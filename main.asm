@@ -5,6 +5,16 @@
 	include 'timing.asm'
 
 __main
+	lea testPalette, a0
+	clr d0
+	jsr loadPalette
+
+	lea testPattern, a0
+	clr d0
+	move #1, d1
+	jsr loadPatterns
+
+gameLoop
 	; do input processing
 
 	; do game processing
@@ -15,6 +25,9 @@ __main
 
 	jsr waitVBlankOff
 
-	jmp __main
+	jmp gameLoop
+
+	include 'assets/palettes.asm'
+	include 'assets/patterns.asm'
 
 __end

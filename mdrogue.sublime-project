@@ -9,12 +9,8 @@
 	[
 		{
 			"name": "asm68k",
-			"cmd": ["$project_path/asm68k", "/p /q /o e-", "$file,$project_base_name.bin"],
+			"cmd": ["$project_path/asm68k", "/p /q /o e-", "$file,$project_base_name.bin,$project_base_name.lst"],
 			"file_regex": "^(.*)\\(([0-9]*)\\)() : Error : (.*)"
-		},
-		{
-			"name": "emulator",
-			"cmd": []
 		}
 	]
 }

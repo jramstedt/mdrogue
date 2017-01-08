@@ -1,6 +1,5 @@
 ; I/O ports
 io_ver    equ 0x00A10001
-
 io_data1  equ 0x00A10003  ;  DATA 1 ( CTRL1 )
 io_data2  equ 0x00A10005  ;  DATA 2 ( CTRL2 )
 io_data3  equ 0x00A10007  ;  DATA 3 ( EXP   )
@@ -19,8 +18,4 @@ io_reset  equ 0x00A1000C  ;  RESET
 io_rx3    equ 0x00A1001D  ;  RxDATA 3
 io_sctrl3 equ 0x00A1001F  ;  S-CTRL 3
 
-; VDP
-vdp_data  equ 0x00C00000
-vdp_ctrl  equ 0x00C00004
-vdp_hvcnt equ 0x00C00008
-vdp_psg   equ 0x00C00011
+    include 'vdp.asm'

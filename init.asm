@@ -94,7 +94,7 @@ EntryPoint
 	bne Main          ; Branch if Not Equal (to zero) - to Main
 
 ; TMSS
-	move.b 0x00A10001, d0
+	move.b io_ver, d0
 	andi.b #0x0F, d0
 	beq skipTMSS
 	move.l #'SEGA', 0x00A14000
@@ -102,7 +102,7 @@ skipTMSS
 
 ; VDP
 	move.l #(VDPRegistersEnd-VDPRegisters-1), d0
-	move.l #0x00008000, d1
+	move.l #vdp_w_reg, d1
 	lea VDPRegisters, a0
 
 initVDPLoop
@@ -135,10 +135,10 @@ Main
 VDPRegisters
    dc.b 0x14 ; 0: Horiz. interrupt on, display on
    dc.b 0x74 ; 1: Vert. interrupt on, screen blank off, DMA on, V28 mode (40 cells vertically), Genesis mode on
-   dc.b 0x30 ; 2: Pattern table for Scroll Plane A at 0xC000 (bits 3-5)
-   dc.b 0x40 ; 3: Pattern table for Window Plane at 0x10000 (bits 1-5)
-   dc.b 0x05 ; 4: Pattern table for Scroll Plane B at 0xA000 (bits 0-2)
-   dc.b 0x70 ; 5: Sprite table at 0xE000 (bits 0-6)
+   dc.b (vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
+   dc.b (vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
+   dc.b (vdp_map_bnt>>13) ; 4: Pattern table for Scroll Plane B (bits 0-2)
+   dc.b (vdp_map_sat>>9) ; 5: Sprite table (bits 0-6)
    dc.b 0x00 ; 6: Unused
    dc.b 0x00 ; 7: Background colour - bits 0-3 = colour, bits 4-5 = palette
    dc.b 0x00 ; 8: Unused
@@ -146,7 +146,7 @@ VDPRegisters
    dc.b 0x00 ; 10: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
    dc.b 0x00 ; 11: External interrupts off, V scroll fullscreen, H scroll fullscreen
    dc.b 0x81 ; 12: Shadows and highlights off, interlace off, H40 mode (64 cells horizontally)
-   dc.b 0x34 ; 13: Horiz. scroll table at 0xD000 (bits 0-5)
+   dc.b (vdp_map_hst>>10) ; 13: Horiz. scroll table (bits 0-5)
    dc.b 0x00 ; 14: Unused
    dc.b 0x00 ; 15: Autoincrement off
    dc.b 0x01 ; 16: Vert. scroll 32, Horiz. scroll 64
