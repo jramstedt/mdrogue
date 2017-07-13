@@ -5,7 +5,11 @@
 		[
 			[
 				"game",
-				"gameVariables\tproperty"
+				"gameObjects"
+			],
+			[
+				"mac",
+				"macro\tMacro"
 			],
 			[
 				"nu",
@@ -372,58 +376,72 @@
 	"buffers":
 	[
 		{
-			"file": "init.asm",
-			"settings":
-			{
-				"buffer_size": 4110,
-				"encoding": "UTF-8",
-				"line_ending": "Windows",
-				"name": "; ************************************************"
-			}
-		},
-		{
 			"file": "main.asm",
 			"settings":
 			{
-				"buffer_size": 92,
+				"buffer_size": 421,
 				"encoding": "UTF-8",
 				"line_ending": "Windows",
 				"name": "include 'init.asm'"
 			}
 		},
 		{
+			"file": "init.asm",
+			"settings":
+			{
+				"buffer_size": 6420,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "sizeByte\t\t\tequ $01\nsizeWord\t\t\tequ $02\nsizeLong\t\t\tequ $04\n\nsizeSpriteDesc\t\tequ $08\nsizePattern\t\t\tequ $20\nsizePalette\t\t\tequ $20\n\nramStartAddress\t\tequ\t$00FF0000\nstackStartAddress\tequ\t$00FFE000\n\n; gameobject varuables\nobClass\t\tequ $00\t;\nobSubclass\tequ $01\t;\nobState\t\tequ\t$02\t;\nobRender\tequ\t$03\t; HRYX\nobX\t\t\tequ $05\t; FFFF\nobY\t\t\tequ $07\t; FFFF\nobVelX\t\tequ $09\t; FFF.F\nobVelY\t\tequ $0B\t; FFF.f\nobWidth\t\tequ\t$0D\t; \nobHeight\tequ $0E\t;\nobFrame\t\tequ $0F\t;\nobAnimTime\tequ $10\t;\nobCollision\tequ\t$11\t;\n\nobDataSize\tequ $20\t; 32 bytes\n\n; sprite attributes\nsVpos\t\tequ\t$0\t; 000000VVVVVVVVVV\nsSize\t\tequ\t$2\t; 0000HHVV\nsLinkData\tequ $3\t; 0XXXXXXX\nsRender\t\tequ $4\t; PCCVHNNNNNNNNNNN\nsHpos\t\tequ\t$6\t; 000000HHHHHHHHHH\n\nsDataSize\tequ\t$8\t; 8 bytes\n\n; VRAM MAPPING\n\n; System stuff\nhblank_counter\t\tequ ramStartAddress\nvblank_counter\t\tequ (hblank_counter+sizeLong)\n\n; 32 bytes reserved\n\n; Game globals\ngameObjects\t\t\tequ\tramStartAddress+32\t; 4096bytes, fits 128 gameObjects\nspriteCount\t\t\tequ gameObjects+(4096)\t; 1byte\nspriteAttrTable\t\tequ spriteCount+1\t\t; 640bytes (8 * 80)\nspriteOrder\t\t\tequ\tspriteAttrTable+640\t; 80bytes\n",
 			"file": "memorymap.asm",
+			"file_size": 1141,
+			"file_write_time": 131289867269961188,
 			"settings":
 			{
-				"buffer_size": 266,
-				"encoding": "UTF-8",
-				"line_ending": "Windows",
-				"name": "; **********************************************"
+				"buffer_size": 1093,
+				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "interrupts.asm",
+			"file": "vdp.asm",
 			"settings":
 			{
-				"buffer_size": 214,
+				"buffer_size": 1730,
 				"encoding": "UTF-8",
-				"line_ending": "Windows",
-				"name": "HBlankInterrupt:"
+				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Users/Janne/AppData/Roaming/Sublime Text 3/Packages/User/asm68k.sublime-build",
+			"file": "assets/patterns.asm",
 			"settings":
 			{
-				"buffer_size": 111,
+				"buffer_size": 159,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		}
 	],
-	"build_system": "",
+	"build_system": "p asm68k",
 	"build_system_choices":
 	[
+		[
+			[
+				[
+					"p asm68k",
+					""
+				],
+				[
+					"Packages/User/asm68k.sublime-build",
+					""
+				]
+			],
+			[
+				"p asm68k",
+				""
+			]
+		]
 	],
 	"build_varint": "",
 	"command_palette":
@@ -598,14 +616,45 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Users/Janne/mdrogue"
+		"/C/Users/Janne/mdrogue",
+		"/C/Users/Janne/mdrogue/assets"
 	],
 	"file_history":
 	[
+		"/C/Users/Janne/mdrogue/init.asm",
+		"/C/Users/Janne/mdrogue/timing.asm",
+		"/C/Users/Janne/mdrogue/megadrive.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/Variables.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/sonic.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/Constants.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/Macros.asm",
+		"/C/Users/Janne/mdrogue/assets/palettes.asm",
+		"/C/Users/Janne/mdrogue/interrupts.asm",
+		"/C/Users/Janne/mdrogue/assets/patterns.asm",
+		"/C/Users/Janne/mdrogue/memorymap.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Sonic.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/tilemaps/Sega Logo.bin",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/collide/Collision Array (Normal).bin",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_incObj/60 Orbinaut.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_inc/Special Stage Mappings & VRAM Pointers.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_inc/Pattern Load Cues.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_inc/PaletteCycle.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_inc/Palette Pointers.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_inc/Enigma Decompression.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Sonic (without frame IDs).asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Springs.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Rings.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Chopper.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Basaran.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/_anim/Ball Hog.asm",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/misc/sinewave.bin",
+		"/C/Users/Janne/Downloads/Sonic_1_Disassembly_July_2010/misc/angles.bin",
+		"/C/Users/Janne/mdrogue/.gitignore",
+		"/C/Users/Janne/mdrogue/mdrogue.sublime-project",
+		"/C/Users/Janne/AppData/Roaming/Sublime Text 3/Packages/User/asm68k.sublime-build",
 		"/C/Users/Janne/mdrogue/Er",
 		"/C/Users/Janne/mdrogue/ 2",
 		"/C/Users/Janne/Recent/asm68k.sublime-build.lnk",
-		"/C/Users/Janne/AppData/Roaming/Sublime Text 3/Packages/User/asm68k.sublime-build",
 		"/D/Users/Janne/Aniway/sekalaiset/trunk/Omnia/Client/node_modules/rxjs/src/util/FastMap.ts",
 		"/D/Users/Janne/Aniway/sekalaiset/trunk/Omnia/Client/src/marketing/marketing.service.ts",
 		"/D/Users/Janne/Aniway/sekalaiset/trunk/Omnia/Client/src/onlinenewspaper/onlinenewspaper.service.ts",
@@ -699,47 +748,27 @@
 		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/src/_theme.scss",
 		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/src/data/wholesale.ts",
 		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/src/@types/ColladaLoader.d.ts",
-		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/jslibs/ColladaLoader.d.ts",
-		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/src/customerservice/customerservice.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/_theme.scss",
-		"/Users/janneramstedt/NewOmnia/dist/index.html",
-		"/Users/janneramstedt/NewOmnia/src/warehouse/warehouse.component.scss",
-		"/Users/janneramstedt/NewOmnia/src/marketing/marketing.component.scss",
-		"/Users/janneramstedt/NewOmnia/src/styles.scss",
-		"/Users/janneramstedt/Library/Application Support/Sublime Text 3/Packages/TypeScript/Preferences.sublime-settings",
-		"/Users/janneramstedt/NewOmnia/src/wholesale/wholesaleitem.component.ts",
-		"/Users/janneramstedt/Library/Application Support/Sublime Text 3/Packages/TypeScript/TypeScript.sublime-settings",
-		"/Users/janneramstedt/Library/Application Support/Sublime Text 3/Packages/User/TypeScript.sublime-settings",
-		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/tsconfig.json",
-		"/Users/janneramstedt/NewOmnia/tsconfig.json",
-		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/bs-config.json",
-		"/Users/janneramstedt/NewOmnia/src/statistics/statistics.component.scss",
-		"/Users/janneramstedt/NewOmnia/src/tsconfig.json",
-		"/Users/janneramstedt/NewOmnia/src/ecommerce/ecommerce.component.scss",
-		"/Users/janneramstedt/NewOmnia/README.md",
-		"/Users/janneramstedt/NewOmnia/angular-cli.json",
-		"/Users/janneramstedt/NewOmnia/node_modules/howler/howler.js",
-		"/Users/janneramstedt/NewOmnia/src/wholesale/wholesale.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/warehouse/warehouseitem.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/start/start.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/payment/payment.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/onlinenewspaper/onlinenewspaper.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/marketing/marketing.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/map/map.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/logistics/logistics.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/financial/financial.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/ecommerce/ecommerce.component.ts",
-		"/Users/janneramstedt/NewOmnia/src/debug/debug.component.ts"
+		"/Users/janneramstedt/Sekalaiset/trunk/Omnia/Client/jslibs/ColladaLoader.d.ts"
 	],
 	"find":
 	{
-		"height": 22.0
+		"height": 34.0
 	},
 	"find_in_files":
 	{
 		"height": 93.0,
 		"where_history":
 		[
+			"*.asm",
+			".asm",
+			"./*.asm",
+			".\\\\*.asm",
+			"..\\*.asm",
+			"mdrogue\\*.asm",
+			".\\*.asm",
+			"./*.asm",
+			"*.asm",
+			"src/*.asm",
 			"src/*.ts",
 			"src/*.html",
 			"src/*.ts",
@@ -810,6 +839,30 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"\\0",
+			"id_EndEggman",
+			"v_objspace",
+			"loadPalette",
+			"setVDPRegister",
+			"0x",
+			"TilemapToVRAM",
+			"0x",
+			"copyTilemap",
+			"800000",
+			"TilemapToVRAM",
+			"even",
+			"ptr_Balance",
+			"clr",
+			"hblank_counter",
+			"ramStartAddress",
+			"vdp_map_ant",
+			"vdp_w_pal",
+			"vdp_ctrl",
+			"vdp_ct",
+			"0x00A10001",
+			"0x000A10009",
+			":",
+			"$",
 			"feedbackOmitted",
 			"order",
 			"excessiveMarketingInMonth",
@@ -913,31 +966,7 @@
 			"init_from",
 			"verkkokauppaKylttiMaterial",
 			"materials",
-			"instance_effect",
-			"verkkokauppaKylttiMaterial",
-			"Map #1",
-			"shader",
-			"ColorOrTexture",
-			"parseTexture",
-			"texcoord",
-			"standard",
-			"technique",
-			"closeX",
-			"technique",
-			"Map #1",
-			"init_f",
-			"images",
-			"dae",
-			"_Image",
-			"parse",
-			"images",
-			"bubbleShow",
-			"currentBubbleIndex",
-			"bubbleShow",
-			"speechBubbleService",
-			"service",
-			"faceClicked",
-			"bubbleShow"
+			"instance_effect"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -945,6 +974,9 @@
 		"regex": false,
 		"replace_history":
 		[
+			"$",
+			";",
+			"0x00",
 			".gameVariables",
 			"suljenappi",
 			"$ballpoint-pen-color",
@@ -971,60 +1003,100 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "init.asm",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 4110,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3589,
-								3589
-							]
-						],
-						"settings":
-						{
-							"auto_name": "; ************************************************",
-							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 952.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 4,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
 					"file": "main.asm",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 92,
+						"buffer_size": 421,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								19,
-								19
+								421,
+								421
 							]
 						],
 						"settings":
 						{
 							"auto_name": "include 'init.asm'",
 							"spell_check": false,
+							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 1,
+					"file": "init.asm",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6420,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4951,
+								4951
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 882.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 2,
+					"file": "memorymap.asm",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1093,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1093,
+								1093
+							]
+						],
+						"settings":
+						{
 							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage"
 						},
 						"translation.x": 0.0,
@@ -1035,89 +1107,60 @@
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "memorymap.asm",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 266,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								266,
-								266
-							]
-						],
-						"settings":
-						{
-							"auto_name": "; **********************************************",
-							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
 					"buffer": 3,
-					"file": "interrupts.asm",
+					"file": "vdp.asm",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 214,
+						"buffer_size": 1730,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								214,
-								214
+								265,
+								265
 							]
 						],
 						"settings":
 						{
-							"auto_name": "HBlankInterrupt:",
-							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage"
+							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
 					"buffer": 4,
-					"file": "/C/Users/Janne/AppData/Roaming/Sublime Text 3/Packages/User/asm68k.sublime-build",
+					"file": "assets/patterns.asm",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 111,
+						"buffer_size": 159,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								108,
-								108
+								156,
+								159
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JSON.sublime-syntax"
+							"syntax": "Packages/M68k Assembly/M68k-Assembly.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 56.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 4,
 					"type": "text"
 				}
 			]
@@ -1140,11 +1183,25 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
+			],
+			[
+				2,
+				0,
+				3,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.257393386891,
+			0.601020098061,
 			1.0
 		],
 		"rows":
@@ -1164,7 +1221,7 @@
 	},
 	"output.exec":
 	{
-		"height": 473.0
+		"height": 256.0
 	},
 	"output.find_results":
 	{
@@ -1178,11 +1235,11 @@
 	{
 		"height": 221.0
 	},
-	"pinned_build_system": "Packages/User/asm68k.sublime-build",
+	"pinned_build_system": "asm68k",
 	"project": "mdrogue.sublime-project",
 	"replace":
 	{
-		"height": 40.0
+		"height": 62.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -1212,7 +1269,7 @@
 		],
 		"width": 719.0
 	},
-	"selected_group": 0,
+	"selected_group": 2,
 	"settings":
 	{
 	},

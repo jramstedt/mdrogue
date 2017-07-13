@@ -4,15 +4,13 @@
 	include 'interrupts.asm'
 	include 'timing.asm'
 
-__main
-	lea testPalette, a0
-	clr d0
-	jsr loadPalette
+	include 'objects/objects.asm'
 
-	lea testPattern, a0
-	clr d0
-	move #1, d1
-	jsr loadPatterns
+__main
+	loadPalette testPalette, 0
+	loadPalette testPalette, 2
+	
+	loadPatterns testPattern, $0, 1
 
 gameLoop
 	; do input processing
@@ -24,10 +22,12 @@ gameLoop
 	; do graphics commands
 
 	jsr waitVBlankOff
-
+	
 	jmp gameLoop
 
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'
-
+	
+	
+	include 'objects/01player.asm'
 __end

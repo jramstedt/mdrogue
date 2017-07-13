@@ -1,9 +1,9 @@
 HBlankInterrupt:
-   add.l #0x1, hblank_counter    ; Increment hinterrupt counter
+   add.l #1, hblank_counter    ; Increment hinterrupt counter
    rte
 
 VBlankInterrupt:
-   add.l #0x1, vblank_counter    ; Increment vinterrupt counter
+   add.l #1, vblank_counter    ; Increment vinterrupt counter
    rte
 
 Exception:
