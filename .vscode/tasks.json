@@ -6,7 +6,7 @@
         {
             "taskName": "build",
             "command": "${workspaceRoot}/asm68k",
-            "args": ["/p /q /o e-", "main.asm,${workspaceRootFolderName}.bin,${workspaceRootFolderName}.lst"],
+            "args": ["/p /q /o e-,l@", "main.asm,${workspaceRootFolderName}.bin"],
             "isShellCommand": true,
             "showOutput": "silent",
             "isBuildCommand": true,

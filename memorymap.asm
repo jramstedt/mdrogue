@@ -2,7 +2,7 @@ sizeByte			equ $01
 sizeWord			equ $02
 sizeLong			equ $04
 
-sizeSpriteDesc		equ $08
+sizeSpriteDesc		equ sDataSize
 sizePattern			equ $20
 sizePalette			equ $20
 
@@ -10,41 +10,42 @@ ramStartAddress		equ	$00FF0000
 stackStartAddress	equ	$00FFE000
 
 ; gameobject variables
-obClass		equ $00	;
-obSubclass	equ $01	;
-obState		equ	$02	;
-obRender	equ	$03	; HRYX
-obX			equ $05	; FFFF
-obY			equ $07	; FFFF
-obVelX		equ $09	; FFF.F
-obVelY		equ $0B	; FFF.F
-obWidth		equ	$0D	; 
-obHeight	equ $0E	;
-obFrame		equ $0F	;
-obAnimTime	equ $10	;
-obCollision	equ	$11	;
-
-obDataSize	equ $20	; 32 bytes
+			rsreset
+obClass		rs.b	1
+obSubclass	rs.b	1
+obState		rs.b	1
+obRender	rs.w	1	; HRYX
+obX			rs.w	1	; FFF.F
+obY			rs.w	1	; FFF.F
+obVelX		rs.w	1	; FFF.F
+obVelY		rs.w	1	; FFF.F
+obWidth		rs.b	1
+obHeight	rs.b	1
+obFrame		rs.b	1
+obAnimTime	rs.b	1
+obCollision	rs.b	1
+obClassData	rs.b	32-__RS
+obDataSize	equ		__RS	; 32 bytes
 
 ; sprite attributes
-sVpos		equ	$0	; 000000VVVVVVVVVV
-sSize		equ	$2	; 0000HHVV
-sLinkData	equ $3	; 0XXXXXXX
-sRender		equ $4	; PCCVHNNNNNNNNNNN
-sHpos		equ	$6	; 000000HHHHHHHHHH
-
-sDataSize	equ	$8	; 8 bytes
+			rsreset
+sVpos		rs.w	1	; 000000VVVVVVVVVV
+sSize		rs.b	1	; 0000HHVV
+sLinkData	rs.b	1	; 0XXXXXXX
+sRender		rs.w	1	; PCCVHNNNNNNNNNNN
+sHpos		rs.w	1	; 000000HHHHHHHHHH
+sDataSize	equ		__RS
 
 ; VRAM MAPPING
 
 ; System stuff
-hblank_counter		equ ramStartAddress
-vblank_counter		equ (hblank_counter+sizeLong)
-
-; 32 bytes reserved
+			rsset	ramStartAddress
+hblank_counter		rs.l	1
+vblank_counter		rs.l	1
 
 ; Game globals
-gameObjects			equ	ramStartAddress+32	; 4096bytes, fits 128 gameObjects
-spriteCount			equ gameObjects+(4096)	; 1byte
-spriteAttrTable		equ spriteCount+1		; 640bytes (8 * 80)
-spriteOrder			equ	spriteAttrTable+640	; 80bytes
+gameObjects			rs.b	obDataSize*128
+spriteCount			rs.b	1				; number of sprites to render
+spriteAttrTable		rs.b 	sDataSize*80	; RAM buffer for sprite attribute table
+spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
+
