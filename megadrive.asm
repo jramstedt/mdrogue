@@ -19,3 +19,4 @@ io_rx3    equ $00A1001D  ;  RxDATA 3
 io_sctrl3 equ $00A1001F  ;  S-CTRL 3
 
     include 'vdp.asm'
+	include 'dma.asm'

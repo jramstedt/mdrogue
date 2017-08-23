@@ -1,5 +1,9 @@
 	include 'objects/objecttable.asm'
 
+; $80,$80 top left 
+; $1BF,$15F
+; width $13F = 319
+; height $DF = 223
 displaySprite
 	rts
 

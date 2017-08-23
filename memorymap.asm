@@ -21,8 +21,9 @@ obVelX		rs.w	1	; FFF.F
 obVelY		rs.w	1	; FFF.F
 obWidth		rs.b	1
 obHeight	rs.b	1
-obFrame		rs.b	1
-obAnimTime	rs.b	1
+obAnim		rs.b	1	; animation number
+obFrame		rs.b	1   ; frame in animation
+obFrameTime	rs.b	1   ; vblanks left until next frame
 obCollision	rs.b	1
 obClassData	rs.b	32-__RS
 obDataSize	equ		__RS	; 32 bytes
@@ -42,6 +43,9 @@ sDataSize	equ		__RS
 			rsset	ramStartAddress
 hblank_counter		rs.l	1
 vblank_counter		rs.l	1
+
+dma_queue			rs.w	7*20
+dma_queue_pointer	rs.l	1
 
 ; Game globals
 gameObjects			rs.b	obDataSize*128

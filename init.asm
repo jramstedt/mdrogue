@@ -134,7 +134,7 @@ Main
 
 VDPRegisters
    dc.b $14 ; 0: Horiz. interrupt on, display on
-   dc.b $74 ; 1: Vert. interrupt on, screen blank off, DMA on, V28 mode (40 cells vertically), Genesis mode on
+   dc.b $7C ; 1: Vert. interrupt on, screen blank off, DMA on, V30 mode, Genesis mode on
    dc.b (vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
    dc.b (vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
    dc.b (vdp_map_bnt>>13) ; 4: Pattern table for Scroll Plane B (bits 0-2)
@@ -145,7 +145,7 @@ VDPRegisters
    dc.b $00 ; 9: Unused
    dc.b $00 ; 10: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
    dc.b $00 ; 11: External interrupts off, V scroll fullscreen, H scroll fullscreen
-   dc.b $81 ; 12: Shadows and highlights off, interlace off, H40 mode (64 cells horizontally)
+   dc.b $89 ; 12: Shadows and highlights on, interlace off, H40 mode (64 cells horizontally)
    dc.b (vdp_map_hst>>10) ; 13: Horiz. scroll table (bits 0-5)
    dc.b $00 ; 14: Unused
    dc.b $00 ; 15: Autoincrement off
