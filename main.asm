@@ -16,34 +16,39 @@ __main
 
 	setVDPRegister 11, %00000111
 
+gameLoop
+	; do input processing
+
+	; do game processing
+
+	; Test horizontal scrolling
 	setVDPAutoIncrement 2
 	setVDPWriteAddressVRAM vdp_map_hst
 
 	move.l #255, d0
 	move.l #0, d1
 @setHScrollLoop
+	move.l vblank_counter, d1
 	move.l d1, vdp_data
-	addq.l #1, d1
+	;addq.l #1, d1
 	dbra d0, @setHScrollLoop
-	
-	setVDPAutoIncrement 2
-	setVDPWriteAddressVSRAM 0
+
+	; Test vertical scrolling
+	setVDPAutoIncrement 4
+	setVDPWriteAddressVSRAM 2
 
 	move.l #19, d0
 	move.l #0, d1
 @setVScrollLoop
-	move.l d1, vdp_data
-	addq.l #1, d1
+	move.l vblank_counter, d1
+	move.w d1, vdp_data
+	;addq.l #1, d1
 	dbra d0, @setVScrollLoop
-
-gameLoop
-	; do input processing
-
-	; do game processing
 
 	jsr waitVBlankOn
 
 	; do graphics commands
+	setVDPAutoIncrement 2
 	jsr processDMAQueue
 
 	jsr waitVBlankOff
