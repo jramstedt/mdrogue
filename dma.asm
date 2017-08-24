@@ -25,8 +25,8 @@
 ;    d6 destination
 ;    d7 length
 queueDMATransfer
-    movea.w dma_queue_pointer, a6           ; Move current pointer to a6
-    cmpa.w  #dma_queue_pointer&$FFFF, a6    ; Compare dma_queue_pointer RAM address to current pointer
+    movea.l dma_queue_pointer, a6           ; Move current pointer to a6
+    cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
     beq.s   @done                           ; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
     lsr.l   #1, d5          ; Source address >> 1 (even address)
@@ -47,7 +47,7 @@ queueDMATransfer
     move.l  d6, (a6)+   ; 
 
     clr.w   (a6)        ; Clear word at address a6 (end token)
-    move.w  a6, dma_queue_pointer
+    move.l  a6, dma_queue_pointer
 
 @done
     rts
@@ -55,7 +55,7 @@ queueDMATransfer
 initDMAQueue
     lea     dma_queue, a6
     move.w  #0, (a6)                ; Move zero to beginning of dma queue
-    move.w  a6, dma_queue_pointer   ; Set current pointer to beginning of dma queue
+    move.l  a6, dma_queue_pointer   ; Set current pointer to beginning of dma queue
     move.l  #$96959493, d7          ; vdp_w_reg+(22<<8), vdp_w_reg+(21<<8), vdp_w_reg+(20<<8), vdp_w_reg+(19<<8)
 
 lc = 0
@@ -71,7 +71,7 @@ processDMAQueue
 
     lea     vdp_ctrl, a5
     lea     dma_queue, a6
-    move.w  a6, dma_queue_pointer   ; Reset dma_queue_pointer
+    move.l  a6, dma_queue_pointer   ; Reset dma_queue_pointer
 
     REPT (dma_queue_pointer-dma_queue)/(7*2)
     move.w	(a6)+, d6               

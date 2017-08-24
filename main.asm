@@ -12,7 +12,13 @@ __main
 	loadPalette testPalette, 0
 	loadPalette testPalette, 2
 	
-	loadPatterns testPattern, $0, 1
+	;loadPatterns testPattern, $0, 1
+	;loadPatterns fontPatterns, $0, fontStripe*fontRows
+
+	move.l #fontPatterns, d5
+	move.l #0, d6
+	move.l #fontStripe/2*fontRows*32, d7
+	jsr queueDMATransfer
 
 	setVDPRegister 11, %00000111
 

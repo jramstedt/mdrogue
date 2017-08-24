@@ -51,7 +51,7 @@ loadPatterns MACRO source, vram, count
 	setVDPWriteAddressVRAM \vram
 
 	lea.l	(source), a0
-	moveq	#count, d0
+	move.l	#count, d0
 	bsr	copyPatterns
 	ENDM
 
