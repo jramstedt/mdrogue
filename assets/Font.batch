@@ -3,5 +3,4 @@ input Font.png
 output FontPatterns.bin
 output2 FontTilemap.bin
 
-tiles 0 0 64 6
 map 0 0 64 6

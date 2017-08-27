@@ -8,13 +8,8 @@ testPattern
     dc.l $0000DE00
     dc.l $000000F0
 
-; 16x16 font
-fontStripe equ 64   ; Number of cells in one row.
-fontRows   equ 6    ; Number of rows.
-
 fontPatterns
     incbin assets/FontPatterns.bin
 
-; tilemap starts from ascii 0x20 (space)
 fontTilemap
     incbin assets/FontTilemap.bin
