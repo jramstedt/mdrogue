@@ -3,6 +3,7 @@
 	include 'megadrive.asm'
 	include 'interrupts.asm'
 	include 'timing.asm'
+	include 'assets/font.asm'
 
 	include 'objects/objects.asm'
 
@@ -17,15 +18,19 @@ __main
 
 	move.l #fontPatterns, d5
 	move.l #0, d6
-	move.l #fontStripe/2*fontRows*32, d7
+	move.l #(fontTilemap-fontPatterns)/2, d7
 	jsr queueDMATransfer
 
-	setVDPRegister 11, %00000111
+	setVDPRegister 11, %00000111	; scroll
+
+	lea	testText, a6
+	jsr drawFont
 
 gameLoop
 	; do input processing
 
 	; do game processing
+	
 
 	; Test horizontal scrolling
 	setVDPAutoIncrement 2
@@ -63,7 +68,8 @@ gameLoop
 
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'
-	
+
+testText	dc.b	'Aa Bb Cc', 0
 	
 	include 'objects/01player.asm'
 __end
