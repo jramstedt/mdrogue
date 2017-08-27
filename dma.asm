@@ -23,7 +23,7 @@
 
 ;    d5 source
 ;    d6 destination
-;    d7 length
+;    d7 length in words
 queueDMATransfer
     movea.l dma_queue_pointer, a6           ; Move current pointer to a6
     cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
