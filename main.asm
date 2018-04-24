@@ -30,7 +30,7 @@ gameLoop
 	; do input processing
 
 	; do game processing
-	
+	jsr	processObjects
 
 	; Test horizontal scrolling
 	setVDPAutoIncrement 2

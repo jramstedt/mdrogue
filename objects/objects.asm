@@ -4,7 +4,26 @@
 ; $1BF,$15F
 ; width $13F = 319
 ; height $DF = 223
+processObjects
+	move.b	#0, spriteCount
+
+	lea.l	gameObjects, a0
+	move.w	#127,d7	; see memorymap.asm, max 128 game objects
+@loop
+	moveq	#0,	d0
+	move.b	obClass(a0), d0
+	beq.s	@skip
+
+	movea.l	objectsOrigin-sizeLong(pc,d0.w), a2 ; class start at 1, decrement address by one long
+	jsr		(a2)	; jump to object code
+
+@skip
+	lea	obDataSize(a0), a0
+	dbra d7, @loop
+	rts
+
 displaySprite
+	addq.l	#1, spriteCount
 	rts
 
 deleteObject
@@ -16,7 +35,7 @@ deleteObject
 	rts
 
 findFreeObject
-	lea.l	gameObjects,a2
+	lea.l	gameObjects, a2
 	move.w	#127,d0	; see memorymap.asm, max 128 game objects
 @loop
 	tst.b	(a2)
