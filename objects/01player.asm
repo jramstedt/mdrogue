@@ -9,16 +9,18 @@ objPlayer
 	dc.w	@display-@routineJmpTable
 	dc.w	@delete-@routineJmpTable
 
-@main
+@main ; inits the object
 	addq.b	#2, obState(a0)	; set object state to @display
 	move.b	#1, obRender(a0)
 	move.b	#8, obWidth(a0)
 	move.b	#8, obHeight(a0)
 
 @display
-	jmp	displaySprite
+	jsr	displaySprite
+
+	rts
 
 @delete
-	jmp	deleteObject
+	jsr	deleteObject
 
 	rts
