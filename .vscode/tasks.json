@@ -1,15 +1,23 @@
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
-    "version": "0.1.0",
+    "version": "2.0.0",
     "tasks": [
         {
-            "taskName": "build",
+            "label": "m68k build",
             "command": "${workspaceRoot}/asm68k",
             "args": ["/p /q /o e-,l@", "main.asm,${workspaceRootFolderName}.bin"],
-            "isShellCommand": true,
-            "showOutput": "silent",
-            "isBuildCommand": true,
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
             "problemMatcher": {
                 "owner": "external",
                 "fileLocation": "absolute",
