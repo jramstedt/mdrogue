@@ -13,6 +13,7 @@ processObjects
 	moveq	#0,	d0
 	move.b	obClass(a0), d0
 	beq.s	@skip
+	lsl.w	#2, d0	; index to pointer
 
 	movea.l	objectsOrigin-sizeLong(pc,d0.w), a2 ; class start at 1, decrement address by one long
 	jsr		(a2)	; jump to object code
