@@ -11,8 +11,7 @@ stackStartAddress	equ	$00FFE000
 
 ; gameobject variables
 			rsreset
-obClass		rs.b	1
-obSubclass	rs.b	1
+obClass		rs.b	1	; Class & Subclass nibbles
 obState		rs.b	1
 obRender	rs.w	1	; HRYX
 obX			rs.w	1	; FFF.F
@@ -25,6 +24,8 @@ obAnim		rs.b	1	; animation number
 obFrame		rs.b	1   ; frame in animation
 obFrameTime	rs.b	1   ; vblanks left until next frame
 obCollision	rs.b	1
+obROM		rs.l	1	; ROM address for animation data
+obVRAM		rs.w	1	; VRAM address for patterns
 obClassData	rs.b	32-__RS
 obDataSize	equ		__RS	; 32 bytes
 
@@ -39,6 +40,13 @@ sDataSize	equ		__RS
 
 ; VRAM MAPPING
 
+; VRAM hole for memory manager
+			rsreset
+vrmNext		rs.l	1
+vrmStart	rs.w	1	; in patterns ($20 bytes)
+vrmEnd		rs.w	1	; in patterns ($20 bytes)
+vrmDataSize	equ		__RS
+
 ; System stuff
 			rsset	ramStartAddress
 hblank_counter		rs.l	1
@@ -47,9 +55,15 @@ vblank_counter		rs.l	1
 dma_queue			rs.w	7*20
 dma_queue_pointer	rs.l	1
 
+vrm_list			rs.b	sDataSize*10
+vrm_first			dc.l	vrm_list
+
 ; Game globals
 gameObjects			rs.b	obDataSize*128
 spriteCount			rs.b	1				; number of sprites to render
-spriteAttrTable		rs.b 	sDataSize*80	; RAM buffer for sprite attribute table
-spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
+
+; 128 sprites max. 80 can be rendered. 20 per line or 320px
+
+;spriteAttrTable		rs.b 	sDataSize*80	; RAM buffer for sprite attribute table
+;spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
 

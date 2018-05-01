@@ -3,6 +3,7 @@
 	include 'megadrive.asm'
 	include 'interrupts.asm'
 	include 'timing.asm'
+	include 'vram.asm'
 	include 'assets/font.asm'
 
 	include 'objects/objects.asm'
