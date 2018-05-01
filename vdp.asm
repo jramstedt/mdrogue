@@ -15,10 +15,6 @@ vdp_r_cram	equ	$00000040
 vdp_r_vsram	equ	$00000010
 
 ; H40 cell mode
-;vdp_map_sat equ $A800	; sprite attribute table
-;vdp_map_hst equ $AC00	; horizontal scroll table
-;vdp_map_wnt equ $B000	; window pattern table
-
 vdp_map_ant	equ $C000	; scroll a pattern name table
 vdp_map_wnt equ $D000	; window pattern table
 vdp_map_bnt equ $E000	; scroll b pattern name table
