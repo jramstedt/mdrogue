@@ -64,7 +64,7 @@ gameLoop
 
 	jsr waitVBlankOff
 	
-	jmp gameLoop
+	bra gameLoop
 
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'

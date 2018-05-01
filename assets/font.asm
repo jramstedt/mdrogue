@@ -46,7 +46,7 @@ drawFont
 
 	add.l #(4<<16), d2
 	add.l #(4<<16), d3
-	jmp @charLoop
+	bra @charLoop
 
 @complete
 	rts

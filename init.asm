@@ -130,7 +130,7 @@ clearRamLoop
 	move #$2000, sr
 
 Main
-	jmp __main ; Begin external main
+	bra __main ; Begin external main
 
 VDPRegisters
    dc.b $14 ; 0: Horiz. interrupt on, display on
