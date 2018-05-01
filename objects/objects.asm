@@ -8,18 +8,20 @@ processObjects
 	move.b	#0, spriteCount
 
 	lea.l	gameObjects, a0
-	move.w	#127,d7	; see memorymap.asm, max 128 game objects
+	move.w	#127,d7		; see memorymap.asm, max 128 game objects
+	move.l d7, -(sp)	; push object counter to stack
 @loop
 	moveq	#0,	d0
 	move.b	obClass(a0), d0
 	beq.s	@skip
-	lsl.w	#2, d0	; index to pointer
+	lsl.w	#2, d0		; index to pointer
 
 	movea.l	objectsOrigin-sizeLong(pc,d0.w), a2 ; class start at 1, decrement address by one long
-	jsr		(a2)	; jump to object code
+	jsr		(a2)		; jump to object code
 
 @skip
 	lea	obDataSize(a0), a0
+	move.l	(sp)+, d7	; pop object counter from stack
 	dbra d7, @loop
 	rts
 
@@ -37,7 +39,7 @@ deleteObject
 
 findFreeObject
 	lea.l	gameObjects, a2
-	move.w	#127,d0	; see memorymap.asm, max 128 game objects
+	move.w	#127,d0		; see memorymap.asm, max 128 game objects
 @loop
 	tst.b	(a2)
 	beq.s	@found
