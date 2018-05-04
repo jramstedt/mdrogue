@@ -63,9 +63,9 @@ freeVRAM
 	cmp.w	vrmEnd(a2), d6
 	beq	@mergeEnd
 
-	cmp.w	d5, vrmStart(a2)
+	cmp.w	vrmStart(a2), d5
 	beq	@mergeStart
-	blt @notFound
+	bgt @notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
