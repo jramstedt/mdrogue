@@ -60,9 +60,12 @@ freeVRAM
 	tst.w	(a2)
 	beq	@notFound
 
-	cmp.w	vrmStart(a2), d5
-	beq	@merge
-	bgt @notFound 
+	cmp.w	vrmEnd(a2), d6
+	beq	@mergeEnd
+
+	cmp.w	d5, vrmStart(a2)
+	beq	@mergeStart
+	blt @notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
@@ -80,8 +83,12 @@ freeVRAM
 	dbra d7, @freeLoop
 	rts ; no free holes left!
 
-@merge
-	sub d7, vrmStart(a2)
+@mergeStart
+	move.w	d6, vrmStart(a2)
+	rts
+
+@mergeEnd
+	move.w	d5, vrmEnd(a2)
 	rts
 
 @makeHole
