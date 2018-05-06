@@ -21,10 +21,17 @@
 ; 0   1   1     CRAM = %011
 ; 1   0   1     VSRAM = %101
 
+queueDMATransfer MACRO sourceMem, destVRAM, lenWords
+	move.l \sourceMem, d5
+	move.l \destVRAM, d6
+	move.l \lenWords, d7
+	jsr _queueDMATransfer
+	ENDM
+
 ;    d5 source
 ;    d6 destination
 ;    d7 length in words
-queueDMATransfer
+_queueDMATransfer
     movea.l dma_queue_pointer, a6           ; Move current pointer to a6
     cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
     beq.s   @done                           ; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
