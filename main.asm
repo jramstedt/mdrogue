@@ -9,18 +9,21 @@
 	include 'objects/objects.asm'
 
 __main
+	move.l #$0, d6
+	move.l #vdp_map_ant/$20, d7
+	jsr freeVRAM
 	jsr initDMAQueue
-
+	
 	loadPalette testPalette, 0
 	loadPalette testPalette, 2
 	
 	;loadPatterns testPattern, $0, 1
 	;loadPatterns fontPatterns, $0, fontStripe*fontRows
 
-	move.l #fontPatterns, d5
-	move.l #0, d6
-	move.l #(fontTilemap-fontPatterns)/2, d7
-	jsr queueDMATransfer
+	move.l #(fontTilemap-fontPatterns)/$20, d7
+	jsr allocVRAM
+
+	queueDMATransfer #fontPatterns, d7, #(fontTilemap-fontPatterns)/2
 
 	setVDPRegister 11, %00000111	; scroll
 
