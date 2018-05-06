@@ -9,8 +9,8 @@ processObjects
 
 	lea.l	gameObjects, a0
 	move.w	#127,d7		; see memorymap.asm, max 128 game objects
-	move.l d7, -(sp)	; push object counter to stack
 @loop
+	move.l d7, -(sp)	; push object counter to stack
 	moveq	#0,	d0
 	move.b	obClass(a0), d0
 	beq.s	@skip
