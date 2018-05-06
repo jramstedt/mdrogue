@@ -8,6 +8,7 @@
 ; trash:
 ; a2, a3, d6, d7
 allocVRAM
+	mulu #$20, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
 	movea.l	(a3), a2
 	moveq	#0, d6
@@ -17,10 +18,9 @@ allocVRAM
 	beq	@notFound
 
 	move.w	vrmStart(a2), d6
-	mulu #$20, d7
 	add	d7, d6
 	cmp.w	vrmEnd(a2), d6
-	bhi	@allocFromHoleStart
+	blo	@allocFromHoleStart
 	beq	@allocFullHole
 	
 	movea.l a2, a3	; set current as previous
@@ -28,20 +28,19 @@ allocVRAM
 	bra	@loop
 
 @allocFromHoleStart
-	move.w	d6, d7
+	move.w	vrmStart(a2), d7
 	move.w	d6, vrmStart(a2)
-	bra @exit
+	rts
 
 @allocFullHole
-	move.w	d6, d7
+	move.w	vrmStart(a2), d7
 	move.l	vrmNext(a2), vrmNext(a3)	; move link
 	clr.l	vrmNext(a2)
-	bra @exit
+	clr.l	vrmStart(a2)
+	rts
 
 @notFound	; No memory left in VRAM.
-	moveq	#0, d7	
-
-@exit
+	moveq	#0, d7
 	rts
 
 ; input:
@@ -65,7 +64,7 @@ freeVRAM
 
 	cmp.w	vrmStart(a2), d5
 	beq	@mergeStart
-	bgt @notFound
+	blo @notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
@@ -74,12 +73,12 @@ freeVRAM
 
 @notFound
 	lea.l	vrm_list, a2
-	move.w	#9, d7	; see memorymap.asm, max 10 vrm holes
+	move.l	#9, d7	; see memorymap.asm, max 10 vrm holes
 @freeLoop	
 	tst.l	vrmStart(a2) ; tests both start and end for null
 	beq	@makeHole
 
-	lea	vrmDataSize(a0), a0
+	lea	vrmDataSize(a2), a2
 	dbra d7, @freeLoop
 	rts ; no free holes left!
 
