@@ -1,0 +1,70 @@
+input orc.png
+
+output orcPatterns.bin
+
+layout sprite
+offset continuous
+
+# idle
+output2 orcIdle.bin
+sprite count 1
+origin 16 32
+sprite 0 0 4 4 vdp
+
+sprite count 1
+origin 48 32
+sprite 4 0 4 4 vdp
+
+# angry idle
+output2 orcAngryIdle.bin
+sprite count 1
+origin 16 64
+sprite 0 4 4 4 vdp
+
+sprite count 1
+origin 48 64
+sprite 4 4 4 4 vdp
+
+sprite count 1
+origin 80 64
+sprite 8 4 4 4 vdp
+
+sprite count 1
+origin 112 64
+sprite 12 4 4 4 vdp
+
+sprite count 1
+origin 144 64
+sprite 16 4 4 4 vdp
+
+# thinking
+output2 orcThinking.bin
+sprite count 1
+origin 16 96
+sprite 0 8 4 4 vdp
+
+sprite count 1
+origin 48 96
+sprite 4 8 4 4 vdp
+
+sprite count 1
+origin 80 96
+sprite 8 8 4 4 vdp
+
+sprite count 1
+origin 112 96
+sprite 12 8 4 4 vdp
+
+sprite count 1
+origin 144 96
+sprite 16 8 4 4 vdp
+
+# surprised
+output2 orcSurprised.bin
+sprite count 1
+origin 16 128
+sprite 0 12 4 4 vdp
+
+sprite count 1
+origin 48 128
+sprite 4 12 4 4 vdp

@@ -11,9 +11,18 @@ objPlayer
 
 @main ; inits the object
 	addq.b	#2, obState(a0)	; set object state to @display
-	move.b	#1, obRender(a0)
-	move.b	#8, obWidth(a0)
-	move.b	#8, obHeight(a0)
+	move.w	#1, obRender(a0)
+	move.b	#32, obWidth(a0)
+	move.b	#32, obHeight(a0)
+
+	move.b	#0, obAnim(a0)
+	move.b	#0, obFrame(a0)
+	move.b	#0, obFrameTime(a0)
+	move.l	#spritesOrc, obROM(a0)
+
+	move.l	#16, d7 ; hard coded for one sprite
+	jsr	allocVRAM
+	move.w	d7, obVRAM(a0)
 
 @display
 	jsr	displaySprite
@@ -21,6 +30,10 @@ objPlayer
 	rts
 
 @delete
+	move.l obVRAM(a0), d6
+	move.l #16, d7
+	jsr	freeVRAM
+
 	jsr	deleteObject
 
 	rts

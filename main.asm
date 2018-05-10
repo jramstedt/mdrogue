@@ -73,6 +73,8 @@ gameLoop
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'
 
+	include 'assets/orc.asm'
+
 testText	dc.b	'Aa Bb Cc', 0
 	
 	include 'objects/01player.asm'
