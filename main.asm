@@ -10,7 +10,7 @@
 
 __main
 	move.l #$0, d6
-	move.l #vdp_map_ant/$20, d7
+	move.l #vdp_map_ant/sizePattern, d7
 	jsr freeVRAM
 	jsr initDMAQueue
 	
@@ -20,7 +20,7 @@ __main
 	;loadPatterns testPattern, $0, 1
 	;loadPatterns fontPatterns, $0, fontStripe*fontRows
 
-	move.l #(fontTilemap-fontPatterns)/$20, d7
+	move.l #(fontTilemap-fontPatterns)/sizePattern, d7
 	jsr allocVRAM
 
 	queueDMATransfer #fontPatterns, d7, #(fontTilemap-fontPatterns)/2
