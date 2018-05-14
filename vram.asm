@@ -8,7 +8,7 @@
 ; trash:
 ; a2, a3, d6, d7
 allocVRAM
-	mulu #$20, d7	; pattern amount to bytes
+	lsl.l	#5, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
 	movea.l	(a3), a2
 	moveq	#0, d6
@@ -50,7 +50,7 @@ allocVRAM
 ; a3, d5, d7
 freeVRAM
 	move.l	d6,	d5
-	mulu #$20, d7
+	lsl	#5, d7
 	add	d7, d5 ; d5 is the VRAM end address
 	lea.l	vrm_first, a3
 	movea.l	(a3), a2
