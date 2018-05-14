@@ -13,8 +13,8 @@
                 "isDefault": true
             },
             "presentation": {
-                "echo": true,
-                "reveal": "silent",
+                "echo": false,
+                "reveal": "never",
                 "focus": false,
                 "panel": "shared"
             },
