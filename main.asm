@@ -30,6 +30,9 @@ __main
 	lea	testText, a6
 	jsr drawFont
 
+	jsr findFreeObject
+	move.b	#$10, obClass(a2)
+
 gameLoop
 	; do input processing
 
@@ -76,6 +79,7 @@ gameLoop
 	include 'assets/orc.asm'
 
 testText	dc.b	'Aa Bb Cc', 0
+	cnop	0,4
 	
 	include 'objects/01player.asm'
 __end

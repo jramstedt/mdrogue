@@ -64,6 +64,6 @@ spriteCount			rs.b	1				; number of sprites to render
 
 ; 128 sprites max. 80 can be rendered. 20 per line or 320px
 
-;spriteAttrTable		rs.b 	sDataSize*80	; RAM buffer for sprite attribute table
+spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
 ;spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
 

@@ -14,6 +14,7 @@ processObjects
 	moveq	#0,	d0
 	move.b	obClass(a0), d0
 	beq.s	@skip
+	lsr.b	#4, d0		; get class from nibble
 	lsl.w	#2, d0		; index to pointer
 
 	movea.l	objectsOrigin-sizeLong(pc,d0.w), a2 ; class start at 1, decrement address by one long
@@ -23,10 +24,77 @@ processObjects
 	lea	obDataSize(a0), a0
 	move.l	(sp)+, d7	; pop object counter from stack
 	dbra d7, @loop
+
+	moveq	#0,	d0
+	move.b	spriteCount, d0
+	beq	@exit
+	lsl	#2, d0	; 4 words per sprite
+	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
+
+@exit
 	rts
 
+; input:
+;	a0 object
 displaySprite
-	addq.l	#1, spriteCount
+	lea	spriteAttrTable, a2
+	movea.l	obROM(a0), a3	; rom address
+	movea.l	(a3), a4		; a4 is patterns start in ROM
+
+	moveq	#0, d0
+	move.b	obAnim(a0), d0	; get animation index
+	lsl.w	#1, d0	; convert index to offset (word per index)
+
+	move.w	sizeLong(a3, d0), d0	; d0 is offset to metasprite data from obROM	
+	lea		(a3, d0), a3	; a3 is metasprite data address
+
+	moveq	#0, d0
+	moveq	#0, d2
+	move.b	(a3)+, d0		; d0 is	sprite count
+
+	move.w	obVRAM(a0), d2
+	lsr	#5, d2	;	address to pattern number
+
+	subq	#1, d0			; decrement one for loop
+@drawSprite
+	addq.b	#1, spriteCount
+
+	;movem.w	(a3)+, d3-d7
+	move.w	(a3)+, d3
+	move.w	(a3)+, d4
+	move.w	(a3)+, d5
+	move.w	(a3)+, d6
+	move.w	(a3)+, d7
+
+	add	#$EF, d3	; screen center vertical
+	move.b	spriteCount, d4
+	add	d2, d5	; add real VRAM pattern id to dplc relative tile position
+	add	#$11F, d6	; screen center horizontal
+
+	; write to spriteAttrTable
+	move.w	d3, (a2)+
+	move.w	d4, (a2)+
+	move.w	d5, (a2)+
+	move.w	d6, (a2)+
+
+	; TODO move to animation code
+	move.w	d7, d1
+	and.b	#$F, d1
+	addq	#1, d1
+	lsl	#4, d1	; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
+
+	and.w	#$7FF0, d7
+	lsl	#1, d7	; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
+	lea	(a4, d7), a5	; a4 is ROM address for start of metasprite pattern data
+
+	lsl	#5, d5
+	move.l d5, a6
+
+	queueDMATransfer a5, a6, d1
+	; TODO END
+
+	dbra	d0, @drawSprite
+
 	rts
 
 deleteObject
