@@ -17,9 +17,13 @@ sprite 4 0 4 4 vdp
 
 # angry idle
 output2 orcAngryIdle.bin
-sprite count 1
+sprite count 4
 origin 16 64
-sprite 0 4 4 4 vdp
+#sprite 0 4 4 4 vdp
+sprite 0 4 2 2 vdp
+sprite 2 4 2 2 vdp
+sprite 0 6 2 2 vdp
+sprite 2 6 2 2 vdp
 
 sprite count 1
 origin 48 64
