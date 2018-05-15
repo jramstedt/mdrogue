@@ -28,9 +28,12 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 	jsr _queueDMATransfer
 	ENDM
 
-;    d5 source
-;    d6 destination
-;    d7 length in words
+; input:
+;	d5 source
+;	d6 destination
+;	d7 length in words
+; trashes:
+;	d4, d5, d6
 _queueDMATransfer
     movea.l dma_queue_pointer, a6           ; Move current pointer to a6
     cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
@@ -38,9 +41,9 @@ _queueDMATransfer
 
     lsr.l   #1, d5          ; Source address >> 1 (even address)
     swap    d5              ; Swap high and low word (high word contains SA23-SA17)
-    move.w  #$977F, d0      ; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
-    and.b   d5, d0          ; AND d0 with d5 lower 8 bits
-    move.w  d0, (a6)+       ; Save reg 23 command+data to DMA queue
+    move.w  #$977F, d4      ; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
+    and.b   d5, d4          ; AND d0 with d5 lower 8 bits
+    move.w  d4, (a6)+       ; Save reg 23 command+data to DMA queue
     move.w  d7, d5          ; Move length to d5 lower word
     movep.l d5, 1(a6)       ; Move each byte to its own word
     lea     8(a6), a6       ; Add 8 to queue (the four words written with movep)
