@@ -1,5 +1,3 @@
-	include 'objects/objecttable.asm'
-
 ; $80,$80 top left 
 ; $1BF,$15F
 ; width $13F = 319
@@ -59,12 +57,7 @@ displaySprite
 @drawSprite
 	addq.b	#1, spriteCount
 
-	;movem.w	(a3)+, d3-d7
-	move.w	(a3)+, d3
-	move.w	(a3)+, d4
-	move.w	(a3)+, d5
-	move.w	(a3)+, d6
-	move.w	(a3)+, d7
+	movem.w	(a3)+, d3-d7
 
 	add	#$EF, d3	; screen center vertical
 	move.b	spriteCount, d4
@@ -79,7 +72,7 @@ displaySprite
 
 	; TODO move to animation code
 	move.w	d7, d1
-	and.b	#$F, d1
+	and.w	#$000F, d1
 	addq	#1, d1
 	lsl	#4, d1	; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
 
