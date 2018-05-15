@@ -6,8 +6,11 @@
 	include 'vram.asm'
 	include 'assets/font.asm'
 
+	include 'objects/objecttable.asm'
 	include 'objects/objects.asm'
 
+	include 'objects/01player.asm'
+	
 __main
 	move.l #$0, d6
 	move.l #vdp_map_ant/sizePattern, d7
@@ -79,7 +82,5 @@ gameLoop
 	include 'assets/orc.asm'
 
 testText	dc.b	'Aa Bb Cc', 0
-	cnop	0,4
-	
-	include 'objects/01player.asm'
+
 __end
