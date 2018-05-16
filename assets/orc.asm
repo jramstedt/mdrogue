@@ -9,23 +9,18 @@ spritesOrc
 	dc.w	@thinking-spritesOrc
 	dc.w	@surprised-spritesOrc
 
-	cnop 1,2
 @idle
 	incbin	assets/orcIdle.bin
 
-	cnop 1,2
 @angryIdle
 	incbin	assets/orcAngryIdle.bin
 
-	cnop 1,2
 @thinking
 	incbin	assets/orcThinking.bin
 
-	cnop 1,2
 @surprised
 	incbin	assets/orcSurprised.bin
 
-	cnop 0,2
 aniOrc
 	dc.w	@aniIdle-aniOrc
 	dc.w	@aniAngryIdle-aniOrc
@@ -43,3 +38,5 @@ aniOrc
 
 @aniSurprised
 	dc.b	60, 0, 1, $80
+
+	cnop 0,2

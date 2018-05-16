@@ -25,6 +25,9 @@ objPlayer
 	move.w	d7, obVRAM(a0)
 
 @display
+	move	#aniOrc, a6
+	jsr animateSprite
+
 	jsr	displaySprite
 
 	rts

@@ -46,14 +46,24 @@ displaySprite
 	move.w	sizeLong(a3, d0), d0	; d0 is offset to metasprite data from obROM	
 	lea		(a3, d0), a3	; a3 is metasprite data address
 
-	moveq	#0, d0
-	moveq	#0, d2
-	move.b	(a3)+, d0		; d0 is	sprite count
+	moveq	#0, d3
+	move.b	obFrame(a0), d3
+	beq	@drawSprites
 
+@findFrame
+	move.w	(a3)+, d0		; d0 is	sprite count
+	mulu	#10, d0
+	adda	d0, a3
+	dbra	d3,	@findFrame
+
+@drawSprites
+	move.w	(a3)+, d0		; d0 is	sprite count
+	subq	#1, d0			; decrement one for loop
+
+	moveq	#0, d2
 	move.w	obVRAM(a0), d2
 	lsr	#5, d2	;	address to pattern number
 
-	subq	#1, d0			; decrement one for loop
 @drawSprite
 	addq.b	#1, spriteCount
 
@@ -87,6 +97,27 @@ displaySprite
 	; TODO END
 
 	dbra	d0, @drawSprite
+
+	rts
+
+; input:
+;	a0 object
+;	a6 animation table
+animateSprite
+	subq	#1, obFrameTime(a0)
+	bmi		@nextFrame
+	rts
+
+@nextFrame
+	moveq	#0,	d0
+	move.b	obAnim(a0), d0
+	lsl.w	#1, d0
+	move	(a6, d0.w),	a6	; a6 is animation script address
+
+	move.b	(a6)+, d0	; d0 is animation speed
+	add	d0, obFrameTime(a0)
+
+	adda	obFrame(a0), a6
 
 	rts
 
