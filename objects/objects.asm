@@ -40,14 +40,16 @@ displaySprite
 	movea.l	(a3), a4		; a4 is patterns start in ROM
 
 	moveq	#0, d0
-	move.b	obAnim(a0), d0	; get animation index
-	lsl.w	#1, d0	; convert index to offset (word per index)
+	move.b	obAnim(a0), d0	; get animation number
+	and.b	#$F0, d0
+	lsr.b	#4-1, d0	; convert number to offset (word per pointer)
 
-	move.w	sizeLong(a3, d0), d0	; d0 is offset to metasprite data from obROM	
+	move.w	sizeLong(a3, d0), d0	; d0 is offset to metasprite data from obROM
 	lea		(a3, d0), a3	; a3 is metasprite data address
 
 	moveq	#0, d3
-	move.b	obFrame(a0), d3
+	move.b	obAnim+1(a0), d3
+	and.b	#$3F, d3
 	beq	@drawSprites
 
 @findFrame
@@ -103,6 +105,8 @@ displaySprite
 ; input:
 ;	a0 object
 ;	a6 animation table
+; trash:
+;	d0, d1, d2, a6
 animateSprite
 	subq	#1, obFrameTime(a0)
 	bmi		@nextFrame
@@ -110,16 +114,34 @@ animateSprite
 
 @nextFrame
 	moveq	#0,	d0
-	move.b	obAnim(a0), d0
-	lsl.w	#1, d0
+	move.b	obAnim(a0), d0	; get animation number
+	and.b	#$F0, d0
+	lsr.b	#4-1, d0	; convert number to offset (word per pointer)
 	move	(a6, d0.w),	a6	; a6 is animation script address
 
-	move.b	(a6)+, d0	; d0 is animation speed
-	add	d0, obFrameTime(a0)
+	move.b	(a6)+, d2	; d2 is animation speed
 
-	adda	obFrame(a0), a6
+	move.w	obAnim(a0), d0
+	move	d0, d1	; d1 is animation data
+
+	and.w	#$0FC0, d0
+	lsr.w	#6, d0	; d0 is animation index
+	move.b (a6, d0.w), d0	; d0 is frame or opcode
+	bmi	@processOpcode
+	
+	add	d2, obFrameTime(a0)
+
+	and.w	#$FFC0, d1
+	or.b	d0, d1
+	add	#64, d1 ; increase animation index
+	move.w	d1, obAnim(a0)
 
 	rts
+
+@processOpcode
+	and.w	#$F03F, d1
+	move.w	d1, obAnim(a0)
+	bra	@nextFrame
 
 deleteObject
 	moveq	#(obDataSize/sizeLong), d0

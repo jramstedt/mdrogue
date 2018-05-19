@@ -20,8 +20,10 @@ obVelX		rs.w	1	; FFF.F
 obVelY		rs.w	1	; FFF.F
 obWidth		rs.b	1
 obHeight	rs.b	1
-obAnim		rs.b	1	; animation number
-obFrame		rs.b	1   ; frame in animation
+obAnim		rs.w	1	; animation number
+						; F000 15 animation
+						; 0FC0 64 animation index
+						; 003F 64 frame
 obFrameTime	rs.b	1   ; vblanks left until next frame
 obCollision	rs.b	1
 obROM		rs.l	1	; ROM address for animation data
