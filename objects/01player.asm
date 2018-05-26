@@ -15,7 +15,7 @@ objPlayer
 	move.b	#32, obWidth(a0)
 	move.b	#32, obHeight(a0)
 
-	move.w	#$1000, obAnim(a0)
+	move.w	#$0000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 	move.l	#spritesOrc, obROM(a0)
 

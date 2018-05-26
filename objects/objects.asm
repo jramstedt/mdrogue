@@ -30,6 +30,15 @@ processObjects
 	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
 
 @exit
+	moveq	#0,	d0
+	move.b	spriteCount, d0
+	sub #1, d0
+	lsl	#3, d0	; 8bytes per sprite
+
+	lea spriteAttrTable, a0
+	add	d0, a0
+	move.b #0, sLinkData(a0)
+
 	rts
 
 ; input:
@@ -44,14 +53,16 @@ displaySprite
 	and.b	#$F0, d0
 	lsr.b	#4-1, d0	; convert number to offset (word per pointer)
 
-	move.w	sizeLong(a3, d0), d0	; d0 is offset to metasprite data from obROM
-	lea		(a3, d0), a3	; a3 is metasprite data address
+	move.w	sizeLong(a3, d0.w), d0	; d0 is offset to metasprite data from obROM
+	lea		(a3, d0.w), a3	; a3 is metasprite data address
 
 	moveq	#0, d3
 	move.b	obAnim+1(a0), d3
 	and.b	#$3F, d3
+	tst d3
 	beq	@drawSprites
 
+	subq	#1, d3			; decrement one for loop
 @findFrame
 	move.w	(a3)+, d0		; d0 is	sprite count
 	mulu	#10, d0
@@ -106,21 +117,24 @@ displaySprite
 ;	a0 object
 ;	a6 animation table
 ; trash:
-;	d0, d1, d2, a6
+;	d0, d1, d2, a5, a6
 animateSprite
 	subq	#1, obFrameTime(a0)
-	bmi		@nextFrame
+	bmi		@processAnim
 	rts
 
-@nextFrame
+@processAnim
 	moveq	#0,	d0
 	move.b	obAnim(a0), d0	; get animation number
 	and.b	#$F0, d0
-	lsr.b	#4-1, d0	; convert number to offset (word per pointer)
-	move	(a6, d0.w),	a6	; a6 is animation script address
+	lsr.b	#4-1, d0	; convert number to table offset (word per pointer)
+	move	(a6, d0.w),	d0	; d0 is offset to animation data
+	lea	(a6, d0.w), a6	; a5 is animation script address
 
+	moveq	#0,	d2
 	move.b	(a6)+, d2	; d2 is animation speed
-
+	
+@nextFrame
 	move.w	obAnim(a0), d0
 	move	d0, d1	; d1 is animation data
 
