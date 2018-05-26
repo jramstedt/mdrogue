@@ -17,7 +17,6 @@ objPlayer
 
 	move.w	#$0000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
-	move.l	#spritesOrc, obROM(a0)
 
 	move.l	#16, d7 ; hard coded for one sprite
 	jsr	allocVRAM
@@ -25,8 +24,9 @@ objPlayer
 
 @display
 	move	#aniOrc, a6
-	jsr animateSprite
+	jsr	animateSprite
 
+	move	#spritesOrc, a6
 	jsr	displaySprite
 
 	rts

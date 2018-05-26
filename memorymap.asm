@@ -26,7 +26,6 @@ obAnim		rs.w	1	; animation number
 						; 003F 64 frame
 obFrameTime	rs.b	1   ; vblanks left until next frame
 obCollision	rs.b	1
-obROM		rs.l	1	; ROM address for animation data
 obVRAM		rs.w	1	; VRAM address for patterns
 obClassData	rs.b	32-__RS
 obDataSize	equ		__RS	; 32 bytes

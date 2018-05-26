@@ -43,9 +43,10 @@ processObjects
 
 ; input:
 ;	a0 object
+;	a6 rom address
 displaySprite
 	lea	spriteAttrTable, a2
-	movea.l	obROM(a0), a3	; rom address
+	movea.l	a6, a3	; rom address
 	movea.l	(a3), a4		; a4 is patterns start in ROM
 
 	moveq	#0, d0
@@ -53,7 +54,7 @@ displaySprite
 	and.b	#$F0, d0
 	lsr.b	#4-1, d0	; convert number to offset (word per pointer)
 
-	move.w	sizeLong(a3, d0.w), d0	; d0 is offset to metasprite data from obROM
+	move.w	sizeLong(a3, d0.w), d0	; d0 is offset to metasprite data from rom address
 	lea		(a3, d0.w), a3	; a3 is metasprite data address
 
 	moveq	#0, d3
@@ -65,7 +66,12 @@ displaySprite
 	subq	#1, d3			; decrement one for loop
 @findFrame
 	move.w	(a3)+, d0		; d0 is	sprite count
-	mulu	#10, d0
+
+	move.w	d0, d2
+	lsl	#3, d0	; * 8
+	add.w	d2, d2	; * 2
+	add.w	d2, d0	; = * 10 	;mulu	#10, d0
+
 	adda	d0, a3
 	dbra	d3,	@findFrame
 
@@ -100,10 +106,10 @@ displaySprite
 	lsl	#4, d1	; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
 
 	and.w	#$7FF0, d7
-	lsl	#1, d7	; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
+	add.w	d7, d7	; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
 	lea	(a4, d7), a5	; a4 is ROM address for start of metasprite pattern data
 
-	lsl	#5, d5
+	lsl	#5, d5	; 32 bytes per pattern
 	move.l d5, a6
 
 	queueDMATransfer a5, a6, d1
@@ -156,6 +162,9 @@ animateSprite
 	and.w	#$F03F, d1
 	move.w	d1, obAnim(a0)
 	bra	@nextFrame
+
+
+
 
 deleteObject
 	moveq	#(obDataSize/sizeLong), d0
