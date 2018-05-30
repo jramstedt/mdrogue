@@ -87,6 +87,10 @@
 	dc.b "                                        "			; 1C8H Notes (unused)
 	dc.b "JUE             "									; 1F0H Country codes
 
+	include 'memorymap.asm'
+	include 'megadrive.asm'
+	include 'interrupts.asm'
+
 EntryPoint
 	tst.w io_expRst   ; Test mystery reset (expansion port reset?)
 	bne Main          ; Branch if Not Equal (to zero) - to Main
@@ -110,6 +114,8 @@ initVDPLoop
 	move.w d1, vdp_ctrl
 	add.w #$0100, d1
 	dbra d0, initVDPLoop
+
+	dmaClearVRAM	; Start filling vram using DMA. Does not block CPU.
 
 ; IO controls
 	move.b #$00, io_ctrl1

@@ -1,9 +1,7 @@
 	include 'init.asm'
-	include 'memorymap.asm'
-	include 'megadrive.asm'
-	include 'interrupts.asm'
 	include 'timing.asm'
 	include 'vram.asm'
+
 	include 'assets/font.asm'
 
 	include 'objects/objecttable.asm'
@@ -12,8 +10,6 @@
 	include 'objects/01player.asm'
 	
 __main
-	dmaClearVRAM	; Start filling vram using DMA. Does not block CPU.
-
 	move.l #$0, d6
 	move.l #vdp_map_ant/sizePattern, d7
 	jsr freeVRAM
@@ -27,8 +23,6 @@ __main
 	jsr findFreeObject
 	move.b	#$10, obClass(a2)
 
-	jsr waitDMAOn ; Block CPU until clear DMA is completed. Any VDP command will abort fill.
-	
 	loadPalette testPalette, 0
 	loadPalette testPalette, 2
 	
@@ -39,7 +33,6 @@ __main
 
 	lea	testText, a6
 	jsr drawFont
-
 
 gameLoop
 	; do input processing
