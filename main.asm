@@ -12,10 +12,22 @@
 	include 'objects/01player.asm'
 	
 __main
+	dmaClearVRAM	; Start filling vram using DMA. Does not block CPU.
+
 	move.l #$0, d6
 	move.l #vdp_map_ant/sizePattern, d7
 	jsr freeVRAM
 	jsr initDMAQueue
+	
+	move.l #(fontTilemap-fontPatterns)/sizePattern, d7
+	jsr allocVRAM
+
+	queueDMATransfer #fontPatterns, d7, #(fontTilemap-fontPatterns)/2
+	
+	jsr findFreeObject
+	move.b	#$10, obClass(a2)
+
+	jsr waitDMAOn ; Block CPU until clear DMA is completed. Any VDP command will abort fill.
 	
 	loadPalette testPalette, 0
 	loadPalette testPalette, 2
@@ -23,18 +35,11 @@ __main
 	;loadPatterns testPattern, $0, 1
 	;loadPatterns fontPatterns, $0, fontStripe*fontRows
 
-	move.l #(fontTilemap-fontPatterns)/sizePattern, d7
-	jsr allocVRAM
-
-	queueDMATransfer #fontPatterns, d7, #(fontTilemap-fontPatterns)/2
-
 	setVDPRegister 11, %00000111	; scroll
 
 	lea	testText, a6
 	jsr drawFont
 
-	jsr findFreeObject
-	move.b	#$10, obClass(a2)
 
 gameLoop
 	; do input processing
@@ -71,7 +76,8 @@ gameLoop
 	; do graphics commands
 	setVDPAutoIncrement 2
 	jsr processDMAQueue
-
+	jsr waitDMAOn
+	
 	jsr waitVBlankOff
 	
 	bra gameLoop

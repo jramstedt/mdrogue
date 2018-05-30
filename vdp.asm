@@ -84,3 +84,11 @@ copyPatternDataLoop
 	dbra d0, copyPatternLoop
 	rts
 
+dmaClearVRAM MACRO
+	setVDPAutoIncrement 1
+	setVDPRegister 19, $FF
+	setVDPRegister 20, $FF
+	setVDPRegister 23, %10000000
+	move.l	#vdp_w_vram+$80, vdp_ctrl
+	move.w #$0, vdp_data
+	ENDM
