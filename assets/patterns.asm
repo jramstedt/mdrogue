@@ -13,3 +13,9 @@ fontPatterns
 
 fontTilemap
     incbin assets/FontTilemap.bin
+
+testLevelPatterns
+	incbin assets/BigPicPatterns.bin
+
+testLevelTilemap
+    incbin assets/BigPicTilemap.bin
