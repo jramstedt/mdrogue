@@ -70,7 +70,7 @@
 ; 100H - 1FFH cartridge data
 
 	dc.b "SEGA MEGA DRIVE "									; 100H Console name
-	dc.b "(C)  JR 2017.JAN"									; 110H Copyrght holder and release date
+	dc.b "(C)  JR 2017.JAN"									; 110H Copyright holder and release date
 	dc.b "ROGUE GAME                                      "	; 120H Domestic name
 	dc.b "ROGUE GAME                                      "	; 150H International name
 	dc.b "GM XXXXXXXX-XX"									; 180H Version number
@@ -115,7 +115,7 @@ initVDPLoop
 	add.w #$0100, d1
 	dbra d0, initVDPLoop
 
-	dmaClearVRAM	; Start filling vram using DMA. Does not block CPU.
+	dmaClearVRAM	; Start filling VRAM using DMA. Does not block CPU.
 
 ; IO controls
 	move.b #$00, io_ctrl1
@@ -139,8 +139,8 @@ Main
 	bra __main ; Begin external main
 
 VDPRegisters
-   dc.b $14 ; 0: Horiz. interrupt on, display on
-   dc.b $7C ; 1: Vert. interrupt on, screen blank off, DMA on, V30 mode, Genesis mode on
+   dc.b $04 ; 0: Horiz. interrupt off, 
+   dc.b $7C ; 1: display on, Vert. interrupt on, screen blank off, DMA on, V30 mode, Mega Drive mode on
    dc.b (vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
    dc.b (vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
    dc.b (vdp_map_bnt>>13) ; 4: Pattern table for Scroll Plane B (bits 0-2)
