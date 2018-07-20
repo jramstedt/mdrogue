@@ -14,15 +14,17 @@ __main
 	move.l #vdp_map_ant/sizePattern, d7
 	jsr freeVRAM
 
+	reserveVRAM	#0, #1	; keep first block empty
 	reserveVRAM	#vdp_map_ant, #(64*32*sizeWord/sizePattern)
-	reserveVRAM	#vdp_map_wnt, #(32/sizePattern)
+	;reserveVRAM	#vdp_map_wnt, #(32/sizePattern)
 	reserveVRAM	#vdp_map_bnt, #(64*32*sizeWord/sizePattern)
 	reserveVRAM	#vdp_map_sat, #(80*sizeSpriteDesc/sizePattern)
-	reserveVRAM	#vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
+	;reserveVRAM	#vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
+	reserveVRAM	#vdp_map_hst, #1
 
 	jsr initDMAQueue
 
-	allocAndQueueDMA testLevelPatterns, testLevelTilemap
+	allocAndQueueDMA testLevelPatterns, testLevelPatternsEnd, levelVRAMAddress
 	allocAndQueueDMA fontPatterns, fontTilemap, fontVRAMAddress
 
 	queueDMATransfer #testLevelTilemap, #vdp_map_bnt, #(64*32)
@@ -86,10 +88,10 @@ gameLoop
 
 	bra gameLoop
 
+	include 'assets/orc.asm'
+
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'
-
-	include 'assets/orc.asm'
 
 testText	dc.b	'Aa Bb', $A,'Cc', $D, 'Dd', $A, $D, '!!!!!!!!!!!!', 0
 

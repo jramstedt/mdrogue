@@ -68,4 +68,5 @@ spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
 ;spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
 
 spriteCount			rs.b	1				; number of sprites to render
-fontVRAMAddress		rs.w	1
+fontVRAMAddress		rs.w	1				; address of font patterns in VRAM
+levelVRAMAddress	rs.w	1				; address of level patters in VRAM
