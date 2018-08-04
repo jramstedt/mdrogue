@@ -30,6 +30,14 @@ obVRAM		rs.w	1	; VRAM address for patterns
 obClassData	rs.b	32-__RS
 obDataSize	equ		__RS	; 32 bytes
 
+; camera variables
+			rsreset
+camX		rs.w	1	; FFF.F
+camY		rs.w	1	; FFF.F
+camLastX	rs.w	1	; FFF.F
+camLastY	rs.w	1	; FFF.F
+camDataSize	equ		__RS
+
 ; sprite attributes
 			rsreset
 sVpos		rs.w	1	; 000000VVVVVVVVVV
@@ -63,12 +71,13 @@ vrm_first			dc.l	vrm_list
 gameObjects			rs.b	obDataSize*128
 
 ; 128 sprites max. 80 can be rendered. 20 per line or 320px
-
 spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
 ;spriteOrder			rs.b	80				; Sorted sprites (for linked list indexes)
 
 spriteCount			rs.b	1				; number of sprites to render
 fontVRAMAddress		rs.w	1				; address of font patterns in VRAM
+
+loadedLevelIndex	rs.b	1				; index of loaded level
 levelVRAMAddress	rs.w	1				; address of level patters in VRAM
 
 scrollBuffer		rs.w	40				; Used on map scrolling DMA. Maximum of H40 and V30.

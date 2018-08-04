@@ -46,6 +46,7 @@ __main
 	jsr drawFont
 
 	setVDPRegister 1, $54	; Display on
+	jsr initScrolling
 
 gameLoop
 	; do input processing
