@@ -70,3 +70,5 @@ spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
 spriteCount			rs.b	1				; number of sprites to render
 fontVRAMAddress		rs.w	1				; address of font patterns in VRAM
 levelVRAMAddress	rs.w	1				; address of level patters in VRAM
+
+scrollBuffer		rs.w	40				; Used on map scrolling DMA. Maximum of H40 and V30.

@@ -5,7 +5,12 @@ output2 BigPicTilemap.bin
 
 offset 1
 layout tilemap
-map 0 0 64 32 reuse
-map 64 0 64 32 reuse
-map 0 32 64 32 reuse
-map 64 32 64 32
+map 0 0 32 32 reuse
+map 32 0 32 32 reuse
+map 64 0 32 32 reuse
+map 96 0 32 32 reuse
+
+map 0 32 32 32 reuse
+map 32 32 32 32 reuse
+map 64 32 32 32 reuse
+map 96 32 32 32
