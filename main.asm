@@ -45,6 +45,8 @@ __main
 	move.l #$00020002, d7
 	jsr drawFont
 
+	setVDPRegister 1, $54	; Display on
+
 gameLoop
 	; do input processing
 

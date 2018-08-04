@@ -140,7 +140,7 @@ Main
 
 VDPRegisters
    dc.b $04 ; 0: Horiz. interrupt off, 
-   dc.b $5C ; 1: display on, Vert. interrupt off, screen blank off, DMA on, V30 mode, Mega Drive mode on
+   dc.b $14 ; 1: display off, Vert. interrupt off, screen blank off, DMA on, V28 mode, Mega Drive mode on
    dc.b (vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
    dc.b (vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
    dc.b (vdp_map_bnt>>13) ; 4: Pattern table for Scroll Plane B (bits 0-2)
