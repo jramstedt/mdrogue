@@ -2,12 +2,14 @@
 
 initScrolling
 	setVDPRegister 11, %00000000	; scroll
+	rts
 
 ; input:
 ; d6 level index
 ; trash:
 ; a3, d5, d6, d7
 loadLevel
+	move.b	d6, loadedLevelIndex
 	lea.l	levelDescriptions, a3
 	mulu.w	#levelDesc, d6
 
@@ -20,6 +22,20 @@ loadLevel
 	
 	lsr.l #1, d7	; bytes to words
 	jsr _queueDMATransfer
+	rts
+
+; input:
+; trash:
+; a3, d6, d7
+unloadLevel
+	move.l	levelVRAMAddress, d6
+
+	lea.l	levelDescriptions, a3
+	clr.l	d7
+	move.b	loadedLevelIndex, d7
+	mulu.w	#levelDesc, d7
+	move.w	patternLen(a3, d7.w), d7
+	jsr freeVRAM
 	rts
 
 updateLevel
