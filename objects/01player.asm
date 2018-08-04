@@ -20,7 +20,7 @@ objPlayer
 
 	move.l	#16, d7 ; hard coded for one sprite
 	jsr	allocVRAM
-	move.w	d7, obVRAM(a0)
+	move.w	d6, obVRAM(a0)
 
 @display
 	move	#aniOrc, a6

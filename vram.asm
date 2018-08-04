@@ -4,9 +4,10 @@
 ; input:
 ; d7	number of patterns (32 = $20 bytes per pattern)
 ; output:
-; d7	VRAM address for patterns
+; d6	VRAM address for patterns
+; d7	Allocated amount in bytes
 ; trash:
-; a2, a3, d6, d7
+; a2, a3, d4
 allocVRAM
 	lsl.l	#5, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
@@ -18,7 +19,7 @@ allocVRAM
 	beq	@notFound
 
 	move.w	vrmStart(a2), d6
-	add	d7, d6
+	add.l	d7, d6
 	cmp.w	vrmEnd(a2), d6
 	blo	@allocFromHoleStart
 	beq	@allocFullHole
@@ -28,19 +29,20 @@ allocVRAM
 	bra	@loop
 
 @allocFromHoleStart
-	move.w	vrmStart(a2), d7
-	move.w	d6, vrmStart(a2)
+	move.l	d6, d4
+	move.w	vrmStart(a2), d6
+	move.w	d4, vrmStart(a2)
 	rts
 
 @allocFullHole
-	move.w	vrmStart(a2), d7
+	move.w	vrmStart(a2), d6
 	move.l	vrmNext(a2), vrmNext(a3)	; move link
 	clr.l	vrmNext(a2)
 	clr.l	vrmStart(a2)
 	rts
 
 @notFound	; No memory left in VRAM.
-	moveq	#0, d7
+	moveq	#0, d6
 	rts
 
 reserveVRAM MACRO sourceMem, lenPatterns
@@ -174,11 +176,10 @@ dataLen equ sourceEnd-sourceStart
 	jsr allocVRAM
 
 	if	narg=3
-		move.w	d7, \outVramAddress
+		move.w	d6, \outVramAddress
 	endif
 
 	move.l #sourceStart, d5
-	move.l d7, d6
-	move.l #dataLen/sizeWord, d7
+	lsr.l #1, d7	; bytes to words
 	jsr _queueDMATransfer
 	ENDM
