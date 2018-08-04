@@ -36,6 +36,7 @@ camX		rs.w	1	; FFF.F
 camY		rs.w	1	; FFF.F
 camLastX	rs.w	1	; FFF.F
 camLastY	rs.w	1	; FFF.F
+
 camDataSize	equ		__RS
 
 ; sprite attributes

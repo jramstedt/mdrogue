@@ -39,6 +39,9 @@ unloadLevel
 	rts
 
 updateLevel
+
+
+
 	; Test horizontal scrolling
 	setVDPAutoIncrement 2
 	setVDPWriteAddressVRAM vdp_map_hst

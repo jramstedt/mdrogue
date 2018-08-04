@@ -50,6 +50,19 @@ __main
 
 gameLoop
 	; do input processing
+	move.b  #$40, io_ctrl1  ; enable output
+	move.b  #$40, io_data1  ; Select 00CBRLDU
+	clr.l   d0
+	;nop     ; wait
+	;nop     ; wait
+	move.b  io_data1, d0    ; Read
+	move.b  #$00, io_data1  ; select 00SA00DU
+	lsl.w   #8, d0          ; move result to upper bytes
+    ;nop     ; wait
+    ;nop     ; wait
+	move.b  io_data1, d0    ; Read
+	
+	
 
 	; do game processing
 	jsr	processObjects
