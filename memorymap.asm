@@ -34,9 +34,6 @@ obDataSize	equ		__RS	; 32 bytes
 			rsreset
 camX		rs.w	1	; FFF.F
 camY		rs.w	1	; FFF.F
-camLastX	rs.w	1	; FFF.F
-camLastY	rs.w	1	; FFF.F
-
 camDataSize	equ		__RS
 
 ; sprite attributes
@@ -67,6 +64,8 @@ dma_queue_pointer	rs.l	1
 
 vrm_list			rs.b	sDataSize*10
 vrm_first			dc.l	vrm_list
+
+pad1State           rs.w    1
 
 ; Game globals
 gameObjects			rs.b	obDataSize*128

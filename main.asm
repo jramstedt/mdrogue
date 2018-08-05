@@ -61,8 +61,7 @@ gameLoop
     ;nop     ; wait
     ;nop     ; wait
 	move.b  io_data1, d0    ; Read
-	
-	
+    move.w  d0, pad1State
 
 	; do game processing
 	jsr	processObjects

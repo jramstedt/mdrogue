@@ -39,7 +39,8 @@ unloadLevel
 	rts
 
 updateLevel
-
+    ;move.w  camX, d1
+    
 
 
 	; Test horizontal scrolling
