@@ -33,7 +33,7 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 ;	d6 destination
 ;	d7 length in words
 ; trashes:
-;	d4, d5, d6
+;	a6, d4, d5, d6
 _queueDMATransfer
     movea.l dma_queue_pointer, a6           ; Move current pointer to a6
     cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
@@ -77,6 +77,7 @@ lc = lc+14
     rts
     
 processDMAQueue
+	setVDPAutoIncrement 2
     ; M1 enable dma
 
     lea     vdp_ctrl, a5

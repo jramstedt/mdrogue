@@ -66,12 +66,13 @@ gameLoop
 	; do game processing
 	jsr	processObjects
 
-	;jsr waitVBlankOn
+	jsr waitVBlankOn	; Wait for blanking to start. Otherwise we will run two or more gameLoops in one frame..
 
 	; do graphics commands
-	setVDPAutoIncrement 2
 	jsr processDMAQueue
-	
+
+	jsr updateLevel
+
 	jsr waitVBlankOff
 	jsr waitDMAOn
 
