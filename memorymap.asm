@@ -32,8 +32,8 @@ obDataSize	equ		__RS	; 32 bytes
 
 ; camera variables
 			rsreset
-camX		rs.w	1	; FFF.F
-camY		rs.w	1	; FFF.F
+camX		rs.w	1	; 
+camY		rs.w	1	; 
 camDataSize	equ		__RS
 
 ; sprite attributes
@@ -68,6 +68,7 @@ vrm_first			dc.l	vrm_list
 pad1State           rs.w    1
 
 ; Game globals
+mainCamera			rs.b	camDataSize
 gameObjects			rs.b	obDataSize*128
 
 ; 128 sprites max. 80 can be rendered. 20 per line or 320px
@@ -80,4 +81,5 @@ fontVRAMAddress		rs.w	1				; address of font patterns in VRAM
 loadedLevelIndex	rs.b	1				; index of loaded level
 levelVRAMAddress	rs.w	1				; address of level patters in VRAM
 
-scrollBuffer		rs.w	40				; Used on map scrolling DMA. Maximum of H40 and V30.
+scrollBufferLen	equ 41
+scrollBuffer		rs.w	scrollBufferLen	; Used on map scrolling DMA. Maximum of H40 and V30.

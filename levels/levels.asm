@@ -13,6 +13,7 @@ planeBTiles	rs.l	1
 levelDesc	equ		__RS
 
 lvlChunkSize equ    32  ; number of patterns in level chunk at at each axis
+lvlChunkArea equ	lvlChunkSize*lvlChunkSize
 
 levelDescriptions
 	dc.l	testLevelPatterns
