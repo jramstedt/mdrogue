@@ -25,6 +25,7 @@ loadLevel
 	
 	lsr.l #1, d7	; bytes to words
 	jsr _queueDMATransfer
+
 	rts
 
 ; input:
@@ -63,6 +64,7 @@ updateLevel
 	move.w  camX(a0), d7
 	and.w	#$FFF8, d6
 	and.w	#$FFF8, d7
+
 	cmp.w	d6, d7
 	beq		@checkY	; no cell boundaries crossed
 	bmi		@leftBorder
@@ -89,100 +91,39 @@ updateLevel
 	move.w  camY(a0), d7
 	and.w	#$FFF8, d6
 	and.w	#$FFF8, d7
+
 	cmp.w	d6, d7
 	beq		@exit	; no cell boundaries crossed
-	;bmi		@topBorder
-	bra		@topBorder	; FIXME
+	bmi		@topBorder
 
 @bottomBorder
-	move.w  camX(a0), d6
-	move.w  camY(a0), d7
-	asr.w	#3, d6
-	asr.w	#3, d7
-	add.w	#28, d7
-	; Draw row
-
-	; fill scroll buffer::
-	;  calc map chunk of left corner
-	;  calc start offset inside map chunk
-	; loop until 40 copied:
-	;  copy: word till chunk end (pos = 32)
-	;  -> increase pointer by: cunksize - rowsize (32 * word)
-	; DMA scroll buffer
-	;  calculate buffer end, and split transfer if needed
+	MODULE
+	calculateCopyStartAddress a1, a0, a2, 0, 224
+	copyRowToBuffer a2
+	queueRowToVram a0, 0, 224
+	MODEND
 
 	bra @exit
 
 @topBorder
-	calculateCopyStartAddress a1, a0, a2, 0, 224
+	MODULE
+	calculateCopyStartAddress a1, a0, a2, 0, 0
 	copyRowToBuffer a2
+	queueRowToVram a0, 0, 0
+	MODEND
 
-	move.l	#0, d2
-	move.l	#0, d3
-	move.l	#0, d6
-
-	; source
-	move.l	#scrollBuffer, d5
-
-	; amount
-	move.l	#scrollBufferLen, d7
-
-	; destination address base
-	move.w  camY(a0), d3
-	;if yOffset<>0
-	;	add	#\yOffset, d3
-		add		#224, d3
-	;endif
-	and.w	#$FF, d3
-	asl.w	#3,	d3	; plane width 64, y in patterns
-
-	move.w  camX(a0), d2
-	and.w	#$1FF, d2
-	asr.w	#3,	d2	; y in patterns
-
-	move	d3,	d6
-	add		d2, d6
-	asl.w	#1,	d6	; 2 bytes per pattern
-	add		#vdp_map_bnt, d6
-
-	cmp		#64-scrollBufferLen, d2
-	blt		@lastCopy
-
-	; overflow, draw till right side
-	move	#64, d7
-	sub		d2, d7
-
-	jsr _queueDMATransfer	; draw buffer
-
-	; draw rest from left side
-	move.l	d7,	d5
-	asl		#1,	d5	; 2 bytes per pattern
-	add.l	#scrollBuffer, d5
-
-	move.l	d3,	d6
-	asl.w	#1,	d6	; 2 bytes per pattern
-	add		#vdp_map_bnt, d6
-
-	move.l	#scrollBufferLen, d3
-	sub.w	d7, d3
-	beq		@exit
-
-	move.l	d3, d7
-
-@lastCopy
-	jsr _queueDMATransfer	; draw buffer
+	bra @exit
 
 @exit
 	movem.l	(sp)+, d0-d7/a0-a6
 	rts
 
-
 updateCamera
 	;sub.w	#160, d6	; half of H40 pixels
 	;sub.w	#112, d7	; half of V28 pixels
 
-	add.w	#$0001, camX(a0) ; one pixel per frame
-	;move.w	#195, camX(a0)
+	;add.w	#$0001, camX(a0) ; one pixel per frame
+	;move.w	#0, camX(a0)
 	add.w	#$0001, camY(a0) ; one pixel per frame
 
 	; we are using fullscreen scroll, set both planes.
