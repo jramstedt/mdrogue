@@ -1,4 +1,6 @@
 testPalette
+	incbin 'assets/level.pal'
+
    dc.w $0000 ; Colour 0 - Transparent
    dc.w $000E ; Colour 1 - Red
    dc.w $00E0 ; Colour 2 - Green

@@ -1,4 +1,5 @@
 input Test2.png
+dumppal level.pal
 
 output BigPicPatterns.bin
 output2 BigPicTilemap.bin
