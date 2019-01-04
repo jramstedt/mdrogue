@@ -6,7 +6,10 @@
         {
             "label": "m68k build",
             "command": "${workspaceRoot}/asm68k",
-            "args": ["/p /q /o e-,l@", "main.asm,${workspaceRootFolderName}.bin,${workspaceRootFolderName}.sym,${workspaceRootFolderName}.lst"],
+            "args": [
+                "/m /p /q /o e-,l@",
+                "main.asm,${workspaceRootFolderName}.bin,${workspaceRootFolderName}.sym,${workspaceRootFolderName}.lst"
+            ],
             "type": "shell",
             "group": {
                 "kind": "build",
@@ -16,7 +19,7 @@
                 "echo": false,
                 "reveal": "never",
                 "focus": false,
-                "panel": "shared"
+                "panel": "dedicated"
             },
             "problemMatcher": {
                 "owner": "external",
