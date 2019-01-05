@@ -42,7 +42,7 @@ _queueDMATransfer
     lsr.l   #1, d5          ; Source address >> 1 (even address)
     swap    d5              ; Swap high and low word (high word contains SA23-SA17)
     move.w  #$977F, d4      ; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
-    and.b   d5, d4          ; AND d0 with d5 lower 8 bits
+    and.b   d5, d4          ; AND d4 with d5 lower 8 bits
     move.w  d4, (a6)+       ; Save reg 23 command+data to DMA queue
     move.w  d7, d5          ; Move length to d5 lower word
     movep.l d5, 1(a6)       ; Move each byte to its own word
