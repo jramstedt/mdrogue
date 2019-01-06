@@ -64,7 +64,7 @@ _reserveVRAM
 	beq	@notFound
 
 	cmp.w	vrmStart(a2), d6
-	blo @notFound
+	blo	@notFound
 
 	add	d6, d7
 	cmp.w	vrmEnd(a2), d7
@@ -91,7 +91,7 @@ _reserveVRAM
 	beq	@makeHole
 
 	lea	vrmDataSize(a2), a2
-	dbra d6, @freeLoop
+	dbra	d6, @freeLoop
 	rts	; no free holes left!
 
 @makeHole

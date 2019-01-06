@@ -81,8 +81,8 @@ fontVRAMAddress		rs.w	1		; address of font patterns in VRAM
 loadedLevelIndex	rs.b	1		; index of loaded level
 levelVRAMAddress	rs.w	1		; address of level patters in VRAM
 
-horBufferLen		equ 41
+horBufferLen		equ	41
 horBuffer		rs.w	horBufferLen	; Used on map scrolling DMA. H40.
 
-verBufferLen		equ 29
+verBufferLen		equ	29
 verBuffer		rs.w	verBufferLen	; Used on map scrolling DMA. V28.
