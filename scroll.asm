@@ -70,20 +70,17 @@ updateLevel
 	bmi		@leftBorder
 
 @rightBorder
-	move.w  camX(a0), d6
-	move.w  camY(a0), d7
-	asr.w	#3, d6
-	asr.w	#3, d7
-	add.w	#40, d6
-	; Draw column
+	MODULE
+	copyColumnToVram a1, a0, 320, 0
+	MODEND
+
 	bra @checkY
 
 @leftBorder
-	move.w  camX(a0), d6
-	move.w  camY(a0), d7
-	asr.w	#3, d6
-	asr.w	#3, d7
-	; Draw column
+	MODULE
+	copyColumnToVram a0, a2, 0, 0
+	MODEND
+	
 	bra @checkY
 
 @checkY
@@ -98,18 +95,14 @@ updateLevel
 
 @bottomBorder
 	MODULE
-	calculateCopyStartAddress a1, a0, a2, 0, 224
-	copyRowToBuffer a2
-	queueRowToVram a0, 0, 224
+	copyRowToVram a1, a0, 0, 224
 	MODEND
 
 	bra @exit
 
 @topBorder
 	MODULE
-	calculateCopyStartAddress a1, a0, a2, 0, 0
-	copyRowToBuffer a2
-	queueRowToVram a0, 0, 0
+	copyRowToVram a1, a0, 0, 0
 	MODEND
 
 	bra @exit
@@ -122,9 +115,10 @@ updateCamera
 	;sub.w	#160, d6	; half of H40 pixels
 	;sub.w	#112, d7	; half of V28 pixels
 
-	;add.w	#$0001, camX(a0) ; one pixel per frame
-	;move.w	#0, camX(a0)
-	add.w	#$0001, camY(a0) ; one pixel per frame
+	add.w	#$0001, camX(a0) ; one pixel per frame
+	;move.w	#320, camX(a0)
+	;add.w	#$0001, camY(a0) ; one pixel per frame
+	move.w	#128, camY(a0)
 
 	; we are using fullscreen scroll, set both planes.
 	setVDPAutoIncrement 2
