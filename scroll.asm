@@ -20,11 +20,11 @@ loadLevel
 
 	moveq	#0,	d7
 	move.w	patternLen(a3, d6.w), d7
-	jsr allocVRAM	; d6 vram address, d7 allocated bytes
+	jsr	allocVRAM	; d6 vram address, d7 allocated bytes
 	move.w	d6, levelVRAMAddress
 	
-	lsr.l #1, d7	; bytes to words
-	jsr _queueDMATransfer
+	lsr.l	#1, d7	; bytes to words
+	jsr	_queueDMATransfer
 
 	lea.l	mainCamera, a0
 	move.w	#1024, camX(a0)
@@ -43,7 +43,7 @@ unloadLevel
 	move.b	loadedLevelIndex, d7
 	mulu.w	#levelDesc, d7
 	move.w	patternLen(a3, d7.w), d7
-	jsr freeVRAM
+	jsr	freeVRAM
 	rts
 
 updateLevel
@@ -59,57 +59,57 @@ updateLevel
 
 	clr.l	d0
 	clr.l	d1
-	move.w  camX(a0), d0
-	move.w  camY(a0), d1
+	move.w	camX(a0), d0
+	move.w	camY(a0), d1
 	bsr	updateCamera
 
 @checkX
 	move.w	d0, d6
-	move.w  camX(a0), d7
+	move.w	camX(a0), d7
 	and.w	#$FFF8, d6
 	and.w	#$FFF8, d7
 
 	cmp.w	d6, d7
-	beq		@checkY	; no cell boundaries crossed
-	bmi		@leftBorder
+	beq	@checkY	; no cell boundaries crossed
+	bmi	@leftBorder
 
 @rightBorder
 	MODULE
 	copyColumnToVram a1, a0, 320, 0
 	MODEND
 
-	bra @checkY
+	bra	@checkY
 
 @leftBorder
 	MODULE
 	copyColumnToVram a1, a0, 0, 0
 	MODEND
 	
-	bra @checkY
+	bra	@checkY
 
 @checkY
 	move.w	d1, d6
-	move.w  camY(a0), d7
+	move.w	camY(a0), d7
 	and.w	#$FFF8, d6
 	and.w	#$FFF8, d7
 
 	cmp.w	d6, d7
-	beq		@exit	; no cell boundaries crossed
-	bmi		@topBorder
+	beq	@exit	; no cell boundaries crossed
+	bmi	@topBorder
 
 @bottomBorder
 	MODULE
 	copyRowToVram a1, a0, 0, 224
 	MODEND
 
-	bra @exit
+	bra	@exit
 
 @topBorder
 	MODULE
 	copyRowToVram a1, a0, 0, 0
 	MODEND
 
-	bra @exit
+	bra	@exit
 
 @exit
 	movem.l	(sp)+, d0-d7/a0-a6
@@ -127,44 +127,17 @@ updateCamera
 	; we are using fullscreen scroll, set both planes.
 	setVDPAutoIncrement 2
 	setVDPWriteAddressVSRAM 0
-	move.w #0, vdp_data
-	move.w camY(a0), vdp_data
+	move.w	#0, vdp_data
+	move.w	camY(a0), vdp_data
 
 	move.l	#0, d7
 	move	camX(a0), d7
-	neg		d7
+	neg	d7
 	and.l	#$1FF, d7
 
 	setVDPAutoIncrement 2
 	setVDPWriteAddressVRAM vdp_map_hst
-	move.w #0, vdp_data
-	move.w d7, vdp_data
-
-	rts
-
-; not used testcode
-	; Test horizontal scrolling
-	setVDPAutoIncrement 2
-	setVDPWriteAddressVRAM vdp_map_hst
-
-	move.l #255, d0
-	move.l vblank_counter, d1
-@setHScrollLoop
-	
-	move.l d1, vdp_data
-	;addq.l #1, d1
-	dbra d0, @setHScrollLoop
-
-	; Test vertical scrolling
-	setVDPAutoIncrement 4
-	setVDPWriteAddressVSRAM 2
-
-	move.l #19, d0
-	move.l #0, d1
-@setVScrollLoop
-	move.l vblank_counter, d1
-	move.w d1, vdp_data
-	;addq.l #1, d1
-	dbra d0, @setVScrollLoop
+	move.w	#0, vdp_data
+	move.w	d7, vdp_data
 
 	rts

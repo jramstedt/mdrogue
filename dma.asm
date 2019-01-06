@@ -22,55 +22,48 @@
 ; 1   0   1     VSRAM = %101
 
 startDMATransfer
-	; vdp_w_reg+(19<<8) $9300
-	; vdp_w_reg+(20<<8) $9400
-
-	; vdp_w_reg+(21<<8) $9500
-	; vdp_w_reg+(22<<8) $9600
-	; vdp_w_reg+(23<<8) $9300
-
 	; length
 	move.w	#$93FF, d4
-	and.b   d7, d4
+	and.b	d7, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.w	#8, d7
 	move.w	#$94FF, d4
-	and.b   d7, d4
+	and.b	d7, d4
 	move.w	d4, vdp_ctrl
 
 	; source
-	lsr.l   #1, d5          ; Source address >> 1 (even address)
-	move.w  #$95FF, d4
-	and.b   d5, d4
+	lsr.l	#1, d5		; Source address >> 1 (even address)
+	move.w	#$95FF, d4
+	and.b	d5, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.l	#8, d5
-	move.w  #$96FF, d4
-	and.b   d5, d4
+	move.w	#$96FF, d4
+	and.b	d5, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.l	#8, d5
-	move.w  #$977F, d4
-	and.b   d5, d4
+	move.w	#$977F, d4
+	and.b	d5, d4
 	move.w	d4, vdp_ctrl
 
 	; Build DMA command
-	lsl.l   #2, d6      ; Shift left. 2 bits goes to upper word
-	addq.w  #%01, d6    ; Set two lowest bits to VRAM write
-	ror.w   #2, d6      ; Rotate right. Moves two added bits to highest bits.
-	swap    d6
-	ori.b   #%10000000, d6
-	move.l  d6, vdp_ctrl
+	lsl.l	#2, d6		; Shift left. 2 bits goes to upper word
+	addq.w	#%01, d6	; Set two lowest bits to VRAM write
+	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
+	swap	d6
+	ori.b	#%10000000, d6
+	move.l	d6, vdp_ctrl
 
 	rts
 
 
 queueDMATransfer MACRO sourceMem, destVRAM, lenWords
-	move.l \sourceMem, d5
-	move.l \destVRAM, d6
-	move.l \lenWords, d7
-	jsr _queueDMATransfer
+	move.l	\sourceMem, d5
+	move.l	\destVRAM, d6
+	move.l	\lenWords, d7
+	jsr	_queueDMATransfer
 	ENDM
 
 ; input:
@@ -80,71 +73,71 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 ; trashes:
 ;	a6, d4, d5, d6
 _queueDMATransfer
-    movea.l dma_queue_pointer, a6           ; Move current pointer to a6
-    cmpa.l  #dma_queue_pointer, a6    ; Compare dma_queue_pointer RAM address to current pointer
-    beq.s   @done                           ; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
+	movea.l	dma_queue_pointer, a6	; Move current pointer to a6
+	cmpa.l	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
+	beq.s	@done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
-    lsr.l   #1, d5          ; Source address >> 1 (even address)
-    swap    d5              ; Swap high and low word (low word contains SA23-SA17)
-    move.w  #$977F, d4      ; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
-    and.b   d5, d4          ; AND d4 with d5 lower 8 bits
-    move.w  d4, (a6)+       ; Save reg 23 command+data to DMA queue
-    move.w  d7, d5          ; Move length to d5 lower word
-    movep.l d5, 1(a6)       ; Move each byte to its own word
-    lea     8(a6), a6       ; Add 8 to queue (the four words written with movep)
+	lsr.l	#1, d5		; Source address >> 1 (even address)
+	swap	d5		; Swap high and low word (low word contains SA23-SA17)
+	move.w	#$977F, d4	; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
+	and.b	d5, d4		; AND d4 with d5 lower 8 bits
+	move.w	d4, (a6)+	; Save reg 23 command+data to DMA queue
+	move.w	d7, d5		; Move length to d5 lower word
+	movep.l	d5, 1(a6)	; Move each byte to its own word
+	lea	8(a6), a6	; Add 8 to queue (the four words written with movep)
 
-    ; Build DMA command
-    lsl.l   #2, d6      ; Shift left. 2 bits goes to upper word
-    addq.w  #%01, d6    ; Set two lowest bits to VRAM write
-    ror.w   #2, d6      ; Rotate right. Moves two added bits to highest bits.
-    swap    d6
-    ori.b   #%10000000, d6
-    move.l  d6, (a6)+   ; 
+	; Build DMA command
+	lsl.l	#2, d6		; Shift left. 2 bits goes to upper word
+	addq.w	#%01, d6	; Set two lowest bits to VRAM write
+	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
+	swap	d6
+	ori.b	#%10000000, d6
+	move.l	d6, (a6)+
 
-    clr.w   (a6)        ; Clear word at address a6 (end token)
-    move.l  a6, dma_queue_pointer
+	clr.w	(a6)		; Clear word at address a6 (end token)
+	move.l	a6, dma_queue_pointer
 
 @done
-    rts
+	rts
 
 initDMAQueue
-    lea     dma_queue, a6
-    move.w  #0, (a6)                ; Move zero to beginning of dma queue
-    move.l  a6, dma_queue_pointer   ; Set current pointer to beginning of dma queue
-    move.l  #$96959493, d7          ; vdp_w_reg+(22<<8), vdp_w_reg+(21<<8), vdp_w_reg+(20<<8), vdp_w_reg+(19<<8)
+	lea	dma_queue, a6
+	move.w	#0, (a6)		; Move zero to beginning of dma queue
+	move.l	a6, dma_queue_pointer	; Set current pointer to beginning of dma queue
+	move.l	#$96959493, d7		; vdp_w_reg+(22<<8), vdp_w_reg+(21<<8), vdp_w_reg+(20<<8), vdp_w_reg+(19<<8)
 
 lc = 0
-    REPT (dma_queue_pointer-dma_queue)/(7*2)
-    movep.l d7, 2+lc(a6)
+	REPT (dma_queue_pointer-dma_queue)/(7*2)
+	movep.l	d7, 2+lc(a6)
 lc = lc+14
-    ENDR
+	ENDR
 
-    rts
-    
+	rts
+	
 processDMAQueue
 	setVDPAutoIncrement 2
-    ; M1 enable dma
+	; M1 enable dma
 
-    lea     vdp_ctrl, a5
-    lea     dma_queue, a6
-    move.l  a6, dma_queue_pointer   ; Reset dma_queue_pointer
+	lea	vdp_ctrl, a5
+	lea	dma_queue, a6
+	move.l	a6, dma_queue_pointer	; Reset dma_queue_pointer
 
-    REPT (dma_queue_pointer-dma_queue)/(7*2)
-    move.w	(a6)+, d6               
-    beq.w   @done                   ; if word in queue was zero (stop token)
+	REPT (dma_queue_pointer-dma_queue)/(7*2)
+	move.w	(a6)+, d6
+	beq.w	@done		; if word in queue was zero (stop token)
 
-    move.w  d6, (a5)                ; reg 23
-    move.l  (a6)+, (a5)             ; reg 22, reg 21
-    move.l  (a6)+, (a5)             ; reg 20, reg 19
-    ;move.l  (a6)+, (a5)             ; dma command
-	move.w  (a6)+, (a5)             ; dma command
-	move.w  (a6)+, (a5)             ; dma command
-    ENDR
-    moveq   #0, d6
+	move.w	d6, (a5)	; reg 23
+	move.l	(a6)+, (a5)	; reg 22, reg 21
+	move.l	(a6)+, (a5)	; reg 20, reg 19
+	;move.l	(a6)+, (a5)	; dma command
+	move.w	(a6)+, (a5)	; dma command
+	move.w	(a6)+, (a5)	; dma command
+	ENDR
+	moveq	#0, d6
 
 @done
-    move.w  d6, dma_queue
+	move.w	d6, dma_queue
 
-    ; wait dma to finish
+	; should wait dma to finish
 
-    rts
+	rts

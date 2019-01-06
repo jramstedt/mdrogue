@@ -26,9 +26,9 @@ drawFont
 	lsl.l	#2, d2
 	lsr.w	#2, d2
 	swap	d2
-	or.l	#vdp_w_vram, d2 ; d2 is first row address
+	or.l	#vdp_w_vram, d2	; d2 is first row address
 	move.l	d2, d3
-	add.l	#(128<<16), d3 ; d3 is second row address
+	add.l	#(128<<16), d3	; d3 is second row address
 
 	move.w	fontVRAMAddress, d4
 	swap	d4
@@ -50,10 +50,10 @@ drawFont
 	move.l	d0, d1
 
 	and.b	#$1F, d0	; Get char index in row
-	lsl.w	#2, d0	; Each character is 4 bytes width
+	lsl.w	#2, d0		; Each character is 4 bytes width
 
-	lsr.b	#5, d1	; /32, calculates row number
-	lsl.w	#8, d1	; Calculate data offset, each row is 128 bytes width, character is two rows
+	lsr.b	#5, d1		; /32, calculates row number
+	lsl.w	#8, d1		; Calculate data offset, each row is 128 bytes width, character is two rows
 	add.l	d1, d0
 
 	lea.l	fontTilemap, a5
@@ -63,7 +63,7 @@ drawFont
 	move.l	d2, vdp_ctrl
 	move.l	d1, vdp_data
 	
-	add.l	#128, d0		; row is 128 bytes
+	add.l	#128, d0	; row is 128 bytes
 	move.l	(a5, d0.l), d1	; d1 is pattern index
 	add.l	d4, d1
 
@@ -77,7 +77,7 @@ drawFont
 @newline
 	add.l	#((128*2)<<16), d2
 	add.l	#((128*2)<<16), d3
-	bra @charLoop
+	bra	@charLoop
 
 @carriageReturn
 	clr.l	d0
@@ -91,7 +91,8 @@ drawFont
 	and.l	#$FF80FFFF, d3
 	add.l	d0, d3
 
-	bra @charLoop
+	bra	@charLoop
 
 @complete
 	rts
+

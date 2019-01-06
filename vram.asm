@@ -46,9 +46,9 @@ allocVRAM
 	rts
 
 reserveVRAM MACRO sourceMem, lenPatterns
-	move.l \sourceMem, d6
-	move.l \lenPatterns, d7
-	jsr _reserveVRAM
+	move.l	\sourceMem, d6
+	move.l	\lenPatterns, d7
+	jsr	_reserveVRAM
 	ENDM
 
 ; input:
@@ -87,12 +87,12 @@ _reserveVRAM
 	lea.l	vrm_list, a2
 	move.l	#9, d6	; see memorymap.asm, max 10 vrm holes
 @freeLoop	
-	tst.l	vrmStart(a2) ; tests both start and end for null
+	tst.l	vrmStart(a2)	; tests both start and end for null
 	beq	@makeHole
 
 	lea	vrmDataSize(a2), a2
 	dbra d6, @freeLoop
-	rts ; no free holes left!
+	rts	; no free holes left!
 
 @makeHole
 	move.w	d7, vrmStart(a2)
@@ -122,7 +122,7 @@ _reserveVRAM
 freeVRAM
 	move.l	d6,	d5
 	lsl	#5, d7
-	add	d7, d5 ; d5 is the VRAM end address
+	add	d7, d5	; d5 is the VRAM end address
 	lea.l	vrm_first, a3
 	movea.l	(a3), a2
 
@@ -135,7 +135,7 @@ freeVRAM
 
 	cmp.w	vrmStart(a2), d5
 	beq	@mergeStart
-	blo @notFound
+	blo	@notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
@@ -146,12 +146,12 @@ freeVRAM
 	lea.l	vrm_list, a2
 	move.l	#9, d7	; see memorymap.asm, max 10 vrm holes
 @freeLoop	
-	tst.l	vrmStart(a2) ; tests both start and end for null
+	tst.l	vrmStart(a2)	; tests both start and end for null
 	beq	@makeHole
 
 	lea	vrmDataSize(a2), a2
-	dbra d7, @freeLoop
-	rts ; no free holes left!
+	dbra	d7, @freeLoop
+	rts	; no free holes left!
 
 @mergeStart
 	move.w	d6, vrmStart(a2)
@@ -172,14 +172,14 @@ allocAndQueueDMA MACRO sourceStart, sourceEnd, outVramAddress
 	local dataLen
 dataLen equ sourceEnd-sourceStart
 
-	move.l #dataLen/sizePattern, d7
-	jsr allocVRAM
+	move.l	#dataLen/sizePattern, d7
+	jsr	allocVRAM
 
 	if	narg=3
 		move.w	d6, \outVramAddress
 	endif
 
-	move.l #sourceStart, d5
-	lsr.l #1, d7	; bytes to words
-	jsr _queueDMATransfer
+	move.l	#sourceStart, d5
+	lsr.l	#1, d7	; bytes to words
+	jsr	_queueDMATransfer
 	ENDM

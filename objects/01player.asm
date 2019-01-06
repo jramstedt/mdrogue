@@ -32,8 +32,8 @@ objPlayer
 	rts
 
 @delete
-	move.l obVRAM(a0), d6
-	move.l #16, d7
+	move.l	obVRAM(a0), d6
+	move.l	#16, d7
 	jsr	freeVRAM
 
 	jsr	deleteObject

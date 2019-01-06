@@ -1,7 +1,7 @@
 patternsOrc
 	incbin	assets/orcPatterns.bin
 
-	cnop 0,2
+	cnop	0,2
 spritesOrc
 	dc.l	patternsOrc
 	dc.w	@idle-spritesOrc
@@ -39,4 +39,4 @@ aniOrc
 @aniSurprised
 	dc.b	25/5, 0, 1, $80
 
-	cnop 0,2
+	cnop	0,2
