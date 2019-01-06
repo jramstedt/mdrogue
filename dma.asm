@@ -21,6 +21,51 @@
 ; 0   1   1     CRAM = %011
 ; 1   0   1     VSRAM = %101
 
+startDMATransfer
+	; vdp_w_reg+(19<<8) $9300
+	; vdp_w_reg+(20<<8) $9400
+
+	; vdp_w_reg+(21<<8) $9500
+	; vdp_w_reg+(22<<8) $9600
+	; vdp_w_reg+(23<<8) $9300
+
+	; length
+	move.w	#$93FF, d4
+	and.b   d7, d4
+	move.w	d4, vdp_ctrl
+
+	lsr.w	#8, d7
+	move.w	#$94FF, d4
+	and.b   d7, d4
+	move.w	d4, vdp_ctrl
+
+	; source
+	lsr.l   #1, d5          ; Source address >> 1 (even address)
+	move.w  #$95FF, d4
+	and.b   d5, d4
+	move.w	d4, vdp_ctrl
+
+	lsr.l	#8, d5
+	move.w  #$96FF, d4
+	and.b   d5, d4
+	move.w	d4, vdp_ctrl
+
+	lsr.l	#8, d5
+	move.w  #$977F, d4
+	and.b   d5, d4
+	move.w	d4, vdp_ctrl
+
+	; Build DMA command
+	lsl.l   #2, d6      ; Shift left. 2 bits goes to upper word
+	addq.w  #%01, d6    ; Set two lowest bits to VRAM write
+	ror.w   #2, d6      ; Rotate right. Moves two added bits to highest bits.
+	swap    d6
+	ori.b   #%10000000, d6
+	move.l  d6, vdp_ctrl
+
+	rts
+
+
 queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 	move.l \sourceMem, d5
 	move.l \destVRAM, d6
@@ -40,7 +85,7 @@ _queueDMATransfer
     beq.s   @done                           ; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
     lsr.l   #1, d5          ; Source address >> 1 (even address)
-    swap    d5              ; Swap high and low word (high word contains SA23-SA17)
+    swap    d5              ; Swap high and low word (low word contains SA23-SA17)
     move.w  #$977F, d4      ; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
     and.b   d5, d4          ; AND d4 with d5 lower 8 bits
     move.w  d4, (a6)+       ; Save reg 23 command+data to DMA queue
@@ -91,7 +136,9 @@ processDMAQueue
     move.w  d6, (a5)                ; reg 23
     move.l  (a6)+, (a5)             ; reg 22, reg 21
     move.l  (a6)+, (a5)             ; reg 20, reg 19
-    move.l  (a6)+, (a5)             ; dma command
+    ;move.l  (a6)+, (a5)             ; dma command
+	move.w  (a6)+, (a5)             ; dma command
+	move.w  (a6)+, (a5)             ; dma command
     ENDR
     moveq   #0, d6
 
