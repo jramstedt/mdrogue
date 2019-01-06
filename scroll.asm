@@ -15,20 +15,28 @@ loadLevel
 	mulu.w	#levelDesc, d6
 
 	lea.l	levelDescriptions, a3
-	
+	lea.l	(a3, d6.w), a1
+
 	move.l	pattern(a3, d6.w), d5
 
 	moveq	#0,	d7
 	move.w	patternLen(a3, d6.w), d7
 	jsr	allocVRAM	; d6 vram address, d7 allocated bytes
 	move.w	d6, levelVRAMAddress
-	
-	lsr.l	#1, d7	; bytes to words
+
+	lsr.l	d7	; bytes to words
 	jsr	_queueDMATransfer
 
+	; TODO better filling. 
 	lea.l	mainCamera, a0
-	move.w	#1024, camX(a0)
-	move.w	#512, camY(a0)
+	move.w	#0, camX(a0)
+	move.w	#0, camY(a0)
+
+lc = 0
+	REPT 29
+	copyRowToVram a1, a0, 0, lc
+lc = lc+8
+	ENDR
 
 	rts
 
@@ -119,9 +127,9 @@ updateCamera
 	;sub.w	#160, d6	; half of H40 pixels
 	;sub.w	#112, d7	; half of V28 pixels
 
-	add.w	#-$0002, camX(a0) ; one pixel per frame
+	add.w	#$0001, camX(a0) ; one pixel per frame
 	;move.w	#320, camX(a0)
-	add.w	#-$0001, camY(a0) ; one pixel per frame
+	add.w	#$0001, camY(a0) ; one pixel per frame
 	;move.w	#256, camY(a0)
 
 	; we are using fullscreen scroll, set both planes.
