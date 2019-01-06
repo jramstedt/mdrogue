@@ -104,7 +104,11 @@ queueRowToVram
 	move	#64, d7
 	sub	d2, d7
 
-	jsr	_queueDMATransfer	; draw buffer
+	setVDPAutoIncrement 2
+	jsr	startDMATransfer	; draw buffer
+
+	move	#64, d7
+	sub	d2, d7
 
 	; draw rest from left side
 	move.l	d7, d5
@@ -123,7 +127,8 @@ queueRowToVram
 	move.l	d3, d7
 
 lastTransfer
-	jsr _queueDMATransfer	; draw buffer
+	setVDPAutoIncrement 2
+	jsr startDMATransfer	; draw buffer
 
 complete
 
@@ -238,7 +243,6 @@ dmaColumnToVram
 	move.l	d3, d7
 
 lastTransfer
-
 	setVDPAutoIncrement $80
 	jsr	startDMATransfer
 
