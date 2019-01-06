@@ -66,15 +66,15 @@ gameLoop
 	; do game processing
 	jsr	processObjects
 
+	jsr updateLevel
+
 	jsr waitVBlankOn	; Wait for blanking to start. Otherwise we will run two or more gameLoops in one frame..
 
 	; do graphics commands
 	jsr processDMAQueue
-
-	jsr updateLevel
+	jsr waitDMAOn
 
 	jsr waitVBlankOff
-	jsr waitDMAOn
 
 	bra gameLoop
 
