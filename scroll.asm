@@ -26,6 +26,10 @@ loadLevel
 	lsr.l #1, d7	; bytes to words
 	jsr _queueDMATransfer
 
+	lea.l	mainCamera, a0
+	move.w	#1024, camX(a0)
+	move.w	#512, camY(a0)
+
 	rts
 
 ; input:
@@ -78,7 +82,7 @@ updateLevel
 
 @leftBorder
 	MODULE
-	copyColumnToVram a0, a2, 0, 0
+	copyColumnToVram a1, a0, 0, 0
 	MODEND
 	
 	bra @checkY
@@ -115,10 +119,10 @@ updateCamera
 	;sub.w	#160, d6	; half of H40 pixels
 	;sub.w	#112, d7	; half of V28 pixels
 
-	add.w	#$0001, camX(a0) ; one pixel per frame
+	add.w	#-$0002, camX(a0) ; one pixel per frame
 	;move.w	#320, camX(a0)
-	;add.w	#$0001, camY(a0) ; one pixel per frame
-	move.w	#128, camY(a0)
+	add.w	#-$0001, camY(a0) ; one pixel per frame
+	;move.w	#256, camY(a0)
 
 	; we are using fullscreen scroll, set both planes.
 	setVDPAutoIncrement 2

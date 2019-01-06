@@ -98,7 +98,7 @@ queueRowToVram
 	add.l	#vdp_map_bnt, d6
 
 	cmp		#64-horBufferLen, d2
-	blt		lastTransfer
+	ble		lastTransfer
 
 	; overflow, draw till right side
 	move	#64, d7
@@ -155,8 +155,10 @@ copyColumnToVram	MACRO level, camera, xOffset, yOffset
 	adda.l	d6, a2
 
 	move.l	#0, d6
-	move.b	lvlWidth(\level), d6				
-	lsl.w	#6,	d6	; multiply by 32 (lvlChunkSize), 2 bytes per pattern
+	move.b	lvlWidth(\level), d6
+	subq.b	#1, d6
+	lsl.l	#8,	d6	; 1024 (lvlChunkArea)
+	lsl.l	#3,	d6	; 2 bytes per pattern
 
 	move	#verBufferLen, d2	; number of patterns needed to fill screen column (patterns left in buffer)
 	lea.l	verBuffer, a3
