@@ -59,7 +59,7 @@ vrmDataSize		equ	__RS
 hblank_counter		rs.l	1
 vblank_counter		rs.l	1
 
-dma_queue			rs.w	7*20
+dma_queue		rs.w	7*20
 dma_queue_pointer	rs.l	1
 
 vrm_list		rs.b	sDataSize*10
