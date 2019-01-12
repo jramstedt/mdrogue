@@ -73,7 +73,7 @@
 	dc.b	"(C)  JR 2017.JAN"					; 110H Copyright holder and release date
 	dc.b	"ROGUE GAME                                      "	; 120H Domestic name
 	dc.b	"ROGUE GAME                                      "	; 150H International name
-	dc.b	"GM XXXXXXXX-XX"					; 180H Version number
+	dc.b	"GM T-XXXXXX-00"					; 180H Version number
 	dc.w	$0000							; 18EH Checksum
 	dc.b	"J               "					; 190H I/O support
 	dc.l	$00000000						; 1A0H Start address of ROM
@@ -134,6 +134,10 @@ clearRamLoop
 	movem.l	ramStartAddress, d0-d7/a0-a6
 	lea	stackStartAddress, sp
 	move	#$2000, sr
+
+	move.w	#$000, Z80_reset
+	move.w	#$100, Z80_busreq
+	move.w	#$100, Z80_reset
 
 Main
 	bra	__main ; Begin external main
