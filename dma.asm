@@ -136,8 +136,7 @@ processDMAQueue
 	moveq	#0, d6
 
 @done
+	jsr	waitDMAOn
 	move.w	d6, dma_queue
-
-	; should wait dma to finish
 
 	rts

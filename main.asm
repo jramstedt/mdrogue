@@ -72,7 +72,6 @@ gameLoop
 
 	; do graphics commands
 	jsr	processDMAQueue
-	jsr	waitDMAOn
 
 	jsr	waitVBlankOff
 
