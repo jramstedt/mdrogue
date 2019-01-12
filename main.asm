@@ -50,18 +50,30 @@ __main
 
 gameLoop
 	; do input processing
+	clr.l	d0
+	clr.l	d1
+
+	haltZ80
 	move.b	#$40, io_ctrl1  ; enable output
 	move.b	#$40, io_data1  ; Select 00CBRLDU
-	clr.l	d0
-	;nop	; wait
-	;nop	; wait
-	move.b	io_data1, d0    ; Read
+	move.b	#$40, io_ctrl2  ; enable output
+	move.b	#$40, io_data2  ; Select 00CBRLDU
+	move.b	io_data1, d0    ; Read 00CBRLDU
+	swap	d0
+	move.b	io_data2, d0    ; Read 00CBRLDU
 	move.b	#$00, io_data1  ; select 00SA00DU
-	lsl.w	#8, d0          ; move result to upper bytes
-	;nop	; wait
-	;nop	; wait
-	move.b	io_data1, d0    ; Read
-	move.w	d0, pad1State
+	move.b	#$00, io_data2  ; select 00SA00DU
+	move.b	io_data1, d1    ; Read 00SA00DU
+	swap	d1
+	move.b	io_data2, d1    ; Read 00SA00DU
+	resumeZ80
+	andi.l	#$003F003F, d0	; 00CBRLDU
+	andi.l	#$00300030, d1	; 00SA0000
+	lsl.l	#2, d1
+	or.l	d1, d0
+	move.b	d0, pad2State
+	swap	d0
+	move.b	d0, pad1State
 
 	; do game processing
 	jsr	processObjects
