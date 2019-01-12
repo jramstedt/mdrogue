@@ -63,56 +63,52 @@ displaySprite
 	moveq	#0, d3
 	move.b	obAnim+1(a0), d3
 	and.b	#$3F, d3
-	tst	d3
 	beq	@drawSprites
 
 	subq	#1, d3		; decrement one for loop
 @findFrame
 	move.w	(a3)+, d0	; d0 is	sprite count
 
+	;mulu	#10, d0
 	move.w	d0, d2
-	lsl	#3, d0		; * 8
+	lsl.w	#3, d0		; * 8
 	add.w	d2, d2		; * 2
-	add.w	d2, d0		; = * 10 	;mulu	#10, d0
+	add.w	d2, d0		; = * 10
 
 	adda	d0, a3
 	dbra	d3, @findFrame
 
 @drawSprites
-	move.w	(a3)+, d0	; d0 is	sprite count
-	subq	#1, d0		; decrement one for loop
-
-	moveq	#0, d2
 	move.w	obVRAM(a0), d2
-	lsr	#5, d2		; address to pattern number
+	lsr.w	#5, d2		; address to pattern number
 
+	move.w	(a3)+, d0	; d0 is	sprite count
+	subq.w	#1, d0		; decrement one for loop
 @drawSprite
 	addq.b	#1, spriteCount
 
-	movem.w	(a3)+, d3-d7
+	movem.w	(a3)+, d3-d7	; d3, d4, d5, d6, d7
 
-	add	#$EF, d3	; screen center vertical
+	add.w	#$EF, d3	; screen center vertical
 	move.b	spriteCount, d4
-	add	d2, d5	; add real VRAM pattern id to dplc relative tile position
-	add	#$11F, d6	; screen center horizontal
+	add.w	d2, d5		; add real VRAM pattern id to dplc relative tile position
+	add.w	#$11F, d6	; screen center horizontal
 
 	; write to spriteAttrTable
-	move.w	d3, (a2)+
-	move.w	d4, (a2)+
-	move.w	d5, (a2)+
-	move.w	d6, (a2)+
+	movem.w	d3-d6, (a2)
+	addi	#8, a2
 
 	; TODO move to animation code
 	move.w	d7, d1
 	and.w	#$000F, d1
 	addq	#1, d1
-	lsl	#4, d1	; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
+	lsl	#4, d1		; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
 
 	and.w	#$7FF0, d7
-	add.w	d7, d7	; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
+	add.w	d7, d7		; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
 	lea	(a4, d7), a5	; a4 is ROM address for start of metasprite pattern data
 
-	lsl	#5, d5	; 32 bytes per pattern
+	lsl	#5, d5		; 32 bytes per pattern
 	move.l	d5, a6
 
 	queueDMATransfer a5, a6, d1
@@ -128,7 +124,7 @@ displaySprite
 ; trash:
 ;	d0, d1, d2, a5, a6
 animateSprite
-	subq	#1, obFrameTime(a0)
+	subq.b	#1, obFrameTime(a0)
 	bmi	@processAnim
 	rts
 
@@ -152,7 +148,7 @@ animateSprite
 	move.b	(a6, d0.w), d0	; d0 is frame or opcode
 	bmi	@processOpcode
 
-	add	d2, obFrameTime(a0)
+	add.b	d2, obFrameTime(a0)
 
 	and.w	#$FFC0, d1
 	or.b	d0, d1
