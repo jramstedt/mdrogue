@@ -115,6 +115,8 @@ lc = lc+14
 	rts
 	
 processDMAQueue
+	haltZ80
+
 	setVDPAutoIncrement 2
 	; M1 enable dma
 
@@ -137,6 +139,8 @@ processDMAQueue
 
 @done
 	jsr	waitDMAOn
+	resumeZ80
+
 	move.w	d6, dma_queue
 
 	rts

@@ -18,5 +18,9 @@ io_reset	equ	$00A1000C	; RESET
 io_rx3		equ	$00A1001D	; RxDATA 3
 io_sctrl3	equ	$00A1001F	; S-CTRL 3
 
+Z80_busreq	equ	$00A11100	; Z80 Bus request
+Z80_reset	equ	$00A11200	; Z80 Reset
+
+	include 'z80.asm'
 	include 'vdp.asm'
 	include 'dma.asm'
