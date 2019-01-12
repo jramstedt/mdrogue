@@ -1,14 +1,14 @@
 waitVBlankOn
 	btst	#3, vdp_ctrl+1
-	bne	waitVBlankOn
+	bne.s	waitVBlankOn
 	rts
 
 waitVBlankOff
 	btst	#3, vdp_ctrl+1
-	beq	waitVBlankOff
+	beq.s	waitVBlankOff
 	rts
 
 waitDMAOn
 	btst	#1, vdp_ctrl+1
-	bne	waitDMAOn
+	bne.s	waitDMAOn
 	rts
