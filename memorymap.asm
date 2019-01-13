@@ -67,8 +67,8 @@ dma_queue_pointer	rs.l	1
 vrm_list		rs.b	sDataSize*10
 vrm_first		dc.l	vrm_list
 
-pad1State		rs.b	1
-pad2State		rs.b	1
+pad1State		rs.b	1	;  SACBRLDU
+pad2State		rs.b	1	;  SACBRLDU
 
 ; Game globals
 mainCamera		rs.b	camDataSize
