@@ -79,8 +79,6 @@ displaySprite
 	dbra	d3, @findFrame
 
 @drawSprites
-	move.w	obVRAM(a0), d2
-	lsr.w	#5, d2		; address to pattern number
 
 	move.w	(a3)+, d0	; d0 is	sprite count
 	subq.w	#1, d0		; decrement one for loop
@@ -89,16 +87,46 @@ displaySprite
 
 	movem.w	(a3)+, d3-d7	; d3, d4, d5, d6, d7
 
-	add.w	#$EF, d3	; screen center vertical
+	lea.l	mainCamera, a5
+
+	move.l	#$80, d2	; offset to upper left corner
+
+	move.w	obX(a0), d1
+	asr.w	#4, d1
+	addx.w	d2, d1
+	sub.w	camX(a5), d1
+	add.w	d1, d6
+
+	move.w	obY(a0), d1
+	asr.w	#4, d1
+	addx.w	d2, d1
+	sub.w	camY(a5), d1
+	add.w	d1, d3
+
+	;lea.l	mainCamera, a5
+	;move.l	obX(a0), d1	; XXXX YYYY
+	;and.l	#$FFF0FFF0, d1
+	;lsr.l	#4, d1		; convert to full pixels
+	;sub.l	camX(a5), d1	; XXXX YYYY
+	;add.l	#$00800080, d1	; corner offset of visible screen
+	;add.w	d1, d3		; d3 is Y
+	;swap	d1
+	;add.w	d1, d6		; d6 is X
+
+	; TODO Cull
+	; TODO if 0, dont draw (because of masking)
+	
 	move.b	spriteCount, d4
+
+	move.w	obVRAM(a0), d2
+	lsr.w	#5, d2		; address to pattern number
 	add.w	d2, d5		; add real VRAM pattern id to dplc relative tile position
-	add.w	#$11F, d6	; screen center horizontal
 
 	; write to spriteAttrTable
 	movem.w	d3-d6, (a2)
 	addi	#8, a2
 
-	; TODO move to animation code
+	; 
 	move.w	d7, d1
 	and.w	#$000F, d1
 	addq	#1, d1
@@ -112,7 +140,6 @@ displaySprite
 	move.l	d5, a6
 
 	queueDMATransfer a5, a6, d1
-	; TODO END
 
 	dbra	d0, @drawSprite
 
