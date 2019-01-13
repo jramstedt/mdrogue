@@ -1,9 +1,9 @@
 
 ; dst = round(dst) as int
 ftori MACRO
-	clr.l	#0, \2
+	moveq.l	#0, \2
 	asr.w	#4, \1
-	addx.b	\2, \1
+	addx.w	\2, \1
 	ENDM
 
 ; dst = dst as int
