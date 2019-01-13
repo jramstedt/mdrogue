@@ -29,8 +29,8 @@ loadLevel
 
 	; TODO better filling. 
 	lea.l	mainCamera, a0
-	move.w	#0, camX(a0)
-	move.w	#0, camY(a0)
+	move.l	#0, camX(a0)		; clears x and y
+	move.l	#0, camXprev(a0)	; clears x and y
 
 lc = 0
 	REPT 29
@@ -67,17 +67,13 @@ updateLevel
 
 	clr.l	d0
 	clr.l	d1
-	move.w	camX(a0), d0
-	move.w	camY(a0), d1
-	bsr	updateCamera
 
 @checkX
-	move.w	d0, d6
-	move.w	camX(a0), d7
-	and.w	#$FFF8, d6
-	and.w	#$FFF8, d7
-
-	cmp.w	d6, d7
+	move.w	camXprev(a0), d0
+	and.w	#$FFF8, d0
+	move.w	camX(a0), d2
+	and.w	#$FFF8, d2
+	cmp.w	d0, d2
 	beq	@checkY	; no cell boundaries crossed
 	bmi	@leftBorder
 
@@ -96,12 +92,11 @@ updateLevel
 	bra	@checkY
 
 @checkY
-	move.w	d1, d6
-	move.w	camY(a0), d7
-	and.w	#$FFF8, d6
-	and.w	#$FFF8, d7
-
-	cmp.w	d6, d7
+	move.w	camYprev(a0), d1
+	and.w	#$FFF8, d1
+	move.w	camY(a0), d2
+	and.w	#$FFF8, d2
+	cmp.w	d1, d2
 	beq	@exit	; no cell boundaries crossed
 	bmi	@topBorder
 
@@ -120,18 +115,6 @@ updateLevel
 	bra	@exit
 
 @exit
-	movem.l	(sp)+, d0-d7/a0-a6
-	rts
-
-updateCamera
-	;sub.w	#160, d6	; half of H40 pixels
-	;sub.w	#112, d7	; half of V28 pixels
-
-	add.w	#$0001, camX(a0) ; one pixel per frame
-	;move.w	#320, camX(a0)
-	add.w	#$0001, camY(a0) ; one pixel per frame
-	;move.w	#256, camY(a0)
-
 	; we are using fullscreen scroll, set both planes.
 	setVDPAutoIncrement 2
 	setVDPWriteAddressVSRAM 0
@@ -148,4 +131,6 @@ updateCamera
 	move.w	#0, vdp_data
 	move.w	d7, vdp_data
 
+	move.l	camX(a0), camXprev(a0)	; copies both x and y
+	movem.l	(sp)+, d0-d7/a0-a6
 	rts

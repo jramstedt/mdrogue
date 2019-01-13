@@ -34,6 +34,8 @@ obDataSize		equ	__RS	; 32 bytes
 			rsreset
 camX			rs.w	1	; 
 camY			rs.w	1	; 
+camXprev		rs.w	1	; 
+camYprev		rs.w	1	;
 camDataSize		equ		__RS
 
 ; sprite attributes
