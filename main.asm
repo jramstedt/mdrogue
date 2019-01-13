@@ -6,6 +6,8 @@
 	
 	include 'scroll.asm'
 
+	include 'fixedpoint.asm'
+
 	include 'objects/objecttable.asm'
 	include 'objects/objects.asm'
 
