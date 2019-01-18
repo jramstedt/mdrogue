@@ -57,12 +57,13 @@ vrmEnd			rs.w	1	; in patterns ($20 bytes)
 vrmDataSize		equ	__RS
 
 ; System stuff
+			rsset	ramStartAddress+$FF008000
+dma_queue		rs.w	7*20
+dma_queue_pointer	rs.w	1
+
 			rsset	ramStartAddress
 hblank_counter		rs.l	1
 vblank_counter		rs.l	1
-
-dma_queue		rs.w	7*20
-dma_queue_pointer	rs.l	1
 
 vrm_list		rs.b	sDataSize*10
 vrm_first		dc.l	vrm_list

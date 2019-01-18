@@ -1,20 +1,5 @@
 
 ; DMA queue code adapted from https://github.com/flamewing/ultra-dma-queue
-; See LICENCE.dma.md
-
-; Copyright 2015-2017 flamewing
-;
-; Licensed under the Apache License, Version 2.0 (the "License");
-; you may not use this file except in compliance with the License.
-; You may obtain a copy of the License at
-;
-;     http://www.apache.org/licenses/LICENSE-2.0
-;
-; Unless required by applicable law or agreed to in writing, software
-; distributed under the License is distributed on an "AS IS" BASIS,
-; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-; See the License for the specific language governing permissions and
-; limitations under the License.
 
 ; CD2 CD1 CD0
 ; 0   0   1     VRAM = %001
@@ -73,8 +58,8 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 ; trashes:
 ;	a6, d4, d5, d6
 _queueDMATransfer
-	movea.l	dma_queue_pointer, a6	; Move current pointer to a6
-	cmpa.l	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
+	movea.w	(dma_queue_pointer).w, a6	; Move current pointer to a6
+	cmpa.w	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
 	beq.s	@done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
 	lsr.l	#1, d5		; Source address >> 1 (even address)
@@ -94,53 +79,61 @@ _queueDMATransfer
 	ori.b	#%10000000, d6
 	move.l	d6, (a6)+
 
-	clr.w	(a6)		; Clear word at address a6 (end token)
-	move.l	a6, dma_queue_pointer
+	move.w	a6, (dma_queue_pointer).w
 
 @done
 	rts
 
+SlotCount	equ (dma_queue_pointer-dma_queue)/(7*2)
+
 initDMAQueue
 	lea	dma_queue, a6
-	move.w	#0, (a6)		; Move zero to beginning of dma queue
-	move.l	a6, dma_queue_pointer	; Set current pointer to beginning of dma queue
+	move.w	a6, (dma_queue_pointer).w	; Set current pointer to beginning of dma queue
 	move.l	#$96959493, d7		; vdp_w_reg+(22<<8), vdp_w_reg+(21<<8), vdp_w_reg+(20<<8), vdp_w_reg+(19<<8)
 
 lc = 0
-	REPT (dma_queue_pointer-dma_queue)/(7*2)
+	REPT SlotCount
 	movep.l	d7, 2+lc(a6)
 lc = lc+14
 	ENDR
 
 	rts
-	
+
+;
 processDMAQueue
-	haltZ80
+	;haltZ80
 
 	setVDPAutoIncrement 2
-	; M1 enable dma
 
-	lea	vdp_ctrl, a5
-	lea	dma_queue, a6
-	move.l	a6, dma_queue_pointer	; Reset dma_queue_pointer
+	movea.w	(dma_queue_pointer).w, a6
+	suba	#dma_queue, a6
+	jmp	@jumpTable(a6)
 
-	REPT (dma_queue_pointer-dma_queue)/(7*2)
-	move.w	(a6)+, d6
-	beq.w	@done		; if word in queue was zero (stop token)
-
-	move.w	d6, (a5)	; reg 23
-	move.l	(a6)+, (a5)	; reg 22, reg 21
-	move.l	(a6)+, (a5)	; reg 20, reg 19
-	;move.l	(a6)+, (a5)	; dma command
-	move.w	(a6)+, (a5)	; dma command
-	move.w	(a6)+, (a5)	; dma command
+@jumpTable
+	rts
+	REPT 6
+	nop
 	ENDR
-	moveq	#0, d6
+lc = 1
+	REPT SlotCount
+	lea	vdp_ctrl, a5
+	lea	dma_queue.w, a6
+	if lc<>SlotCount
+		bra.w	@done-lc*8
+	endif
+lc = lc+1
+	ENDR
+
+	REPT SlotCount
+	move.l	(a6)+, (a5)	; reg 23, reg 22
+	move.l	(a6)+, (a5)	; reg 21, reg 20
+	move.l	(a6)+, (a5)	; reg 19, dma first hlf
+	move.w	(a6)+, (a5)	; dma command second half
+	ENDR
 
 @done
-	jsr	waitDMAOn
-	resumeZ80
+	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer
 
-	move.w	d6, dma_queue
+	;resumeZ80
 
 	rts
