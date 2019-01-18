@@ -47,7 +47,11 @@ __main
 	move.l	#$00020002, d7
 	jsr	drawFont
 
-	setVDPRegister 1, $54	; Display on
+	move.w	#vdp_w_reg, d0
+	move.b	vdp1r, d0
+	or.w	#%101000000, d0	; #1 reg, display on
+	move.w	d0, vdp_ctrl
+
 	jsr	initScrolling
 
 gameLoop
@@ -86,7 +90,7 @@ gameLoop
 
 	; do graphics commands
 	jsr	processDMAQueue
-
+	
 	jsr	waitVBlankOff
 
 	bra	gameLoop

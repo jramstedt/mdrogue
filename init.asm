@@ -143,28 +143,28 @@ Main
 	bra	__main ; Begin external main
 
 VDPRegisters
-	dc.b	$04 ; 0: Horiz. interrupt off, 
-	dc.b	$14 ; 1: display off, Vert. interrupt off, screen blank off, DMA on, V28 mode, Mega Drive mode on
+	dc.b	%00000100 ; 0: Horiz. interrupt off, 
+vdp1r	dc.b	%00010100 ; 1: display off, Vert. interrupt off, screen blank off, DMA on, V28 mode, Mega Drive mode on
 	dc.b	(vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
 	dc.b	(vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
 	dc.b	(vdp_map_bnt>>13) ; 4: Pattern table for Scroll Plane B (bits 0-2)
 	dc.b	(vdp_map_sat>>9) ; 5: Sprite table (bits 0-6)
-	dc.b	$00 ; 6: Unused
-	dc.b	$00 ; 7: Background colour - bits 0-3 = colour, bits 4-5 = palette
-	dc.b	$00 ; 8: Unused
-	dc.b	$00 ; 9: Unused
-	dc.b	$00 ; 10: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
-	dc.b	$00 ; 11: External interrupts off, V scroll fullscreen, H scroll fullscreen
-	dc.b	$81 ; 12: Shadows and highlights off, interlace off, H40 mode (64 cells horizontally)
+	dc.b	%00000000 ; 6: Unused
+	dc.b	%00000000 ; 7: Background colour - bits 0-3 = colour, bits 4-5 = palette
+	dc.b	%00000000 ; 8: Unused
+	dc.b	%00000000 ; 9: Unused
+	dc.b	%00000000 ; 10: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
+	dc.b	%00000000 ; 11: External interrupts off, V scroll fullscreen, H scroll fullscreen
+	dc.b	%10000001 ; 12: Shadows and highlights off, interlace off, H40 mode (64 cells horizontally)
 	dc.b	(vdp_map_hst>>10) ; 13: Horiz. scroll table (bits 0-5)
-	dc.b	$00 ; 14: Unused
-	dc.b	$00 ; 15: Autoincrement off
-	dc.b	$01 ; 16: Vert. scroll 32, Horiz. scroll 64
-	dc.b	$00 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
-	dc.b	$00 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
-	dc.b	$00 ; 19: DMA length lo byte
-	dc.b	$00 ; 20: DMA length hi byte
-	dc.b	$00 ; 21: DMA source address lo byte
-	dc.b	$00 ; 22: DMA source address mid byte
-	dc.b	$00 ; 23: DMA source address hi byte, memory-to-VRAM mode (bits 6-7)
+	dc.b	%00000000 ; 14: Unused
+	dc.b	%00000000 ; 15: Autoincrement off
+	dc.b	%00000001 ; 16: Vert. scroll 32, Horiz. scroll 64
+	dc.b	%00000000 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
+	dc.b	%00000000 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
+	dc.b	%00000000 ; 19: DMA length lo byte
+	dc.b	%00000000 ; 20: DMA length hi byte
+	dc.b	%00000000 ; 21: DMA source address lo byte
+	dc.b	%00000000 ; 22: DMA source address mid byte
+	dc.b	%00000000 ; 23: DMA source address hi byte, memory-to-VRAM mode (bits 6-7)
 VDPRegistersEnd
