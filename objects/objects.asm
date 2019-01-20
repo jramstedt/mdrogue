@@ -17,8 +17,8 @@ processObjects
 
 	move.l	d7, -(sp)	; push object counter to stack
 
-	movea.l	objectsOrigin-sizeLong(pc,d0.w), a2 ; class start at 1, decrement address by one long
-	jsr	(a2)		; jump to object code
+	lea	objectsOrigin-sizeLong.w, a2	; class start at 1, decrement address by one long
+	jsr	(a2,d0.w)			; jump to object code
 
 	move.l	(sp)+, d7	; pop object counter from stack
 	moveq	#0, d0
@@ -32,12 +32,11 @@ processObjects
 	lsl	#2, d0	; 4 words per sprite
 	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
 
-@exit
-	moveq	#0, d0
 	move.b	spriteCount, d0
 	sub	#1, d0
 	lsl	#3, d0	; 8 bytes per sprite
 
+@exit
 	lea	spriteAttrTable, a0
 	add	d0, a0
 	move.b	#0, sLinkData(a0)
@@ -48,9 +47,8 @@ processObjects
 ;	a0 object
 ;	a6 rom address
 displaySprite
-	lea	spriteAttrTable, a2
 	movea.l	a6, a3		; rom address
-	movea.l	(a3), a4	; a4 is patterns start in ROM
+	movea.l	(a6), a4	; a4 is patterns start in ROM
 
 	moveq	#0, d0
 	move.b	obAnim(a0), d0	; get animation number
@@ -80,6 +78,7 @@ displaySprite
 
 @drawSprites
 
+	lea	spriteAttrTable, a2
 	move.w	(a3)+, d0	; d0 is	sprite count
 	subq.w	#1, d0		; decrement one for loop
 @drawSprite
@@ -91,11 +90,15 @@ displaySprite
 
 	move.l	#$80, d2	; offset to upper left corner
 
+	; TODO Cull sprites that are out of screen
+
 	move.w	obX(a0), d1
 	asr.w	#4, d1
 	addx.w	d2, d1
 	sub.w	camX(a5), d1
 	add.w	d1, d6
+	
+	dbne	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
 
 	move.w	obY(a0), d1
 	asr.w	#4, d1
@@ -112,9 +115,6 @@ displaySprite
 	;add.w	d1, d3		; d3 is Y
 	;swap	d1
 	;add.w	d1, d6		; d6 is X
-
-	; TODO Cull
-	; TODO if 0, dont draw (because of masking)
 	
 	move.b	spriteCount, d4
 
@@ -126,20 +126,19 @@ displaySprite
 	movem.w	d3-d6, (a2)
 	addi	#8, a2
 
-	; 
-	move.w	d7, d1
-	and.w	#$000F, d1
-	addq	#1, d1
-	lsl	#4, d1		; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
-
-	and.w	#$7FF0, d7
-	add.w	d7, d7		; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
-	lea	(a4, d7), a5	; a4 is ROM address for start of metasprite pattern data
-
+	; DMA
 	lsl	#5, d5		; 32 bytes per pattern
-	move.l	d5, a6
+	move.l	d5, d6
 
-	queueDMATransfer a5, a6, d1
+	move.w	d7, d5
+	and.w	#$7FF0, d5
+	add.w	d5, d5		; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
+	add.l	a4, d5
+
+	and.w	#$000F, d7
+	addq	#1, d7
+	lsl.w	#4, d7		; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
+	jsr	_queueDMATransfer
 
 	dbra	d0, @drawSprite
 
@@ -189,7 +188,8 @@ animateSprite
 	move.w	d1, obAnim(a0)
 	bra	@nextFrame
 
-
+; input:
+;	a0 object
 deleteObject
 	moveq	#(obDataSize/sizeLong), d0
 	moveq	#0, d1

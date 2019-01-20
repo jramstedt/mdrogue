@@ -8,10 +8,8 @@
 
 	include 'fixedpoint.asm'
 
-	include 'objects/objecttable.asm'
 	include 'objects/objects.asm'
-
-	include 'objects/01player.asm'
+	include 'objects/objecttable.asm'
 
 __main
 	move.l	#$0, d6
