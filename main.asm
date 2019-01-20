@@ -102,4 +102,7 @@ gameLoop
 
 testText	dc.b	'Aa Bb', $A,'Cc', $D, 'Dd', $A, $D, '!!!!!!!!!!!!', 0
 
+sinCosTableLen	equ	256
+sinCosTable	incbin	'assets/sin.bin'
+
 __end

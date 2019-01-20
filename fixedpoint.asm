@@ -55,4 +55,18 @@ isubf MACRO
 	asr.w	#4, \1
 	subx.w	\1, \2
 	ENDM
-	
+
+sinCos MACRO base, inpreg, sinreg, cosreg
+	lsl.w	#2, \2
+	movem.w	(\1, \2.w), \3/\4
+	ENDM
+
+sin MACRO base, inpreg, sinreg
+	lsl.w	#2, \2
+	move.w	(\1, \2.w), \3
+	ENDM
+
+cos MACRO base, inpreg, cosreg
+	lsl.w	#2, \2
+        move.w	(2, \1, \2.w), \3
+        ENDM
