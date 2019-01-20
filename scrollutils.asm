@@ -1,4 +1,4 @@
-
+;
 toPatterns MACRO positionPixels, offsetPixels, out
 	move.l	#0, \out
 	move.w	\positionPixels, \out
@@ -8,14 +8,17 @@ toPatterns MACRO positionPixels, offsetPixels, out
 	asr.w	#3, \out
 	ENDM
 
+;
 chunkSizeShift MACROS y
 	lsl.l	#5, \y		; multiply by 32 (lvlChunkSize)
 
+;
 xChunkStart MACRO x
 	and.w	#$FFE0, \x	; full chunks in patterns
 	chunkSizeShift \x
 	ENDM
 
+;
 yChunkStart MACRO level, y
 	and.w	#$FFE0, \y	; full chunks in patterns
 	move.b	lvlWidth(\level), d3
@@ -23,9 +26,11 @@ yChunkStart MACRO level, y
 	chunkSizeShift \y
 	ENDM
 
+;
 chunkOffset MACROS c
 	and.w	#$1F, \c	; in patterns (chunk space)
 
+;
 copyRowToVram MACRO level, camera, xOffset, yOffset
 	local initCopy, startCopyLoop, copy, queueRowToVram, lastTransfer, complete
 

@@ -118,9 +118,9 @@ _reserveVRAM
 ; d6 VRAM address
 ; d7 number of patterns
 ; trash:
-; a3, d5, d7
+; a3, d5, d6, d7
 freeVRAM
-	move.l	d6,	d5
+	move.l	d6, d5
 	lsl	#5, d7
 	add	d7, d5	; d5 is the VRAM end address
 	lea.l	vrm_first, a3

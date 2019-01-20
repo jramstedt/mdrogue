@@ -1,6 +1,3 @@
-; ******************************************************************
-; Sega Megadrive ROM header
-; ******************************************************************
 
 	dc.l	stackStartAddress	; Initial stack pointer value
 	dc.l	EntryPoint		; Start of program
@@ -92,7 +89,7 @@
 	include 'interrupts.asm'
 
 EntryPoint
-	tst.w	io_expRst	; Test mystery reset (expansion port reset?)
+	tst.w	io_expRst	; Test expansion port reset
 	bne	Main		; Branch if Not Equal (to zero) - to Main
 	tst.w	io_reset	; Test reset button
 	bne	Main		; Branch if Not Equal (to zero) - to Main
@@ -105,7 +102,7 @@ EntryPoint
 skipTMSS
 
 ; VDP
-	move.l	#(VDPRegistersEnd-VDPRegisters-1), d0
+	move.l	#VDPRegistersEnd-VDPRegisters-1, d0
 	move.l	#vdp_w_reg, d1
 	lea	VDPRegisters, a0
 
@@ -124,16 +121,16 @@ initVDPLoop
 
 ; Clear RAM FF0000 - FFFFFF
 	moveq	#0, d0
-	lea	$00000000, a0
+	lea	ramStartAddress, a0
 	move.l	#$00003FFF, d1
 clearRamLoop
-	move.l	d0, -(a0)
+	move.l	d0, (a0)+
 	dbra	d1, clearRamLoop
 
 ; clean init registers
 	movem.l	ramStartAddress, d0-d7/a0-a6
 	lea	stackStartAddress, sp
-	move	#$2000, sr
+	move.w	#$2000, sr	; supervisor
 
 	move.w	#$000, Z80_reset
 	move.w	#$100, Z80_busreq
