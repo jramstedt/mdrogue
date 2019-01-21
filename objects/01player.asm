@@ -19,7 +19,7 @@ objPlayer
 	move.w	#$0A0F, obX(a0)
 	move.w	#$078F, obY(a0)
 
-	move.w	#$0000, obAnim(a0)
+	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 
 	move.l	#16, d7 ; hard coded for one sprite
@@ -50,8 +50,11 @@ objPlayer
 @display
 	;add.w	#$000F, obY(a0) ; 1 / 15 pixel per frame
 	; update main camera to player coordinates!
-	lea.l	mainCamera, a2
+	
+	lea	obX(a0), a1
+	vrotate a1, #1
 
+	lea.l	mainCamera, a2
 	moveq.l	#0, d2
 
 	move.w	obX(a0), d3
