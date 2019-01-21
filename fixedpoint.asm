@@ -33,6 +33,7 @@ fmul MACRO
 
 ; dst = dst / src
 fdiv MACRO
+	ext.l	\2
 	asl.l	#4, \2
 	divs.w	\1, \2
 	ENDM
@@ -56,17 +57,17 @@ isubf MACRO
 	subx.w	\1, \2
 	ENDM
 
-sinCos MACRO base, inpreg, sinreg, cosreg
-	lsl.w	#2, \2
+sinCos MACRO table, angle, sin, cos
+	lsl.w	#2, \2	; to long
 	movem.w	(\1, \2.w), \3/\4
 	ENDM
 
-sin MACRO base, inpreg, sinreg
-	lsl.w	#2, \2
+sin MACRO table, angle, sin
+	lsl.w	#2, \2	; to long
 	move.w	(\1, \2.w), \3
 	ENDM
 
-cos MACRO base, inpreg, cosreg
-	lsl.w	#2, \2
+cos MACRO table, angle, cos
+	lsl.w	#2, \2	; to long
         move.w	(2, \1, \2.w), \3
         ENDM
