@@ -33,7 +33,6 @@ fmul MACRO
 
 ; dst = dst / src
 fdiv MACRO
-	ext.l	\2
 	asl.l	#4, \2
 	divs.w	\1, \2
 	ENDM
