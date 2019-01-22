@@ -89,6 +89,64 @@ varctan MACRO vec, angle
 
 	ENDM
 
+vcpsign MACRO vec1, vec2
+	move.w	0(\vec1), d2
+	beq	@v1zero
+	move.w	2(\vec1), d3
+	beq	@v1zero
+
+	move.w	d2, d0
+	eor.w	d3, d0
+	smi	d0
+	bra.s	@v1end
+
+@v1zero	moveq	#0, d0
+@v1end
+
+	move.w	0(\vec2), d4
+	beq	@v2zero
+	move.w	2(\vec2), d5
+	beq	@v2zero
+
+	move.w	d2, d1
+	eor.w	d3, d1
+	smi	d1
+	bra.s	@v2end
+
+@v2zero	moveq	#0, d1
+@v2end
+
+	cmp.b	d1, d0
+	beq	@abs
+	bmi	@posit
+
+@negat	moveq	#-1, d0
+	bra.s	@end
+
+@posit	moveq	#1, d0
+	bra.s	@end
+
+@abs
+	tst.w	d0
+	bpl.s	@calc
+	neg.w	d2
+	neg.w	d3
+	neg.w	d4
+	neg.w	d5
+	exg	d2, d4
+	exg	d3, d5
+
+@calc
+	muls.w	d2, d3
+	muls.w	d4, d5
+	
+	cmp.l	d5, d3
+	bmi.s	@negat
+	bpl.s	@posit
+
+	moveq	#0, d0	; parallel?
+@end
+	ENDM
 	
 	cnop	0,2
 ; X Y Abs
