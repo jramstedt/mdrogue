@@ -54,6 +54,8 @@ objPlayer
 	lea	obX(a0), a1
 	vrotate a1, #1
 
+	varctan a1, d2
+
 	lea.l	mainCamera, a2
 	moveq.l	#0, d2
 
