@@ -14,10 +14,10 @@ stackStartAddress	equ	$00FFE000
 obClass			rs.b	1	; Class & Subclass nibbles
 obState			rs.b	1
 obRender		rs.w	1	; HRYX
-obX			rs.w	1	; FFF.F
-obY			rs.w	1	; FFF.F
-obVelX			rs.w	1	; FFF.F
-obVelY			rs.w	1	; FFF.F
+obX			rs.w	1	; 13.3
+obY			rs.w	1	; 13.3
+obVelX			rs.w	1	; 8.8
+obVelY			rs.w	1	; 8.8
 obWidth			rs.b	1
 obHeight		rs.b	1
 obAnim			rs.w	1	; animation number

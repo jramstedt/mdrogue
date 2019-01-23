@@ -22,20 +22,20 @@ vrotate MACRO vec, angle
 	sinCos a2, d2, d0, d1
 
 	moveq	#0, d5
-	moveq	#15, d6
+	moveq	#15, d6	; sin and cos are s.15 fp
 
 	movem.w	0(\vec), d2/d3
 	muls.w	d1, d2	; x = x * cos()
 	muls.w	d0, d3	; y = y * sin()
-	sub.l	d3, d2	; 12.4 * s.15 = 12.19, needs shift 15 right to get 12.4
-	asr.l	d6, d2	; -> 12.4
-	addx.w	d5, d2	; round
+	sub.l	d3, d2	; x = x - y
+	asr.l	d6, d2	; s.15 -> original vec fixed point
+	subx.w	d5, d2	; round
 
 	movem.w	0(\vec), d3/d4
 	muls.w	d0, d3	; x = x * sin()
 	muls.w	d1, d4	; y = y * cos()
-	add.l	d4, d3	; 12.4 * s.15 = 12.19, needs shift 15 right to get 12.4
-	asr.l	d6, d3	; -> 12.4
+	add.l	d4, d3	; y = x + y
+	asr.l	d6, d3	; s.15 -> original vec fixed point
 	addx.w	d5, d3	; round
 
 	movem.w	d2/d3, 0(\vec)
@@ -69,14 +69,15 @@ varctan MACRO vec, angle
 	and.b	#%001, d4
 	or.b	d4, d5
 
-	moveq	#12, d4	; 15 - 3, 3 bits mark the octant
+	moveq	#12, d4	; In division we lose fraction. We need 12 bits for octant fraction. 15 - 3, MS 3 bits mark the octant
 	ext.l	d3
-	asl.l	d4, d3	; s.15
+	asl.l	d4, d3
+
 	divs	d2, d3
 
 	lea	octantLookup, a2
 	move.b	(a2, d5.w), d5
-	bpl.s	@angle	; skip sub
+	bpl.s	@angle		; skip sub
 	move	#$1000, d2	; 12 bit percision
 	sub.w	d3, d2
 	move.l	d2, d3

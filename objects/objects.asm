@@ -93,7 +93,7 @@ displaySprite
 	; TODO Cull sprites that are out of screen
 
 	move.w	obX(a0), d1
-	asr.w	#4, d1
+	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camX(a5), d1
 	add.w	d1, d6
@@ -101,20 +101,16 @@ displaySprite
 	dbne	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
 
 	move.w	obY(a0), d1
-	asr.w	#4, d1
+	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camY(a5), d1
 	add.w	d1, d3
 
 	;lea.l	mainCamera, a5
 	;move.l	obX(a0), d1	; XXXX YYYY
-	;and.l	#$FFF0FFF0, d1
-	;lsr.l	#4, d1		; convert to full pixels
+	;and.l	#$FFF8FFF8, d1
+	;lsr.l	#3, d1		; convert to full pixels
 	;sub.l	camX(a5), d1	; XXXX YYYY
-	;add.l	#$00800080, d1	; corner offset of visible screen
-	;add.w	d1, d3		; d3 is Y
-	;swap	d1
-	;add.w	d1, d6		; d6 is X
 	
 	move.b	spriteCount, d4
 
