@@ -28,15 +28,15 @@ aniOrc
 	dc.w	@aniSurprised-aniOrc
 
 @aniIdle
-	dc.b	25/1, 0, 1, $80
+	dc.b	50/1, 0, 1, $80
 
 @aniAngryIdle
-	dc.b	25/5, 0, 1, 2, 3, 4, $80
+	dc.b	50/5, 0, 1, 2, 3, 4, $80
 
 @aniThinking
-	dc.b	25/5, 0, 1, 2, 3, 4, $80
+	dc.b	50/5, 0, 1, 2, 3, 4, $80
 
 @aniSurprised
-	dc.b	25/5, 0, 1, $80
+	dc.b	50/5, 0, 1, $80
 
 	cnop	0,2

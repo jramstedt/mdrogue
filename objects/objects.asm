@@ -112,7 +112,7 @@ displaySprite
 
 	; Y
 	btst.b	#4, obRender(a0)
-	beq	@y	; not set, skip flip
+	beq.s	@y	; not set, skip flip
 	neg.w	d3
 	move.w	d4, d1
 	lsr.w	#5, d1	; to multiples of eight
