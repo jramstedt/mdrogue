@@ -92,7 +92,17 @@ displaySprite
 
 	; TODO Cull sprites that are out of screen
 
-	move.w	obX(a0), d1
+	; X
+	btst.b	#3, obRender(a0)
+	beq.s	@x	; not set, skip flip
+	neg.w	d6
+	move.w	d4, d1
+	lsr.w	#7, d1	; to multiples of eight
+	andi.b	#%11000, d1
+	addi.b	#8, d1
+	sub.w	d1, d6
+
+@x	move.w	obX(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camX(a5), d1
@@ -100,7 +110,17 @@ displaySprite
 	
 	dbne	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
 
-	move.w	obY(a0), d1
+	; Y
+	btst.b	#4, obRender(a0)
+	beq	@y	; not set, skip flip
+	neg.w	d3
+	move.w	d4, d1
+	lsr.w	#5, d1	; to multiples of eight
+	andi.b	#%11000, d1
+	addi.b	#8, d1
+	sub.w	d1, d3
+
+@y	move.w	obY(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camY(a5), d1
@@ -115,7 +135,6 @@ displaySprite
 	move.b	spriteCount, d4
 
 	move.w	obVRAM(a0), d2
-	lsr.w	#5, d2		; address to pattern number
 	add.w	d2, d5		; add real VRAM pattern id to dplc relative tile position
 
 	; write to spriteAttrTable

@@ -13,20 +13,25 @@ stackStartAddress	equ	$00FFE000
 			rsreset
 obClass			rs.b	1	; Class & Subclass nibbles
 obState			rs.b	1
-obRender		rs.w	1	; HRYX
 obX			rs.w	1	; 13.3
 obY			rs.w	1	; 13.3
 obVelX			rs.w	1	; 8.8
 obVelY			rs.w	1	; 8.8
-obWidth			rs.b	1
-obHeight		rs.b	1
 obAnim			rs.w	1	; animation number
 					; F000 15 animation
 					; 0FC0 64 animation index
 					; 003F 64 frame
 obFrameTime		rs.b	1	; vblanks left until next frame
-obCollision		rs.b	1
-obVRAM			rs.w	1	; VRAM address for patterns
+obRadius		rs.b	1	; 8.0
+obCollision		rs.b	1	; F.F = Groups.Mask
+obPhysics		rs.b	1	; %0000000K
+					; K = kinematic, movable, does not respond to collision
+obRender		rs.b	0	; %PLLVHXXX $FFF
+obVRAM			rs.w	1	; P = priority
+					; LL = palette
+					; V = vertical flip
+					; H = horizontal flip
+					; XXX $FFF = VRAM pattern number (address / 32)
 obClassData		rs.b	32-__RS
 obDataSize		equ	__RS	; 32 bytes
 

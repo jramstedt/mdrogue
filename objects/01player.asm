@@ -12,9 +12,8 @@ objPlayer
 
 @main ; inits the object
 	addq.b	#2, obState(a0)	; set object state to @display
-	move.w	#1, obRender(a0)
-	move.b	#32, obWidth(a0)
-	move.b	#32, obHeight(a0)
+	move.w	#$0800, obRender(a0)
+	move.b	#24, obRadius(a0)
 
 	move.w	#160<<3, obX(a0)
 	move.w	#120<<3, obY(a0)
@@ -24,7 +23,8 @@ objPlayer
 
 	move.l	#16, d7 ; hard coded for one sprite
 	jsr	allocVRAM
-	move.w	d6, obVRAM(a0)
+	lsr.w	#5, d6		; address to pattern number
+	or.w	d6, obVRAM(a0)
 
 @input
 	; TODO set velocity
@@ -52,10 +52,10 @@ objPlayer
 	; update main camera to player coordinates!
 	
 	lea	obX(a0), a1
-	vrotate a1, #1
+	;vrotate a1, #-1&$FF
 
-	varctan a1, d2
-	vcpsign	a1, a1
+	;varctan a1, d2
+	;vcpsign	a1, a1
 
 	lea.l	mainCamera, a2
 	moveq.l	#0, d2
@@ -86,7 +86,8 @@ objPlayer
 	rts
 
 @delete
-	move.l	obVRAM(a0), d6
+	move.w	obVRAM(a0), d6
+	lsl.w	#5, d6		; pattern number to address
 	move.l	#16, d7
 	jsr	freeVRAM
 
