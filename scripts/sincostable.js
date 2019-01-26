@@ -10,4 +10,4 @@ for(let i = 0; i < 256; ++i) {
 	table.setInt16((i << 2) + 2, cos, false)
 }
 
-fs.writeFileSync('assets/sin.bin', table)
+fs.writeFileSync('assets/sincos.bin', table)
