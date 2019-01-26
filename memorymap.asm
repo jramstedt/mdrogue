@@ -78,10 +78,11 @@ pad2State		rs.b	1	;  SACBRLDU
 
 ; Game globals
 mainCamera		rs.b	camDataSize
-gameObjects		rs.b	obDataSize*128
+gameObjectsLen		equ	128
+gameObjects		rs.b	obDataSize*gameObjectsLen
 
 ; 128 sprites max. 80 can be rendered. 20 per line or 320px
-spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
+spriteAttrTable		rs.b 	sDataSize*gameObjectsLen	; RAM buffer for sprite attribute table
 ;spriteOrder		rs.b	80		; Sorted sprites (for linked list indexes)
 
 spriteCount		rs.b	1		; number of sprites to render

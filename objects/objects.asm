@@ -6,26 +6,22 @@ processObjects
 	move.b	#0, spriteCount
 
 	lea.l	gameObjects, a0
-	move.w	#127, d7	; see memorymap.asm, max 128 game objects
 	moveq	#0, d0
 @loop
 	move.b	obClass(a0), d0
 	beq.s	@skip
 
-	lsr.b	#4, d0		; get class from nibble
-	lsl.w	#2, d0		; index to pointer
-
-	move.l	d7, -(sp)	; push object counter to stack
+	andi.b	#$F0, d0	; mask class
+	lsr.b	#2, d0		; class to word pointer
 
 	lea	objectsOrigin-sizeLong.w, a2	; class start at 1, decrement address by one long
 	jsr	(a2,d0.w)			; jump to object code
 
-	move.l	(sp)+, d7	; pop object counter from stack
 	moveq	#0, d0
-
 @skip
 	lea	obDataSize(a0), a0
-	dbra	d7, @loop
+	cmpa.l	#(gameObjects+(obDataSize*gameObjectsLen)), a0
+	bls	@loop
 
 	move.b	spriteCount, d0
 	beq	@exit
