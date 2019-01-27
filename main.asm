@@ -107,6 +107,6 @@ testText	dc.b	'Aa Bb', $A,'Cc', $D, 'Dd', $A, $D, '!!!!!!!!!!!!', 0
 
 ; sin cos table in s.15 fp format. MSB is optional sign bit.
 sinCosTableLen	equ	256
-sinCosTable	incbin	'assets/sin.bin'
+sinCosTable	incbin	'assets/sincos.bin'
 
 __end

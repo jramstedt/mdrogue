@@ -7,7 +7,7 @@ sizePattern		equ	$20
 sizePalette		equ	$20
 
 ramStartAddress		equ	$00FF0000
-stackStartAddress	equ	$00FFE000
+stackStartAddress	equ	$00FFFFFE
 
 ; gameobject variables
 			rsreset

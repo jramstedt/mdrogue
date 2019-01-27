@@ -30,22 +30,22 @@ objPlayer
 	; TODO set velocity
 	btst	#0, pad1State
 	seq	d0
-	andi	#2<<3|3, d0
+	andi	#1<<3|3, d0
 	sub	d0, obY(a0)
 
 	btst	#1, pad1State
 	seq	d0
-	andi	#2<<3|3, d0
+	andi	#1<<3|3, d0
 	add	d0, obY(a0)
 
 	btst	#2, pad1State
 	seq	d0
-	andi	#2<<3|3, d0
+	andi	#1<<3|3, d0
 	sub	d0, obX(a0)
 
 	btst	#3, pad1State
 	seq	d0
-	andi	#2<<3|3, d0
+	andi	#1<<3|3, d0
 	add	d0, obX(a0)
 
 @display
