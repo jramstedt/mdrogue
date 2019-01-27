@@ -76,6 +76,8 @@ vrm_first		dc.l	vrm_list
 pad1State		rs.b	1	;  SACBRLDU
 pad2State		rs.b	1	;  SACBRLDU
 
+lcgSeed			rs.l	1
+
 ; Game globals
 mainCamera		rs.b	camDataSize
 gameObjectsLen		equ	128

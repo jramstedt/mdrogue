@@ -80,6 +80,8 @@ gameLoop
 	swap	d0
 	move.b	d0, pad1State
 
+	lcg	d0
+
 	; do game processing
 	jsr	processObjects
 

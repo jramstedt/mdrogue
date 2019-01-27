@@ -87,6 +87,7 @@
 	include 'memorymap.asm'
 	include 'megadrive.asm'
 	include 'interrupts.asm'
+	include 'lcg.asm'
 
 EntryPoint
 	tst.w	io_expRst	; Test expansion port reset
@@ -136,6 +137,7 @@ clearRamLoop
 	move.w	#$100, Z80_busreq
 	move.w	#$100, Z80_reset
 
+	move.l	#1, lcgSeed
 Main
 	bra	__main ; Begin external main
 
