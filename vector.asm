@@ -15,6 +15,30 @@ vscale MACRO src, dest
 	muls.w	\1, 2(\2)
 	ENDM
 
+; 0.16 FP
+; input: |x| and |y|
+; output: x as approximate length
+approxlen MACRO x, y
+	cmp.w	\y, \x
+	bhi.s	*+4		; x bigger, skip exchange
+	exg	\y, \x
+	
+	add.w	\x, \y
+	mulu	#46341, \y	; sqrt(0.5) @ 0.16FP = 46340 (.2429046313)
+	swap	\y		; >> 16, to original precision
+
+	cmp.w	\y, \x
+	bhi.s	*+4		; x bigger, skip exchange
+	exg	\y, \x
+
+	move.w	\x, \y
+
+	mulu	#2700, \x	; ((1 + sqrt(4 - 2 * sqrt(2))) / 2) - 1 @ 0.16FP = 2699 (.78642308)
+	swap	\x		; >> 16, to original precision
+	add	\y, \x		; since we saved one bit of precision before (-1 from calculation), we need to add it back
+
+	ENDM
+
 ;
 vrotate MACRO vec, angle
 	move.l	\angle, d2
