@@ -2,9 +2,9 @@
 toPatterns MACRO positionPixels, offsetPixels, out
 	move.l	#0, \out
 	move.w	\positionPixels, \out
-	if offsetPixels<>0
+	IF offsetPixels<>0
 		add	#\offsetPixels, \out
-	endif
+	ENDIF
 	asr.w	#3, \out
 	ENDM
 

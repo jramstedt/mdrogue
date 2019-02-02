@@ -175,9 +175,9 @@ dataLen equ sourceEnd-sourceStart
 	move.l	#dataLen/sizePattern, d7
 	jsr	allocVRAM
 
-	if	narg=3
+	IF narg=3
 		move.w	d6, \outVramAddress
-	endif
+	ENDIF
 
 	move.l	#sourceStart, d5
 	lsr.l	#1, d7	; bytes to words

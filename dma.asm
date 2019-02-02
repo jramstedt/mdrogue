@@ -118,9 +118,9 @@ lc = 1
 	REPT SlotCount
 	lea	vdp_ctrl, a5
 	lea	dma_queue.w, a6
-	if lc<>SlotCount
+	IF lc<>SlotCount
 		bra.w	@done-lc*8
-	endif
+	ENDIF
 lc = lc+1
 	ENDR
 
