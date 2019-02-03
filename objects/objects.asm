@@ -12,10 +12,11 @@ processObjects
 	beq.s	@skip
 
 	andi.b	#$F0, d0	; mask class
-	lsr.b	#2, d0		; class to word pointer
+	lsr.b	#3, d0		; class to word pointer
 
-	lea	objectsOrigin-sizeLong.w, a2	; class start at 1, decrement address by one long
-	jsr	(a2,d0.w)			; jump to object code
+	lea	objectsOrigin-sizeWord.w, a2	; class start at 1, decrement address by one word
+	move.w	(a2,d0.w), a2
+	jsr	(a2)				; jump to object code
 
 	moveq	#0, d0
 @skip
@@ -75,6 +76,10 @@ displaySprite
 @drawSprites
 
 	lea	spriteAttrTable, a2
+	move.b	spriteCount, d0
+	lsl.w	#3, d0		; sprite attribute is 8 bytes
+	add	d0, a2
+
 	move.w	(a3)+, d0	; d0 is	sprite count
 	subq.w	#1, d0		; decrement one for loop
 @drawSprite
@@ -104,7 +109,8 @@ displaySprite
 	sub.w	camX(a5), d1
 	add.w	d1, d6
 	
-	dbne	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
+	;bne.s	*+4
+	;dbra	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
 
 	; Y
 	btst.b	#4, obRender(a0)
@@ -135,7 +141,7 @@ displaySprite
 
 	; write to spriteAttrTable
 	movem.w	d3-d6, (a2)
-	addi	#8, a2
+	addi	#sDataSize, a2
 
 	; DMA
 	lsl	#5, d5		; 32 bytes per pattern
