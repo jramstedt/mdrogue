@@ -8,6 +8,7 @@
 
 	include 'fixedpoint.asm'
 	include 'vector.asm'
+	include 'collision.asm'
 
 	include 'objects/objects.asm'
 	include 'objects/objecttable.asm'
@@ -36,7 +37,13 @@ __main
 
 	jsr	findFreeObject
 	move.b	#$10, obClass(a2)
-	
+
+	jsr	findFreeObject
+	move.b	#$20, obClass(a2)
+	move.b	#16, obRadius(a2)
+	move.b	#0, obPhysics(a2)
+	move.b	#$1F, obCollision(a2)
+
 	jsr	waitDMAOn
 
 	loadPalette testPalette, 0
@@ -84,6 +91,7 @@ gameLoop
 
 	; do game processing
 	jsr	processObjects
+	jsr	processPhysicObjects
 
 	jsr	updateLevel
 
@@ -97,6 +105,7 @@ gameLoop
 	bra	gameLoop
 
 	include 'assets/orc.asm'
+	include 'assets/col.asm'
 
 	include 'assets/palettes.asm'
 	include 'assets/patterns.asm'

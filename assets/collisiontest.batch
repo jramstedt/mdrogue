@@ -1,0 +1,45 @@
+output colpat.bin
+
+# 8x8
+input 8x8.png
+
+layout sprite
+offset continuous
+
+output2 8x8spr.bin
+sprite count 1
+origin 4 4
+sprite 0 0 1 1 vdp
+
+# 16x16
+input 16x16.png
+
+layout sprite
+offset continuous
+
+output2 16x16spr.bin
+sprite count 1
+origin 8 8
+sprite 0 0 2 2 vdp
+
+# 24x24
+input 24x24.png
+
+layout sprite
+offset continuous
+
+output2 24x24spr.bin
+sprite count 1
+origin 12 12
+sprite 0 0 3 3 vdp
+
+# 32x32
+input 32x32.png
+
+layout sprite
+offset continuous
+
+output2 32x32spr.bin
+sprite count 1
+origin 16 16
+sprite 0 0 4 4 vdp

@@ -23,15 +23,15 @@ obAnim			rs.w	1	; animation number
 					; 003F 64 frame
 obFrameTime		rs.b	1	; vblanks left until next frame
 obRadius		rs.b	1	; 8.0
-obCollision		rs.b	1	; F.F = Groups.Mask
 obPhysics		rs.b	1	; %0000000K
 					; K = kinematic, movable, does not respond to collision
-obRender		rs.b	0	; %PLLVHXXX $FFF
+obCollision		rs.b	1	; F.F = Groups.Mask
+obRender		rs.b	0	; %PLLVHXXX $FF
 obVRAM			rs.w	1	; P = priority
 					; LL = palette
 					; V = vertical flip
 					; H = horizontal flip
-					; XXX $FFF = VRAM pattern number (address / 32)
+					; XXX $FF = VRAM pattern number (address / 32)
 obClassData		rs.b	32-__RS
 obDataSize		equ	__RS	; 32 bytes
 

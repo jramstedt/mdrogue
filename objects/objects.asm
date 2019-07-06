@@ -74,7 +74,6 @@ displaySprite
 	dbra	d3, @findFrame
 
 @drawSprites
-
 	lea	spriteAttrTable, a2
 	move.b	spriteCount, d0
 	lsl.w	#3, d0		; sprite attribute is 8 bytes

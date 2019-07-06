@@ -11,9 +11,11 @@ objPlayer
 	dc.w	@delete-@routineJmpTable
 
 @main ; inits the object
-	addq.b	#2, obState(a0)	; set object state to @display
+	addq.b	#1<<1, obState(a0)	; set object state to @input
 	move.w	#$0800, obRender(a0)
-	move.b	#24, obRadius(a0)
+	move.b	#12, obRadius(a0)
+	move.b	#0, obPhysics(a0)
+	move.b	#$1F, obCollision(a0)
 
 	move.w	#160<<3, obX(a0)
 	move.w	#120<<3, obY(a0)
@@ -21,7 +23,7 @@ objPlayer
 	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 
-	move.l	#16, d7 ; hard coded for one sprite
+	move.l	#4*4, d7 ; hard coded for one sprite
 	jsr	allocVRAM
 	lsr.w	#5, d6		; address to pattern number
 	or.w	d6, obVRAM(a0)
@@ -57,6 +59,10 @@ objPlayer
 	;varctan a1, d2
 	;vcpsign	a1, a1
 
+	;moveq	#126, d3
+	;moveq	#67, d4
+	;approxlen d3, d4
+
 	lea.l	mainCamera, a2
 	moveq.l	#0, d2
 
@@ -88,7 +94,7 @@ objPlayer
 @delete
 	move.w	obVRAM(a0), d6
 	lsl.w	#5, d6		; pattern number to address
-	move.l	#16, d7
+	move.l	#4*4, d7
 	jsr	freeVRAM
 
 	jsr	deleteObject
