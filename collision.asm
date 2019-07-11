@@ -53,9 +53,9 @@ calculateCollision MACRO type, skip
 		moveq	#0, d5
 		move.b	obRadius(a1), d5
 		mulu	d5, d6			; d6 = displacement * obRadius(a1), 13.3
-		swap	d6
-		mulu	d7, d7			; d7 = (radius+radius)^2, 16.0
-		asr.l	#3, d7
+		swap	d6			; 13.19
+		mulu	d7, d7			; d7 = (radius+radius)^2, 26.6
+		asr.l	#3, d7			; 26.3
 
 		divu	d7, d6			; 0.16
 						; d6 = displacement * obRadius(a1) / (radius+radius)^2
@@ -87,33 +87,32 @@ calculateCollision MACRO type, skip
 		add.w	d4, obY(a1)
 		
 	ELSE
-		lsl.l	#3, d3	; .6 -> .9 so that we get .3
-		divu	d3, d5	; 
+		move.l	d5, d6			; d6 = radius+radius
+		sub.w	d3, d6			; d6 = d5 - d3, displacement
 
-		movem.w	obX(a1), d4/d5
+		swap	d6			; 13.19
 
-		sub.w	d1, d4
-		muls	d3, d4
-		asr.l	#3, d4
+		divu	d5, d6			; 0.16
+						; d6 = displacement / (radius+radius)
 
-		sub.w	d2, d5
-		muls	d3, d5
-		asr.l	#3, d5
+		; X axis
+		sub.w	obX(a1), d1		; d1 = dx = x1 - x2
+
+		muls	d6, d1			; d1 = sx 13.19
+		swap	d1			; 13.3
+
+		; Y axis
+		sub.w	obY(a1), d2		; d2 = dy = y1 - y2
+
+		muls	d6, d2			; d2 = sy 13.19
+		swap	d2			; 13.3
 		
 		IF STRCMP(\type, 'dtok')
-			movem.w	obX(a1), d1/d2
-			
-			sub.w	d4, d1
-			sub.w	d5, d2
-
-			movem.w	d1/d2, obX(a0)
-
+			add.w	d1, obX(a0)
+			add.w	d2, obY(a0)
 		ELSEIF STRCMP(\type, 'ktod')
-			add.w	d1, d4
-			add.w	d2, d5
-
-			movem.w	d4/d5, obX(a1)
-
+			sub.w	d1, obX(a1)
+			sub.w	d2, obY(a1)
 		ENDIF
 	ENDIF
 
@@ -161,7 +160,7 @@ processPhysicObjects
 	rts
 
 @targetDynamic
-	btst	#9, d0
+	btst	#8, d0
 	beq.s	@dtod	; both dynamic
 
 	; if target dynamic bounce target

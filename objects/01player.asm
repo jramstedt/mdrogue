@@ -14,7 +14,7 @@ objPlayer
 	addq.b	#1<<1, obState(a0)	; set object state to @input
 	move.w	#$0800, obRender(a0)
 	move.b	#12, obRadius(a0)
-	move.b	#0, obPhysics(a0)
+	move.b	#1, obPhysics(a0)
 	move.b	#$1F, obCollision(a0)
 
 	move.w	#160<<3, obX(a0)
