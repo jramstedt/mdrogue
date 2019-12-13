@@ -66,10 +66,6 @@ vrmDataSize		equ	__RS
 dma_queue		rs.w	7*20
 dma_queue_pointer	rs.w	1
 
-			rsset	ramStartAddress
-hblank_counter		rs.l	1
-vblank_counter		rs.l	1
-
 vrm_list		rs.b	sDataSize*10
 vrm_first		dc.l	vrm_list
 
@@ -77,6 +73,8 @@ pad1State		rs.b	1	;  SACBRLDU
 pad2State		rs.b	1	;  SACBRLDU
 
 lcgSeed			rs.l	1
+
+			rsset	ramStartAddress
 
 ; Game globals
 mainCamera		rs.b	camDataSize
