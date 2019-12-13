@@ -96,3 +96,6 @@ horBuffer		rs.w	horBufferLen	; Used on map scrolling DMA. H40.
 
 verBufferLen		equ	29
 verBuffer		rs.w	verBufferLen	; Used on map scrolling DMA. V28.
+
+
+textScrap		rs.b	10

@@ -96,3 +96,21 @@ drawFont
 @complete
 	rts
 
+; int to four characters
+; max value shown is 9999
+; input:
+; a0	address for string
+; d0	int to write
+itos
+	adda	#4, a0
+	move.l	#4-1, d2
+@aloop
+	divu	#10, d0		; hi = modulo
+	move.l	d0, d1
+	and.l	#$FFFF, d0	; clear hi
+	swap	d1
+	add.b	#$30, d1	; add ascii start
+	move.b	d1, -(a0)
+	dbra	d2, @aloop
+
+	rts

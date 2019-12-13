@@ -88,19 +88,31 @@ gameLoop
 	move.b	d0, pad1State
 
 	lcg	d0
-
+	
 	; do game processing
 	jsr	processObjects
 	jsr	processPhysicObjects
 
 	jsr	updateLevel
+	
+	; print vertical line of 224
+	clr.l	d0
+	move.w	vdp_hvcnt, d0	; hi = vert, lo = hori
+	lsr.w	#8, d0
+	lea	textScrap, a0
+	jsr	itos
 
-	jsr	waitVBlankOn	; Wait for blanking to start. Otherwise we will run two or more gameLoops in one frame..
+	lea	textScrap, a6
+	move.b	#0, 4(a6)
+	move.l	#$00000000, d7
+	jsr	drawFont
+
+	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 
 	; do graphics commands
 	jsr	processDMAQueue
 	
-	jsr	waitVBlankOff
+	jsr	waitVBlankOn	; Wait for blanking to stop.
 
 	bra	gameLoop
 
