@@ -2,9 +2,12 @@
 {
 	"[m68k]": {
 		"editor.detectIndentation": false,
-		"editor.insertSpaces": false
+		"editor.insertSpaces": false,
+		"editor.tabSize": 8,
 	},
-	"editor.tabSize": 8,
-	"editor.detectIndentation": false,
-	"editor.insertSpaces": false
+	"[javascript]": {
+		"editor.detectIndentation": false,
+		"editor.insertSpaces": true,
+		"editor.tabSize": 2
+	}
 }
