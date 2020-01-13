@@ -25,25 +25,39 @@ const chunkSize = [
   mapData.editorsettings.chunksize.width || 32,
   mapData.editorsettings.chunksize.height || 32,
 ]
+const chunkVolume = chunkSize[0] * chunkSize[1]
 
 const minX = mapData.layers.reduce((min, layer) => Math.min(min, layer.startx || layer.x), Infinity)
 const maxX = mapData.layers.reduce((max, layer) => Math.max(max, (layer.startx || layer.x) + layer.width), -Infinity)
 const minY = mapData.layers.reduce((min, layer) => Math.min(min, layer.starty || layer.y), Infinity)
 const maxY = mapData.layers.reduce((max, layer) => Math.max(max, (layer.starty || layer.y) + layer.height), -Infinity)
 
-const chunks = [
-  Math.ceil((maxX - minX) / chunkSize[0]),
-  Math.ceil((maxY - minY) / chunkSize[1])
+const mapPatterns = [
+  maxX - minX,
+  maxY - minY
 ]
+const mapVolumePatterns = mapPatterns[0] * mapPatterns[1]
+
+const chunks = [
+  Math.ceil(mapPatterns[0] / chunkSize[0]),
+  Math.ceil(mapPatterns[1] / chunkSize[1])
+]
+
+const rawData = new ArrayBuffer(mapVolumePatterns >> 3) // one bit per pattern
+const rawType = new ArrayBuffer(mapVolumePatterns >> 1) // nibble per pattern
 
 const collisionData = []
 const collisionType = []
 for (let chunkY = 0; chunkY < chunks[1]; ++chunkY) {
   const dataRow = collisionData[chunkY] = []
   const typeRow = collisionType[chunkY] = []
+  const rowOffset = chunkY * chunks[0]
+
   for (let chunkX = 0; chunkX < chunks[0]; ++chunkX) {
-    dataRow[chunkX] = new Uint8Array((chunkSize[0] * chunkSize[1]) >> 3) // one bit per pattern
-    typeRow[chunkX] = new Uint8Array((chunkSize[0] * chunkSize[1]) >> 1) // nibble per pattern
+    const dataOffset = (rowOffset + chunkX) * chunkVolume
+
+    dataRow[chunkX] = new Uint8Array(rawData, dataOffset >> 3, chunkVolume >> 3)
+    typeRow[chunkX] = new Uint8Array(rawType, dataOffset >> 1, chunkVolume >> 1)
   }
 }
 
@@ -76,14 +90,14 @@ for (const layer of collisionLayers) {
     //data = Buffer.from(layer.data)
   }
 
-  const dataView = new DataView(data.buffer)
+  const dataView = new Uint32Array(data.buffer)
 
-  const rowBytes = layer.width << 2
   for (let y = 0; y < layer.height; ++y) {
     const realY = layer.y + y
     const chunkY = Math.trunc(realY / chunkSize[1])
+
     for (let x = 0; x < layer.width; ++x) {
-      const globalTileId = dataView.getUint32(y * rowBytes + (x << 2), true)
+      const globalTileId = dataView[y * layer.width + x]
       if (globalTileId === 0) continue  // empty tile
 
       const realX = layer.x + x
@@ -92,13 +106,25 @@ for (const layer of collisionLayers) {
       const tileId = getTileId(globalTileId)
       // console.log(realX, realY, globalTileId)
 
-      // TODO check previous value, if set and not 0, set as 0
+      const patternInChunkPosition = (realY % chunkSize[1]) * chunkSize[0] + (realX % chunkSize[0])
+
+      const typeIndex = patternInChunkPosition >> 1
+      const dataIndex = patternInChunkPosition >> 3
+
+      const dataMask = 1 << (7 - (realX & 7))
+      const typeShift = (realX & 1) << 4
 
       const dataChunk = collisionData[chunkY][chunkX]
-      dataChunk[y * (layer.width >> 3) + x >> 3] |= 1 << (x & 7)
-
       const typeChunk = collisionType[chunkY][chunkX]
-      typeChunk[y * (layer.width >> 1) + x >> 1] = tileId << ((tileId & 1) << 2)
+
+      const wasSetBefore = dataChunk[dataIndex] & dataMask !== 0
+
+      if (wasSetBefore && typeChunk[typeIndex] !== typeChunk)
+        typeChunk[typeIndex] &= 0xF0 >> typeShift
+      else
+        typeChunk[typeIndex] |= tileId << typeShift
+      
+      dataChunk[dataIndex] |= dataMask
     }
   }
 }
@@ -117,4 +143,5 @@ function getTileId(globalId) {
   return tileId
 }
 
-// fs.writeFileSync('assets/sincos.bin', table)
+fs.writeFileSync('assets/coldata.bin', new DataView(rawData))
+fs.writeFileSync('assets/coltype.bin', new DataView(rawType))
