@@ -32,7 +32,7 @@ drawFont
 
 	move.w	fontVRAMAddress, d4
 	swap	d4
-	or.w	fontVRAMAddress, d4
+	move.w	fontVRAMAddress, d4
 	lsr.l	#5, d4
 
 @charLoop
