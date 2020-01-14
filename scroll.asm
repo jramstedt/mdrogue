@@ -115,22 +115,25 @@ updateLevel
 	bra	@exit
 
 @exit
+	move.l	camX(a0), camXprev(a0)	; copies both x and y
+	movem.l	(sp)+, d0-d7/a0-a6
+	rts
+
+updatePlaneScrollToCamera
+	lea.l	mainCamera, a0
+
 	; we are using fullscreen scroll, set both planes.
 	setVDPAutoIncrement 2
+
 	setVDPWriteAddressVSRAM 0
 	move.w	#0, vdp_data
 	move.w	camY(a0), vdp_data
 
-	move.l	#0, d7
-	move	camX(a0), d7
-	neg	d7
-	and.l	#$1FF, d7
+	move.w	camX(a0), d7
+	neg.w	d7
+	and.w	#$1FF, d7
 
-	setVDPAutoIncrement 2
 	setVDPWriteAddressVRAM vdp_map_hst
 	move.w	#0, vdp_data
 	move.w	d7, vdp_data
-
-	move.l	camX(a0), camXprev(a0)	; copies both x and y
-	movem.l	(sp)+, d0-d7/a0-a6
 	rts
