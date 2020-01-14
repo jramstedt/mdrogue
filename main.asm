@@ -109,9 +109,8 @@ gameLoop
 
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 
-	jsr	updatePlaneScrollToCamera
-
 	; do graphics commands
+	jsr	updatePlaneScrollToCamera
 	jsr	processDMAQueue
 	
 	jsr	waitVBlankOn	; Wait for blanking to stop.

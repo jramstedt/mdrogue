@@ -102,6 +102,8 @@ queueRowToVram
 	lsl.w	d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
+	setVDPAutoIncrement 2
+
 	cmp	#64-horBufferLen, d2
 	ble	lastTransfer
 
@@ -110,7 +112,6 @@ queueRowToVram
 	sub	d2, d7
 
 	haltZ80
-	setVDPAutoIncrement 2
 	jsr	startDMATransfer	; draw buffer
 	resumeZ80
 
@@ -135,8 +136,7 @@ queueRowToVram
 
 lastTransfer
 	haltZ80
-	setVDPAutoIncrement 2
-	jsr startDMATransfer	; draw buffer
+	jsr	startDMATransfer	; draw buffer
 	resumeZ80
 
 complete
@@ -223,6 +223,8 @@ dmaColumnToVram
 	lsl.w	d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
+	setVDPAutoIncrement $80
+
 	cmp	#32-verBufferLen, d3
 	ble	lastTransfer
 
@@ -231,7 +233,6 @@ dmaColumnToVram
 	sub	d3, d7
 
 	haltZ80
-	setVDPAutoIncrement $80
 	jsr	startDMATransfer
 	resumeZ80
 
@@ -255,7 +256,6 @@ dmaColumnToVram
 
 lastTransfer
 	haltZ80
-	setVDPAutoIncrement $80
 	jsr	startDMATransfer
 	resumeZ80
 

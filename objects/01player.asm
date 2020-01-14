@@ -67,15 +67,15 @@ objPlayer
 	moveq.l	#0, d2
 
 	move.w	obX(a0), d3
-	sub.w	#160<<3, d3	; move offset by half screen width
 	asr.w	#3, d3
 	addx.w	d2, d3
+	sub.w	#160, d3	; move offset by half screen width
 	move.w	d3, camX(a2)
 
 	move.w	obY(a0), d3
-	sub.w	#112<<3, d3	; move offset by half screen height
 	asr.w	#3, d3
 	addx.w	d2, d3
+	sub.w	#112, d3	; move offset by half screen height
 	move.w	d3, camY(a2)
 
 	;move.l	obX(a0), d1	; XXXX YYYY
