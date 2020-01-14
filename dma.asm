@@ -101,19 +101,20 @@ lc = lc+14
 
 ;
 processDMAQueue
-	;haltZ80
-
 	setVDPAutoIncrement 2
 
 	movea.w	(dma_queue_pointer).w, a6
 	suba	#dma_queue, a6
+
+	haltZ80
 	jmp	@jumpTable(a6)
 
 @jumpTable
+	resumeZ80
 	rts
-	REPT 6
 	nop
-	ENDR
+	nop
+	
 lc = 1
 	REPT SlotCount
 	lea	vdp_ctrl, a5
@@ -132,8 +133,8 @@ lc = lc+1
 	ENDR
 
 @done
-	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer
+	resumeZ80
 
-	;resumeZ80
+	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer
 
 	rts
