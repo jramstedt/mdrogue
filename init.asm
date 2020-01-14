@@ -133,8 +133,11 @@ clearRamLoop
 	lea	stackStartAddress, sp
 	move.w	#$2000, sr	; supervisor
 
-	move.w	#$000, Z80_reset
+	move.w	#$100, Z80_reset
 	move.w	#$100, Z80_busreq
+	; upload program here
+	move.w	#$000, Z80_reset
+	move.w	#$000, Z80_busreq
 	move.w	#$100, Z80_reset
 
 	move.l	#1, lcgSeed
