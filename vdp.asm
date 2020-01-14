@@ -4,7 +4,7 @@ vdp_ctrl  	equ	$00C00004
 vdp_hvcnt 	equ	$00C00008
 vdp_psg   	equ	$00C00011
 
-vdp_w_reg	equ	$8000
+vdp_w_reg	equ	$00008000
 
 vdp_w_vram	equ	$40000000
 vdp_w_cram	equ	$C0000000
