@@ -14,14 +14,13 @@ drawFont
 	clr.l	d0
 	move	#vdp_map_ant, d2
 
-	move.w	d7, d0	; X
-	lsl.l	#1, d0	; Each table entry is 2 bytes width
-	add.w	d0, d2
+	lsl.l	#1, d7	; Each table entry is 2 bytes width
+	add.w	d7, d2
 
-	swap	d7
-	move.w	d7, d0	; Y
-	lsl.w	#7, d0	; Each table entry is 2 bytes width, Each row is 64 patterns (32 bytes)
-	add.w	d0, d2
+	swap	d7	; XXXXYYYY
+	lsl.w	#6, d7	; Each row is 64 patterns (32 bytes)
+	add.w	d7, d2
+	clr.w	d7
 
 	lsl.l	#2, d2
 	lsr.w	#2, d2
@@ -79,17 +78,12 @@ drawFont
 	add.l	#((128*2)<<16), d3
 	bra	@charLoop
 
-@carriageReturn
-	clr.l	d0
-	move.w	d7, d0	; X
-	lsl.w	#1, d0	; Each table entry is 2 bytes width
-	swap	d0
-	
+@carriageReturn	
 	and.l	#$FF80FFFF, d2
-	add.l	d0, d2
+	add.l	d7, d2
 
 	and.l	#$FF80FFFF, d3
-	add.l	d0, d3
+	add.l	d7, d3
 
 	bra	@charLoop
 
