@@ -114,7 +114,7 @@ varctan MACRO vec, angle
 
 	ENDM
 
-;
+; vector cross product sign
 vcpsign MACRO vec1, vec2
 	move.w	0(\vec1), d2
 	beq	@v1zero

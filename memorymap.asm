@@ -61,6 +61,9 @@ vrmStart		rs.w	1	; in patterns ($20 bytes)
 vrmEnd			rs.w	1	; in patterns ($20 bytes)
 vrmDataSize		equ	__RS
 
+
+; FFFF8000 - FFFFFFFF -> address can be save as word and sign extended on read
+
 ; System stuff
 			rsset	ramStartAddress+$FF008000
 dma_queue		rs.w	7*20
@@ -75,6 +78,8 @@ pad2State		rs.b	1	;  SACBRLDU
 lcgSeed			rs.l	1
 
 			rsset	ramStartAddress
+
+; 0000 - 7FFF -> address can be save as word
 
 ; Game globals
 mainCamera		rs.b	camDataSize

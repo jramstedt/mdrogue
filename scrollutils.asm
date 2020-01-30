@@ -12,7 +12,8 @@ toPatterns MACRO positionPixels, offsetPixels, out
 chunkSizeShift MACROS y
 	lsl.l	#5, \y		; multiply by 32 (lvlChunkSize)
 
-;
+; Calculates chunk start position in patterns
+; x in patterns
 xChunkStart MACRO x
 	and.w	#$FFE0, \x	; full chunks in patterns
 	chunkSizeShift \x
