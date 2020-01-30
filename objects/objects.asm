@@ -22,7 +22,7 @@ processObjects
 @skip
 	lea	obDataSize(a0), a0
 	cmpa.l	#(gameObjects+(obDataSize*gameObjectsLen)), a0
-	bls	@loop
+	blo.s	@loop
 
 	move.b	spriteCount, d0
 	beq	@exit

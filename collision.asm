@@ -155,7 +155,7 @@ processPhysicObjects
 @skipSource
 	lea	obDataSize(a0), a0
 	cmpa.l	#(gameObjects+(obDataSize*gameObjectsLen)), a0
-	bls.s	@sourceLoop
+	blo.s	@sourceLoop
 
 	rts
 

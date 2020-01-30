@@ -11,7 +11,6 @@
 drawFont
 	setVDPAutoIncrement 2
 
-	clr.l	d0
 	move	#vdp_map_ant, d2
 
 	lsl.l	#1, d7	; Each table entry is 2 bytes width
@@ -78,7 +77,7 @@ drawFont
 	add.l	#((128*2)<<16), d3
 	bra	@charLoop
 
-@carriageReturn	
+@carriageReturn
 	and.l	#$FF80FFFF, d2
 	add.l	d7, d2
 
