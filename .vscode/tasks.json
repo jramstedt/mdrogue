@@ -7,7 +7,7 @@
             "label": "m68k build",
             "command": "${workspaceRoot}/asm68k",
             "args": [
-                "/m /p /q /o e-,l@",
+                "/zd /w /m /p /q /o e-,l@,v+",
                 "main.asm,${workspaceRootFolderName}.bin,${workspaceRootFolderName}.sym,${workspaceRootFolderName}.lst"
             ],
             "type": "shell",

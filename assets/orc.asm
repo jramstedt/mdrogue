@@ -1,5 +1,5 @@
 patternsOrc
-	incbin	assets/orcPatterns.bin
+	incbin	'assets/orc/orcPatterns.bin'
 
 	cnop	0,2
 spritesOrc
@@ -10,16 +10,16 @@ spritesOrc
 	dc.w	@surprised-spritesOrc
 
 @idle
-	incbin	assets/orcIdle.bin
+	incbin	'assets/orc/orcIdle.bin'
 
 @angryIdle
-	incbin	assets/orcAngryIdle.bin
+	incbin	'assets/orc/orcAngryIdle.bin'
 
 @thinking
-	incbin	assets/orcThinking.bin
+	incbin	'assets/orc/orcThinking.bin'
 
 @surprised
-	incbin	assets/orcSurprised.bin
+	incbin	'assets/orc/orcSurprised.bin'
 
 aniOrc
 	dc.w	@aniIdle-aniOrc

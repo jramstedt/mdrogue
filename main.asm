@@ -46,11 +46,11 @@ __main
 
 	jsr	waitDMAOn
 
-	loadPalette testPalette, 0
+	; loadPalette testPalette, 0
 	loadPalette testPalette, 1
 
 	lea	testText, a6
-	move.l	#$00020002, d7
+	move.l	#$00030003, d7
 	jsr	drawFont
 
 	move.w	#vdp_w_reg, d0
@@ -95,7 +95,7 @@ gameLoop
 
 	jsr	updateLevel
 	
-	; print vertical line of 224
+	; print vertical line of 224/240
 	clr.l	d0
 	move.w	vdp_hvcnt, d0	; hi = vert, lo = hori
 	lsr.w	#8, d0

@@ -7,7 +7,7 @@ sizePattern		equ	$20
 sizePalette		equ	$20
 
 ramStartAddress		equ	$00FF0000
-stackStartAddress	equ	$00FFFFFE
+stackStartAddress	equ	$FFFF8000 ; was 00FFFFFE
 
 ; gameobject variables
 			rsreset
@@ -32,8 +32,8 @@ obVRAM			rs.w	1	; P = priority
 					; V = vertical flip
 					; H = horizontal flip
 					; XXX $FF = VRAM pattern number (address / 32)
-obClassData		rs.b	32-__RS
-obDataSize		equ	__RS	; 32 bytes
+obClassData		rs.b	32-__rs
+obDataSize		equ	__rs	; 32 bytes
 
 ; camera variables
 			rsreset
@@ -41,7 +41,7 @@ camX			rs.w	1	;
 camY			rs.w	1	; 
 camXprev		rs.w	1	; 
 camYprev		rs.w	1	;
-camDataSize		equ		__RS
+camDataSize		equ		__rs
 
 ; sprite attributes
 			rsreset
@@ -50,7 +50,7 @@ sSize			rs.b	1	; 0000HHVV
 sLinkData		rs.b	1	; 0XXXXXXX
 sRender			rs.w	1	; PCCVHNNNNNNNNNNN
 sHpos			rs.w	1	; 000000HHHHHHHHHH
-sDataSize		equ		__RS
+sDataSize		equ		__rs
 
 ; VRAM MAPPING
 
@@ -59,7 +59,7 @@ sDataSize		equ		__RS
 vrmNext			rs.l	1
 vrmStart		rs.w	1	; in patterns ($20 bytes)
 vrmEnd			rs.w	1	; in patterns ($20 bytes)
-vrmDataSize		equ	__RS
+vrmDataSize		equ	__rs
 
 
 ; FFFF8000 - FFFFFFFF -> address can be save as word and sign extended on read
@@ -99,8 +99,8 @@ levelVRAMAddress	rs.w	1		; address of level patters in VRAM
 horBufferLen		equ	41
 horBuffer		rs.w	horBufferLen	; Used on map scrolling DMA. H40.
 
-verBufferLen		equ	29
-verBuffer		rs.w	verBufferLen	; Used on map scrolling DMA. V28.
+verBufferLen		equ	31
+verBuffer		rs.w	verBufferLen	; Used on map scrolling DMA. V30.
 
 
 textScrap		rs.b	10

@@ -14,7 +14,7 @@
 	dc.l	Exception		; Unused (reserved)
 	dc.l	Exception		; Unused (reserved)
 	dc.l	Exception		; Unused (reserved)
-	dc.l	Exception		; Unused (reserved)
+	dc.l	Exception		; Uninitialized Interrupt Vector
 	dc.l	Exception		; Unused (reserved)
 	dc.l	Exception		; Unused (reserved)
 	dc.l	Exception		; Unused (reserved)
@@ -87,7 +87,7 @@
 	include 'memorymap.asm'
 	include 'megadrive.asm'
 	include 'interrupts.asm'
-	include 'lcg.asm'
+	include 'random.asm'
 
 EntryPoint
 	tst.w	io_expRst	; Test expansion port reset
@@ -103,15 +103,15 @@ EntryPoint
 skipTMSS
 
 ; VDP
-	move.l	#VDPRegistersEnd-VDPRegisters-1, d0
-	move.l	#vdp_w_reg, d1
+	move.l	#vdp_w_reg, d0
 	lea	VDPRegisters, a0
 
 initVDPLoop
-	move.b	(a0)+, d1
-	move.w	d1, vdp_ctrl
-	add.w	#$0100, d1
-	dbra	d0, initVDPLoop
+	move.b	(a0)+, d0
+	move.w	d0, vdp_ctrl
+	add.w	#$0100, d0
+	cmpa.w	#VDPRegistersEnd, a0
+	blo.s	initVDPLoop
 
 	dmaClearVRAM	; Start filling VRAM using DMA. Does not block CPU.
 

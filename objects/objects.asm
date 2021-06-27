@@ -55,9 +55,8 @@ displaySprite
 	move.w	sizeLong(a3, d0.w), d0	; d0 is offset to metasprite data from rom address
 	lea	(a3, d0.w), a3	; a3 is metasprite data address
 
-	moveq	#0, d3
-	move.b	obAnim+1(a0), d3
-	and.b	#$3F, d3
+	moveq	#$3F, d3
+	and.b	obAnim+1(a0), d3
 	beq	@drawSprites
 
 	subq	#1, d3		; decrement one for loop

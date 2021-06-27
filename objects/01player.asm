@@ -33,22 +33,31 @@ objPlayer
 	btst	#0, pad1State
 	seq	d0
 	andi	#1<<3|3, d0
-	sub	d0, obY(a0)
+	sub.w	d0, obY(a0)
 
 	btst	#1, pad1State
 	seq	d0
 	andi	#1<<3|3, d0
-	add	d0, obY(a0)
+	add.w	d0, obY(a0)
 
 	btst	#2, pad1State
 	seq	d0
 	andi	#1<<3|3, d0
-	sub	d0, obX(a0)
+	sub.w	d0, obX(a0)
 
 	btst	#3, pad1State
 	seq	d0
 	andi	#1<<3|3, d0
-	add	d0, obX(a0)
+	add.w	d0, obX(a0)
+
+	; temporary level collision test code
+	clr.l	d0
+	clr.l	d1
+	movem.w	obX(a0), d0/d1
+	jsr	levelCollision	; Z is set if no collision
+	beq.s	@display
+
+	sub.w	#8, obX(a0)
 
 @display
 	; update main camera to player coordinates!

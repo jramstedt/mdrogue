@@ -17,10 +17,18 @@ loadLevel
 	lea.l	levelDescriptions, a3
 	lea.l	(a3, d6.w), a1
 
-	move.l	pattern(a3, d6.w), d5
+; load palette
+	setVDPAutoIncrement 2
+	setVDPWriteAddressCRAM 0
+
+	move.l	lvlPalette(a1), a0
+	bsr	copyPalette
+
+; load patterns
+	move.l	lvlPattern(a1), d5
 
 	moveq	#0,	d7
-	move.w	patternLen(a3, d6.w), d7
+	move.w	lvlPatternLen(a1), d7
 	jsr	allocVRAM	; d6 vram address, d7 allocated bytes
 	move.w	d6, levelVRAMAddress
 
@@ -33,7 +41,7 @@ loadLevel
 	move.l	#0, camXprev(a0)	; clears x and y
 
 lc = 0
-	REPT 29
+	REPT 32
 	copyRowToVram a1, a0, 0, lc
 lc = lc+8
 	ENDR
@@ -50,7 +58,7 @@ unloadLevel
 	moveq	#0,	d7
 	move.b	loadedLevelIndex, d7
 	mulu.w	#levelDesc, d7
-	move.w	patternLen(a3, d7.w), d7
+	move.w	lvlPatternLen(a3, d7.w), d7
 	jsr	freeVRAM
 	rts
 

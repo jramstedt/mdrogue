@@ -1,6 +1,6 @@
 
 patternsCol
-	incbin	assets/colpat.bin
+	incbin	'assets/col/colpat.bin'
 
 	cnop	0,2
 spritesCol
@@ -11,15 +11,15 @@ spritesCol
 	dc.w	@sprite32x32-spritesCol
 
 @sprite8x8
-	incbin	assets/8x8spr.bin
+	incbin	'assets/col/8x8spr.bin'
 
 @sprite16x16
-	incbin	assets/16x16spr.bin
+	incbin	'assets/col/16x16spr.bin'
 
 @sprite24x24
-	incbin	assets/24x24spr.bin
+	incbin	'assets/col/24x24spr.bin'
 
 @sprite32x32
-	incbin	assets/32x32spr.bin
+	incbin	'assets/col/32x32spr.bin'
 
 	cnop	0,2

@@ -1,6 +1,6 @@
 ;
 toPatterns MACRO positionPixels, offsetPixels, out
-	move.l	#0, \out
+	moveq.l	#0, \out
 	move.w	\positionPixels, \out
 	IF offsetPixels<>0
 		add	#\offsetPixels, \out
@@ -8,23 +8,23 @@ toPatterns MACRO positionPixels, offsetPixels, out
 	asr.w	#3, \out
 	ENDM
 
-;
-chunkSizeShift MACROS y
-	lsl.l	#5, \y		; multiply by 32 (lvlChunkSize)
-
 ; Calculates chunk start position in patterns
 ; x in patterns
 xChunkStart MACRO x
-	and.w	#$FFE0, \x	; full chunks in patterns
-	chunkSizeShift \x
+	; >>5 then <<5 == AND $FFE0
+	;lsr.w	#5, \x		; patterns to full chunk widths
+	;lsl.l	#10, \x		; to number of patterns in chunk (32*32)
+
+	and.w	#$FFE0, \x	; full chunks, already in rows (*32)
+	lsl.l	#5, \x		; multiply by 32 to get full chunks (32*32)
 	ENDM
 
 ;
 yChunkStart MACRO level, y
-	and.w	#$FFE0, \y	; full chunks in patterns
+	and.w	#$FFE0, \y	; full chunks, already in rows (*32)
+	lsl.l	#5, \y		; multiply by 32 to get full chunks (32*32)
 	move.b	lvlWidth(\level), d3
 	mulu.w	d3, \y		; multiply by amount of chunks in row
-	chunkSizeShift \y
 	ENDM
 
 ;
@@ -37,22 +37,28 @@ copyRowToVram MACRO level, camera, xOffset, yOffset
 
 	move.l	#0, d6
 
+	; full chunks
 	toPatterns camY(\camera), \yOffset, d2
 	move.l	d2, d5
-	yChunkStart \level, d2
+	yChunkStart \level, d2	; full chunk rows in patterns
 	add	d2, d6
+
+	; full rows
 	chunkOffset d5
-	chunkSizeShift d5
+	lsl.l	#5, d5		; to full rows of patterns
 	add	d5, d6
 	
+	; full chunks
 	toPatterns camX(\camera), \xOffset, d2
 	move.l	d2, d4
 	xChunkStart d2
 	add	d2, d6
+
+	; patterns
 	chunkOffset d4
 	add	d4, d6
 	
-	move.l	planeBTiles(\level), a2
+	move.l	lvlPlaneBTiles(\level), a2
 	lsl.l	d6			; 2 bytes per pattern
 	adda.l	d6, a2
 	
@@ -61,6 +67,7 @@ copyRowToVram MACRO level, camera, xOffset, yOffset
 initCopy
 	move	#lvlChunkSize, d3	; number of patterns in row of chunk
 	sub	d4, d3			; number of patterns left in this row
+	beq	queueRowToVram		; 0 needed to fill, skip copying
 
 	cmp	d3, d2			; is space left in buffer for full row of patterns
 	bge	startCopyLoop		; if there is then start copying
@@ -76,7 +83,7 @@ copy
 	move.w	(a2)+, (a3)+
 	dbra	d3, copy
 
-	; skip to next chunk
+	; skip to next chunk, and move to start of the row
 	adda.l	#(lvlChunkArea-lvlChunkSize)<<1, a2
 
 	move	#0, d4	; start from zero x
@@ -147,15 +154,16 @@ complete
 copyColumnToVram MACRO level, camera, xOffset, yOffset
 	local initCopy, startCopyLoop, copy, dmaColumnToVram, lastTransfer, complete
 
-	move.l	#0, d6
-
+	; full chunks
 	toPatterns camY(\camera), \yOffset, d2
 	move.l	d2, d5
-	yChunkStart \level, d2
-	add	d2, d6
+	yChunkStart \level, d2	; full chunk rows in patterns
+	move.l	d2, d6
+
+	; full rows
 	chunkOffset d5
 	move.l	d5, d2
-	chunkSizeShift	d2
+	lsl.l	#5, d2		; d2 is number of patterns (rows * lvlChunkSize)
 	add	d2, d6
 
 	toPatterns camX(\camera), \xOffset, d2
@@ -165,15 +173,16 @@ copyColumnToVram MACRO level, camera, xOffset, yOffset
 	chunkOffset d4
 	add	d4, d6
 
-	move.l	planeBTiles(\level), a2
+	move.l	lvlPlaneBTiles(\level), a2
 	lsl.l	d6	; 2 bytes per pattern
 	adda.l	d6, a2
 
-	move.l	#0, d6
+	; calculate bytes to to next row
+	moveq.l	#0, d6
+	moveq.l #11, d4		; 1024 (lvlChunkArea), 2 bytes per pattern
 	move.b	lvlWidth(\level), d6
 	subq.b	#1, d6
-	lsl.l	#8, d6		; 1024 (lvlChunkArea)
-	lsl.l	#3,	d6	; 2 bytes per pattern
+	lsl.l	d4, d6
 
 	move	#verBufferLen, d2	; number of patterns needed to fill screen column (patterns left in buffer)
 	lea.l	verBuffer, a3
@@ -194,13 +203,15 @@ startCopyLoop
 	sub	#1, d3
 copy
 	move.w	(a2), (a3)+
-	adda.l	#lvlChunkSize<<1, a2	; increase by full row of patterns
+	adda.l	#lvlChunkSize<<1, a2	; increase by full row of patterns (32), 2 bytes per pattern
 	dbra	d3, copy
+
+	; a2 is now at the next chunk
 
 	; skip to next chunk
 	adda.l	d6, a2
 
-	move	#0, d5	; start from zero x
+	move	#0, d5	; start from zero y
 	bra	initCopy
 
 dmaColumnToVram

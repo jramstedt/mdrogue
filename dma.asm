@@ -6,6 +6,10 @@
 ; 0   1   1     CRAM = %011
 ; 1   0   1     VSRAM = %101
 
+; input:
+;	d5 source
+;	d6 destination
+;	d7 length in words
 startDMATransfer
 	; length
 	move.w	#$93FF, d4

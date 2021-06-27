@@ -175,3 +175,68 @@ processPhysicObjects
 	; if source dynamic bounce source
 	calculateCollision 'dtok', @skipTarget
 	jmp @skipTarget
+
+; d0 X
+; d1 Y
+; trashes d0 d1 d2 d3 a1
+levelCollision
+	clr.l	d2
+
+	move.b	loadedLevelIndex, d2
+	mulu.w	#levelDesc, d2	; TODO lookup table instead of multiply
+
+	lea.l	levelDescriptions, a1
+	adda.l	d2, a1
+
+	movea.l	lvlCollisionData(a1), a2	; a2 will be the address to collision data byte at d0,d1 (needs to be bittest with x position)
+
+	; Yp = y / 8
+	; Yc = Yp / 32
+	; Yi = Yp % 32
+
+	; Y
+	asr.w	#6, d1		; to pixels, to patterns
+
+	; Y offset inside chunk
+	moveq	#$1F, d2
+	and.w	d1, d2		; number of rows
+	lsl.b	#2, d2		; 32bits = 4bytes in row, d2 is byte offset
+	adda.w	d2, a2
+	
+	; >> 5 to chunks
+	; lsr.w	#5, d1
+	; lsl.w	#7, d1		; offset in bytes
+	clr.l	d3
+	and.w	#$FFE0, d1	; truncate to chunk start
+	lsl.l	#2, d1		; 32bits = 4bytes in row, full chunks now
+	move.b	lvlWidth(a1), d3
+	mulu.w	d3, d1
+	
+	adda.w	d1, a2
+
+	; Xp = x / 8
+	; Xc = Xp / 32
+	; Xi = Xp % 32
+
+	; X
+	asr.w	#6, d0		; to pixels, to patterns
+
+	; X offset inside chunk
+	moveq	#$1F, d2
+	and.b	d0, d2	; d2 is x in patterns
+	; We can use btst directly with d2 now.
+
+	; >> 5 to chunks
+	; collision data chunk is 32*32 bits = 32 longs, 128 bytes
+	; lsr.w	#5, d0
+	; lsl.w	#7, d0
+	and.w	#$FFE0, d0	; truncate to chunk start
+	lsl.w	#2, d0		; 
+	adda.w	d0, a2
+
+	move.l	(a2), d0
+	btst.l	d2, d0		; bittest with x position
+	
+	
+
+	rts
