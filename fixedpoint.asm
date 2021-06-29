@@ -70,3 +70,34 @@ cos MACRO table, angle, cos
 	lsl.w	#2, \2	; to long
         move.w	(2, \1, \2.w), \3
         ENDM
+
+; min
+min MACRO reg, min
+	cmp.\0	\min, \reg
+	bpl	@end
+	move.\0	\min, \reg
+@end
+	ENDM
+
+; max
+max MACRO reg, max
+	cmp.\0	\max, \reg
+	bmi	@end
+	move.\0	\max, \reg
+@end
+	ENDM
+
+; clamp
+clamp MACRO reg, min, max
+	cmp.\0	\min, \reg
+	bpl	@clampMax
+	move.\0	\min, \reg
+	bra	@end
+
+@clampMax
+	cmp.\0	\max, \reg
+	bmi	@end
+	move.\0	\max, \reg
+
+@end
+	ENDM
