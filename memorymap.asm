@@ -93,7 +93,7 @@ spriteAttrTable		rs.b 	sDataSize*gameObjectsLen	; RAM buffer for sprite attribut
 spriteCount		rs.b	1		; number of sprites to render
 fontVRAMAddress		rs.w	1		; address of font patterns in VRAM
 
-loadedLevelIndex	rs.b	1		; index of loaded level
+loadedLevelAddress	rs.l	1		; address of loaded level description
 levelVRAMAddress	rs.w	1		; address of level patters in VRAM
 
 horBufferLen		equ	41

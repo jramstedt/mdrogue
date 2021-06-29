@@ -11,11 +11,10 @@ initScrolling
 ; trash:
 ; a3, d5, d6, d7
 loadLevel
-	move.b	d6, loadedLevelIndex
 	mulu.w	#levelDesc, d6
-
 	lea.l	levelDescriptions, a3
 	lea.l	(a3, d6.w), a1
+	move.l	a1, loadedLevelAddress
 
 ; load palette
 	setVDPAutoIncrement 2
@@ -53,12 +52,8 @@ lc = lc+8
 ; a3, d6, d7
 unloadLevel
 	move.l	levelVRAMAddress, d6
-
-	lea.l	levelDescriptions, a3
-	moveq	#0,	d7
-	move.b	loadedLevelIndex, d7
-	mulu.w	#levelDesc, d7
-	move.w	lvlPatternLen(a3, d7.w), d7
+	move.l	(loadedLevelAddress), a3
+	move.w	lvlPatternLen(a3), d7
 	jsr	freeVRAM
 	rts
 
@@ -66,12 +61,7 @@ updateLevel
 	movem.l	d0-d7/a0-a6, -(sp)
 
 	lea.l	mainCamera, a0
-	lea.l	levelDescriptions, a1
-
-	clr.l	d0
-	move.b	loadedLevelIndex, d0
-	mulu.w	#levelDesc, d0
-	adda.l	d0, a1	; a1 is now offset to correct level description
+	move.l	(loadedLevelAddress), a1
 
 	clr.l	d0
 	clr.l	d1

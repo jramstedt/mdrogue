@@ -180,14 +180,7 @@ processPhysicObjects
 ; d1 Y
 ; trashes d0 d1 d2 d3 a1
 levelCollision
-	clr.l	d2
-
-	move.b	loadedLevelIndex, d2
-	mulu.w	#levelDesc, d2	; TODO lookup table instead of multiply
-
-	lea.l	levelDescriptions, a1
-	adda.l	d2, a1
-
+	move.l	(loadedLevelAddress), a1
 	movea.l	lvlCollisionData(a1), a2	; a2 will be the address to collision data byte at d0,d1 (needs to be bittest with x position)
 
 	; Yp = y / 8
