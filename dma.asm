@@ -13,28 +13,28 @@
 startDMATransfer
 	; length
 	move.w	#$93FF, d4
-	and.b	d7, d4
+	move.b	d7, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.w	#8, d7
 	move.w	#$94FF, d4
-	and.b	d7, d4
+	move.b	d7, d4
 	move.w	d4, vdp_ctrl
 
 	; source
 	lsr.l	#1, d5		; Source address >> 1 (even address)
 	move.w	#$95FF, d4
-	and.b	d5, d4
+	move.b	d5, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.l	#8, d5
 	move.w	#$96FF, d4
-	and.b	d5, d4
+	move.b	d5, d4
 	move.w	d4, vdp_ctrl
 
 	lsr.l	#8, d5
 	move.w	#$977F, d4
-	and.b	d5, d4
+	and.b	d5, d4		; would move be safe?
 	move.w	d4, vdp_ctrl
 
 	; Build DMA command

@@ -89,6 +89,7 @@ copy
 	move	#0, d4	; start from zero x
 	bra	initCopy
 
+; Horiz. scroll 64
 queueRowToVram
 	; source
 	move.l	#horBuffer, d5
@@ -214,6 +215,7 @@ copy
 	move	#0, d5	; start from zero y
 	bra	initCopy
 
+; Vert. scroll 32
 dmaColumnToVram
 	; source
 	move.l	#verBuffer, d5
@@ -230,8 +232,8 @@ dmaColumnToVram
 
 	toPatterns camX(\camera), \xOffset, d2
 	and.w	#$3F, d2
-	add	d2, d6
 	
+	add	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
@@ -251,6 +253,10 @@ dmaColumnToVram
 	move	#32, d7
 	sub	d3, d7
 
+	move.l	#verBufferLen, d3
+	sub.w	d7, d3
+	beq	complete
+
 	; draw rest from top side
 	move.l	d7, d5
 	lsl.l	d5	; 2 bytes per pattern
@@ -259,10 +265,6 @@ dmaColumnToVram
 	move.l	d2, d6
 	lsl.l	d6	; 2 bytes per pattern
 	add	#vdp_map_bnt, d6
-
-	move.l	#verBufferLen, d3
-	sub.w	d7, d3
-	beq	complete
 
 	move.l	d3, d7
 
