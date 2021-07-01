@@ -8,7 +8,7 @@
 ; d7	position. YYYYXXXX
 ; trash:
 ; d0, d1, d2, d3, d4, a5
-drawFont
+drawFont	MODULE
 	setVDPAutoIncrement 2
 
 	move	#vdp_map_ant, d2
@@ -88,13 +88,14 @@ drawFont
 
 @complete
 	rts
+	MODEND
 
 ; int to four characters
 ; max value shown is 9999
 ; input:
 ; a0	address for string
 ; d0	int to write
-itos
+itos	MODULE
 	adda	#4, a0
 	move.l	#4-1, d2
 @aloop
@@ -107,3 +108,4 @@ itos
 	dbra	d2, @aloop
 
 	rts
+	MODEND

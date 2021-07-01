@@ -2,7 +2,7 @@
 ; $1BF,$15F
 ; width $13F = 319
 ; height $DF = 223
-processObjects
+processObjects	MODULE
 	move.b	#0, spriteCount
 
 	lea.l	gameObjects, a0
@@ -39,11 +39,12 @@ processObjects
 	move.b	#0, sLinkData(a0)
 
 	rts
+	MODEND
 
 ; input:
 ;	a0 object
 ;	a6 rom address
-displaySprite
+displaySprite	MODULE
 	movea.l	a6, a3		; rom address
 	movea.l	(a6), a4	; a4 is patterns start in ROM
 
@@ -158,13 +159,14 @@ displaySprite
 	dbra	d0, @drawSprite
 
 	rts
+	MODEND
 
 ; input:
 ;	a0 object
 ;	a6 animation table
 ; trash:
 ;	d0, d1, d2, a5, a6
-animateSprite
+animateSprite	MODULE
 	subq.b	#1, obFrameTime(a0)
 	bmi	@processAnim
 	rts
@@ -202,18 +204,20 @@ animateSprite
 	and.w	#$F03F, d1
 	move.w	d1, obAnim(a0)
 	bra	@nextFrame
+	MODEND
 
 ; input:
 ;	a0 object
-deleteObject
+deleteObject	MODULE
 	moveq	#(obDataSize/sizeLong), d0
 	moveq	#0, d1
 @loop
 	move.l	d1, (a0)+
 	dbra	d0, @loop
 	rts
+	MODEND
 
-findFreeObject
+findFreeObject	MODULE
 	lea.l	gameObjects, a2
 	move.w	#127, d0	; see memorymap.asm, max 128 game objects
 @loop
@@ -224,3 +228,4 @@ findFreeObject
 
 @found
 	rts
+	MODEND

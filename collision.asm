@@ -119,7 +119,7 @@ calculateCollision MACRO type, skip
 	ENDM
 
 ;
-processPhysicObjects
+processPhysicObjects	MODULE
 	lea.l	gameObjects, a0
 	lea.l	obDataSize(a0), a0	; start from second object.
 
@@ -176,10 +176,12 @@ processPhysicObjects
 	calculateCollision 'dtok', @skipTarget
 	jmp @skipTarget
 
+	MODEND
+
 ; d0 X
 ; d1 Y
 ; trashes d0 d1 d2 d3 a1
-levelCollision
+levelCollision	MODULE
 	move.l	(loadedLevelAddress), a1
 	movea.l	lvlCollisionData(a1), a2	; a2 will be the address to collision data byte at d0,d1 (needs to be bittest with x position)
 
@@ -233,3 +235,4 @@ levelCollision
 	
 
 	rts
+	MODEND

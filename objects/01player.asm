@@ -1,4 +1,4 @@
-objPlayer
+objPlayer	MODULE
 	moveq	#0, d0
 	move.b	obState(a0), d0	; a0 is object address
 	move.w	@routineJmpTable(pc,d0.w), d1
@@ -58,6 +58,7 @@ objPlayer
 	beq.s	@display
 
 	sub.w	#8, obX(a0)
+	; jmp collideWithLevel
 
 @display
 	; update main camera to player coordinates!
@@ -109,3 +110,5 @@ objPlayer
 	jsr	deleteObject
 
 	rts
+	
+	MODEND

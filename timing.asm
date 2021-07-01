@@ -1,14 +1,17 @@
-waitVBlankOn
+waitVBlankOn	MODULE
 	btst	#3, vdp_ctrl+1
 	bne.s	waitVBlankOn
 	rts
+	MODEND
 
-waitVBlankOff
+waitVBlankOff	MODULE
 	btst	#3, vdp_ctrl+1
 	beq.s	waitVBlankOff
 	rts
+	MODEND
 
-waitDMAOn
+waitDMAOn	MODULE
 	btst	#1, vdp_ctrl+1
 	bne.s	waitDMAOn
 	rts
+	MODEND

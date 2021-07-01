@@ -8,7 +8,7 @@
 ; d7	Allocated amount in bytes
 ; trash:
 ; a2, a3, d4
-allocVRAM
+allocVRAM	MODULE
 	lsl.l	#5, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
 	movea.l	(a3), a2
@@ -44,6 +44,7 @@ allocVRAM
 @notFound	; No memory left in VRAM.
 	moveq	#0, d6
 	rts
+	MODEND
 
 reserveVRAM MACRO sourceMem, lenPatterns
 	move.l	\sourceMem, d6
@@ -54,7 +55,7 @@ reserveVRAM MACRO sourceMem, lenPatterns
 ; input:
 ; d6 VRAM address
 ; d7 number of patterns
-_reserveVRAM
+_reserveVRAM	MODULE
 	lsl.l	#5, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
 	movea.l	(a3), a2
@@ -113,13 +114,14 @@ _reserveVRAM
 
 @notFound
 	rts
+	MODEND
 
 ; input:
 ; d6 VRAM address
 ; d7 number of patterns
 ; trash:
 ; a3, d5, d6, d7
-freeVRAM
+freeVRAM	MODULE
 	move.l	d6, d5
 	lsl	#5, d7
 	add	d7, d5	; d5 is the VRAM end address
@@ -167,6 +169,7 @@ freeVRAM
 	move.l	vrmNext(a3), vrmNext(a2)
 	move.l	a2, vrmNext(a3)
 	rts
+	MODEND
 
 allocAndQueueDMA MACRO sourceStart, sourceEnd, outVramAddress
 	LOCAL dataLen

@@ -2,15 +2,16 @@
 
 ; handles map scrolling and loading when needed
 
-initScrolling
+initScrolling	MODULE
 	setVDPRegister 11, %00000000	; scroll
 	rts
+	MODEND
 
 ; input:
 ; d6 level index
 ; trash:
 ; a3, d5, d6, d7
-loadLevel
+loadLevel	MODULE
 	mulu.w	#levelDesc, d6
 	lea.l	levelDescriptions, a3
 	lea.l	(a3, d6.w), a1
@@ -46,18 +47,20 @@ lc = lc+8
 	ENDR
 
 	rts
+	MODEND
 
 ; input:
 ; trash:
 ; a3, d6, d7
-unloadLevel
+unloadLevel	MODULE
 	move.l	levelVRAMAddress, d6
 	move.l	(loadedLevelAddress), a3
 	move.w	lvlPatternLen(a3), d7
 	jsr	freeVRAM
 	rts
+	MODEND
 
-updateLevel
+updateLevel	MODULE
 	movem.l	d0-d7/a0-a6, -(sp)
 
 	lea.l	mainCamera, a0
@@ -76,16 +79,12 @@ updateLevel
 	bmi	@leftBorder
 
 @rightBorder
-	MODULE
 	copyColumnToVram a1, a0, 320, 0
-	MODEND
 
 	bra	@checkY
 
 @leftBorder
-	MODULE
 	copyColumnToVram a1, a0, 0, 0
-	MODEND
 	
 	bra	@checkY
 
@@ -99,16 +98,12 @@ updateLevel
 	bmi	@topBorder
 
 @bottomBorder
-	MODULE
 	copyRowToVram a1, a0, 0, 224
-	MODEND
 
 	bra	@exit
 
 @topBorder
-	MODULE
 	copyRowToVram a1, a0, 0, 0
-	MODEND
 
 	bra	@exit
 
@@ -116,8 +111,9 @@ updateLevel
 	move.l	camX(a0), camXprev(a0)	; copies both x and y
 	movem.l	(sp)+, d0-d7/a0-a6
 	rts
+	MODEND
 
-updatePlaneScrollToCamera
+updatePlaneScrollToCamera	MODULE
 	lea.l	mainCamera, a0
 
 	; we are using fullscreen scroll, set both planes.
@@ -135,3 +131,4 @@ updatePlaneScrollToCamera
 	move.w	#0, vdp_data
 	move.w	d7, vdp_data
 	rts
+	MODEND

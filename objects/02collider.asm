@@ -1,4 +1,4 @@
-objCollider
+objCollider	MODULE
 	moveq	#0, d0
 	move.b	obState(a0), d0	; a0 is object address
 	move.w	@routineJmpTable(pc,d0.w), d1
@@ -74,3 +74,5 @@ objCollider
 	jsr	deleteObject
 
 	rts
+
+	MODEND

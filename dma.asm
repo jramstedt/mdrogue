@@ -10,7 +10,7 @@
 ;	d5 source
 ;	d6 destination
 ;	d7 length in words
-startDMATransfer
+startDMATransfer	MODULE
 	; length
 	move.w	#$93FF, d4
 	move.b	d7, d4
@@ -46,6 +46,7 @@ startDMATransfer
 	move.l	d6, vdp_ctrl
 
 	rts
+	MODEND
 
 
 queueDMATransfer MACRO sourceMem, destVRAM, lenWords
@@ -61,7 +62,7 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 ;	d7 length in words
 ; trashes:
 ;	a6, d4, d5, d6
-_queueDMATransfer
+_queueDMATransfer	MODULE
 	movea.w	(dma_queue_pointer).w, a6	; Move current pointer to a6
 	cmpa.w	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
 	beq.s	@done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
@@ -87,10 +88,11 @@ _queueDMATransfer
 
 @done
 	rts
+	MODEND
 
 SlotCount	equ (dma_queue_pointer-dma_queue)/(7*2)
 
-initDMAQueue
+initDMAQueue	MODULE
 	lea	dma_queue, a6
 	move.w	a6, (dma_queue_pointer).w	; Set current pointer to beginning of dma queue
 	move.l	#$96959493, d7		; vdp_w_reg+(22<<8), vdp_w_reg+(21<<8), vdp_w_reg+(20<<8), vdp_w_reg+(19<<8)
@@ -102,9 +104,10 @@ lc = lc+14
 	ENDR
 
 	rts
+	MODEND
 
 ;
-processDMAQueue
+processDMAQueue	MODULE
 	setVDPAutoIncrement 2
 
 	movea.w	(dma_queue_pointer).w, a6
@@ -142,3 +145,4 @@ lc = lc+1
 	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer
 
 	rts
+	MODEND

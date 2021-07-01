@@ -65,24 +65,26 @@ loadPalette MACRO source, index
 	ENDM
 
 ; a0	palette 68k address
-copyPalette
+copyPalette	MODULE
 	move.w	#sizePalette/sizeLong-1, d0
-copyColorLoop
+@copyColorLoop
 	move.l	(a0)+, vdp_data
-	dbra	d0, copyColorLoop
+	dbra	d0, @copyColorLoop
 	rts
+	MODEND
 
 ; a0	pattern 68k address
 ; d0	number of patterns
-copyPatterns
+copyPatterns	MODULE
 	subq.b	#1, d0 ; decrease by one to make looping work
-copyPatternLoop
+@copyPatternLoop
 	move.w	#sizePattern/sizeLong-1, d1
-copyPatternDataLoop
+@copyPatternDataLoop
 	move.l	(a0)+, vdp_data
-	dbra	d1, copyPatternDataLoop
-	dbra	d0, copyPatternLoop
+	dbra	d1, @copyPatternDataLoop
+	dbra	d0, @copyPatternLoop
 	rts
+	MODEND
 
 dmaClearVRAM MACRO
 	setVDPAutoIncrement 1
