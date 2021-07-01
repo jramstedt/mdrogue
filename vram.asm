@@ -169,7 +169,7 @@ freeVRAM
 	rts
 
 allocAndQueueDMA MACRO sourceStart, sourceEnd, outVramAddress
-	local dataLen
+	LOCAL dataLen
 dataLen equ sourceEnd-sourceStart
 
 	move.l	#dataLen/sizePattern, d7

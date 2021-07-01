@@ -33,7 +33,7 @@ chunkOffset MACROS c
 
 ;
 copyRowToVram MACRO level, camera, xOffset, yOffset
-	local initCopy, startCopyLoop, copy, queueRowToVram, lastTransfer, complete
+	LOCAL initCopy, startCopyLoop, copy, queueRowToVram, lastTransfer, complete
 
 	move.l	#0, d6
 
@@ -153,7 +153,7 @@ complete
 	ENDM
 
 copyColumnToVram MACRO level, camera, xOffset, yOffset
-	local initCopy, startCopyLoop, copy, dmaColumnToVram, lastTransfer, complete
+	LOCAL initCopy, startCopyLoop, copy, dmaColumnToVram, lastTransfer, complete
 
 	; full chunks
 	toPatterns camY(\camera), \yOffset, d2
