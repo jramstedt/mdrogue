@@ -13,7 +13,7 @@ objPlayer	MODULE
 @main ; inits the object
 	addq.b	#1<<1, obState(a0)	; set object state to @input
 	move.w	#$0800, obRender(a0)
-	move.b	#12, obRadius(a0)
+	move.b	#8, obRadius(a0)
 	move.b	#1, obPhysics(a0)
 	move.b	#$1F, obCollision(a0)
 
@@ -50,15 +50,7 @@ objPlayer	MODULE
 	andi	#1<<3|3, d0
 	add.w	d0, obX(a0)
 
-	; temporary level collision test code
-	clr.l	d0
-	clr.l	d1
-	movem.w	obX(a0), d0/d1
-	jsr	levelCollision	; Z is set if no collision
-	beq.s	@display
-
-	sub.w	#8, obX(a0)
-	; jmp collideWithLevel
+	jsr collideWithLevel
 
 @display
 	; update main camera to player coordinates!

@@ -231,8 +231,166 @@ levelCollision	MODULE
 
 	move.l	(a2), d0
 	btst.l	d2, d0		; bittest with x position
-	
-	
 
+	rts
+	MODEND
+
+; clampToGrid
+clampToGrid	MACRO	reg, corner
+	LOCAL clampMax, end
+	cmp.\0	\corner, \reg
+	bpl	clampMax
+	move.\0	\corner, \reg
+	bra	end
+
+clampMax
+	add.\0	#1<<6, \corner	; add one full pattern
+	cmp.\0	\corner, \reg
+	bmi	end
+	move.\0	\corner, \reg
+end
+	ENDM
+
+; a0 obj
+; trashes a1, a2, d0, d1, d2, d3, d4, d5, d6, d7
+collideWithLevel	MODULE
+	move.l	(loadedLevelAddress), a1
+
+	; ! note
+	; d0, d1 loop counters
+	; d2, d3 closest point in grid cell
+	; d4, d5 diff of object to closest grid point
+
+	; TODO FIXME collision to upwards shakes.
+
+	; Y pixels to loop
+	moveq	#0, d1
+	move.b	obRadius(a0), d1
+	asl.w	#1, d1		; to diameter; Y pixels, will be decremented in loop
+
+@yLoop
+	movea.l	lvlCollisionData(a1), a2
+
+	; Y grid cell
+	moveq	#0, d5
+	move.b	obRadius(a0), d5
+	sub.w	d1, d5
+	asl.w	#3, d5		; to 13.3
+	add.w	obY(a0), d5
+
+	and.w	#$FFC0, d5	; truncate to grid cell
+
+	; Chunk Y offset
+	moveq	#0, d6
+	move.b	lvlWidth(a1), d6
+
+	move	#$F800, d7	; FFE0<<6
+	and.w	d5, d7
+	asr.w	#4, d7		; 6 - 2
+	mulu.w	d6, d7
+	adda.w	d7, a2
+
+	; Y offset inside chunk
+	move	#$7C0, d7	; 1F<<6
+	and.w	d5, d7
+	asr.w	#4, d7		; 6 - 2
+	adda.w	d7, a2
+
+	moveq	#0, d3
+	move.w	obY(a0), d3
+	clampToGrid.w d3, d5	; d3 = closest point Y
+
+	; Y diff
+	sub.w	obY(a0), d3
+	move.w	d3, d5		; d5 = Y diff
+	bpl.s	*+4		; skip neg
+	neg.w	d3		; abs
+
+	; X amount to loop
+	moveq	#0, d0
+	move.b	obRadius(a0), d0
+	asl.w	#1, d0	; to diameter; X pixels, will be decremented in loop
+
+@xLoop
+	; check if collides with level
+	move.l	a2, a3
+
+	; X grid cell
+	moveq	#0, d4
+	move.b	obRadius(a0), d4
+	sub.w	d0, d4
+	asl.w	#3, d4		; to 13.3
+	add.w	obX(a0), d4
+
+	and.w	#$FFC0, d4	; truncate to grid cell
+
+	; Chunk X offset
+	move	#$F800, d7	; FFE0<<6
+	and.w	d4, d7
+	asr.w	#4, d7		; 6 - 2
+	adda.w	d7, a3
+
+	; X offset inside chunk
+	move	#$7C0, d7	; 1F<<6
+	and.w	d4, d7
+	asr.w	#6, d7		; to pixels, to patterns
+
+	move.l	(a3), d6
+	btst.l	d7, d6
+	beq.s	@continue	; free tile, skip collision calculation
+
+	; clamp to pattern
+	moveq	#0, d2
+	move.w	obX(a0), d2
+	clampToGrid.w d2, d4	; d2 = closest point X
+
+				; free: d4, d6, d7
+
+	; X diff
+	sub.w	obX(a0), d2
+	move.w	d2, d4		; d4 = X diff
+	bpl.s	*+4		; skip neg
+	neg.w	d2		; abs
+
+	move.w	d3, d6		; avoid trashing d3
+	approxlen d2, d6	; d2 is length now
+
+				; free: d6, d7
+
+	moveq	#0, d7
+	move.b	obRadius(a0), d7
+	asl.w	#3, d7		; to 13.3
+
+	cmp.w	d7, d2		; if d2 >= radius then continue
+	bge.s	@continue
+
+	move.l	d7, d6
+	sub.w	d2, d6		; displacement
+	swap	d6		; 13.19
+	divs	d7, d6		; 0.16
+				; d2 = displacement / radius
+
+	muls	d6, d4		; 13.19
+	swap	d4		; 13.3
+
+	sub.w	d4, obX(a0)
+
+	move.w	d5, d4		; avoid trashing d5
+	muls	d6, d4		; 13.19
+	swap	d4		; 13.3
+
+	sub.w	d4, obY(a0)
+
+	; TODO check if X or Y cell changed, then recheck (only changed sides)
+
+@continue
+	; loop
+	subq.w	#8, d0
+	bpl	@xLoop
+
+	subq.w	#8, d1
+	bpl	@yLoop
+
+@end
 	rts
 	MODEND
