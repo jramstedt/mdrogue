@@ -307,6 +307,7 @@ collideWithLevel	MODULE
 	adda.w	d7, a2
 
 	move.w	obY(a0), d3
+	; TODO here should be type checking and clamping for diagonal tiles.
 	clampToGrid.w d3, d5	; d3 = closest point Y
 
 	; Y diff
@@ -341,6 +342,7 @@ collideWithLevel	MODULE
 
 	; clamp to pattern
 	move.w	obX(a0), d2
+	; TODO here should be type checking and clamping for diagonal tiles.
 	clampToGrid.w d2, d4	; d2 = closest point X
 
 				; free: d4, d6, d7
