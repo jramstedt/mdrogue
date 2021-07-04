@@ -92,8 +92,8 @@ calculateCollision MACRO type, skip
 
 		swap	d6			; 13.19
 
-		divu	d5, d6			; 0.16
-						; d6 = displacement / (radius+radius)
+		divu	d3, d6			; 0.16
+						; d6 = displacement / approxlen
 
 		; X axis
 		sub.w	obX(a1), d1		; d1 = dx = x1 - x2
@@ -261,7 +261,8 @@ collideWithLevel	MODULE
 	; d2, d3 closest point in grid cell
 	; d4, d5 diff of object to closest grid point
 
-	; TODO FIXME collision to upwards shakes.
+	moveq	#0, d2
+	moveq	#0, d3
 
 	; Y pixels to loop
 	moveq	#0, d1
@@ -269,6 +270,13 @@ collideWithLevel	MODULE
 	asl.w	#1, d1		; to diameter; Y pixels, will be decremented in loop
 
 @yLoop
+	
+	; X amount to loop
+	moveq	#0, d0
+	move.b	obRadius(a0), d0
+	asl.w	#1, d0		; to diameter; X pixels, will be decremented in loop
+
+@xLoop
 	movea.l	lvlCollisionData(a1), a2
 
 	; Y grid cell
@@ -278,6 +286,8 @@ collideWithLevel	MODULE
 	asl.w	#3, d5		; to 13.3
 	add.w	obY(a0), d5
 
+	; Position to grid cell
+	; Sets data address
 	and.w	#$FFC0, d5	; truncate to grid cell
 
 	; Chunk Y offset
@@ -296,7 +306,6 @@ collideWithLevel	MODULE
 	asr.w	#4, d7		; 6 - 2
 	adda.w	d7, a2
 
-	moveq	#0, d3
 	move.w	obY(a0), d3
 	clampToGrid.w d3, d5	; d3 = closest point Y
 
@@ -305,15 +314,6 @@ collideWithLevel	MODULE
 	move.w	d3, d5		; d5 = Y diff
 	bpl.s	*+4		; skip neg
 	neg.w	d3		; abs
-
-	; X amount to loop
-	moveq	#0, d0
-	move.b	obRadius(a0), d0
-	asl.w	#1, d0	; to diameter; X pixels, will be decremented in loop
-
-@xLoop
-	; check if collides with level
-	move.l	a2, a3
 
 	; X grid cell
 	moveq	#0, d4
@@ -328,19 +328,18 @@ collideWithLevel	MODULE
 	move	#$F800, d7	; FFE0<<6
 	and.w	d4, d7
 	asr.w	#4, d7		; 6 - 2
-	adda.w	d7, a3
+	adda.w	d7, a2
 
 	; X offset inside chunk
 	move	#$7C0, d7	; 1F<<6
 	and.w	d4, d7
 	asr.w	#6, d7		; to pixels, to patterns
 
-	move.l	(a3), d6
+	move.l	(a2), d6
 	btst.l	d7, d6
 	beq.s	@continue	; free tile, skip collision calculation
 
 	; clamp to pattern
-	moveq	#0, d2
 	move.w	obX(a0), d2
 	clampToGrid.w d2, d4	; d2 = closest point X
 
@@ -352,36 +351,35 @@ collideWithLevel	MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d2		; abs
 
-	move.w	d3, d6		; avoid trashing d3
-	approxlen d2, d6	; d2 is length now
+	; Check if really collides
+	; Calculate displacement
+
+	approxlen d2, d3	; d2 is length now
+	beq.s	@continue	; d2 is zero; avoid division by zero
 
 				; free: d6, d7
 
-	moveq	#0, d7
-	move.b	obRadius(a0), d7
-	asl.w	#3, d7		; to 13.3
+	moveq	#0, d6
+	move.b	obRadius(a0), d6
+	asl.w	#3, d6		; to 13.3
 
-	cmp.w	d7, d2		; if d2 >= radius then continue
+	cmp.w	d6, d2		; if d2 >= radius then continue
 	bge.s	@continue
 
-	move.l	d7, d6
 	sub.w	d2, d6		; displacement
 	swap	d6		; 13.19
-	divs	d7, d6		; 0.16
-				; d2 = displacement / radius
+	divu	d2, d6		; 0.16
+				; d6 = displacement / approxlen
 
+	; X
 	muls	d6, d4		; 13.19
 	swap	d4		; 13.3
-
 	sub.w	d4, obX(a0)
 
-	move.w	d5, d4		; avoid trashing d5
-	muls	d6, d4		; 13.19
-	swap	d4		; 13.3
-
-	sub.w	d4, obY(a0)
-
-	; TODO check if X or Y cell changed, then recheck (only changed sides)
+	; Y
+	muls	d6, d5		; 13.19
+	swap	d5		; 13.3
+	sub.w	d5, obY(a0)
 
 @continue
 	; loop
