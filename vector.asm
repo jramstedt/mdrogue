@@ -33,9 +33,9 @@ approxlen MACRO x, y
 
 	move.w	\x, \y
 
-	mulu	#2700, \x	; ((1 + sqrt(4 - 2 * sqrt(2))) / 2) - 1 @ 0.16FP = 2699 (.78642308)
+	mulu	#2699, \x	; ((1 + sqrt(4 - 2 * sqrt(2))) / 2) - 1 @ 0.16FP = 2699 (.78642308)
 	swap	\x		; >> 16, to original precision
-	add	\y, \x		; since we saved one bit of precision before (-1 from calculation), we need to add it back
+	add.w	\y, \x		; since we saved one bit of precision before (-1 from calculation), we need to add it back
 
 	ENDM
 

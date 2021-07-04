@@ -205,7 +205,7 @@ levelCollision	MODULE
 	and.w	#$FFE0, d1	; truncate to chunk start
 	lsl.l	#2, d1		; 32bits = 4bytes in row, full chunks now
 	move.b	lvlWidth(a1), d3
-	mulu.w	d3, d1
+	mulu	d3, d1
 	
 	adda.w	d1, a2
 
@@ -236,18 +236,18 @@ levelCollision	MODULE
 	MODEND
 
 ; clampToGrid
-clampToGrid	MACRO	reg, corner
+clampToGrid	MACRO	point, corner
 	LOCAL clampMax, end
-	cmp.\0	\corner, \reg
-	bpl	clampMax
-	move.\0	\corner, \reg
+	cmp.\0	\corner, \point
+	bgt	clampMax
+	move.\0	\corner, \point
 	bra	end
 
 clampMax
 	add.\0	#1<<6, \corner	; add one full pattern
-	cmp.\0	\corner, \reg
-	bmi	end
-	move.\0	\corner, \reg
+	cmp.\0	\corner, \point
+	blt	end
+	move.\0	\corner, \point
 end
 	ENDM
 
@@ -287,7 +287,7 @@ collideWithLevel	MODULE
 	move	#$F800, d7	; FFE0<<6
 	and.w	d5, d7
 	asr.w	#4, d7		; 6 - 2
-	mulu.w	d6, d7
+	mulu	d6, d7
 	adda.w	d7, a2
 
 	; Y offset inside chunk
@@ -385,10 +385,10 @@ collideWithLevel	MODULE
 
 @continue
 	; loop
-	subq.w	#8, d0
+	subq.w	#1<<3, d0
 	bpl	@xLoop
 
-	subq.w	#8, d1
+	subq.w	#1<<3, d1
 	bpl	@yLoop
 
 @end
