@@ -106,8 +106,8 @@ queueRowToVram
 
 	toPatterns camX(\camera), \xOffset, d2
 	and.w	#$3F, d2
-	add	d2, d6
-	
+
+	add.w	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
@@ -117,15 +117,19 @@ queueRowToVram
 	ble	lastTransfer
 
 	; overflow, draw till right side
-	move	#64, d7
-	sub	d2, d7
+	moveq	#64, d7
+	sub.w	d2, d7
 
 	haltZ80
 	jsr	startDMATransfer	; draw buffer
 	resumeZ80
 
-	move	#64, d7
-	sub	d2, d7
+	moveq	#64, d7
+	sub.w	d2, d7
+	
+	move.l	#horBufferLen, d2
+	sub.w	d7, d2
+	beq	complete
 
 	; draw rest from left side
 	move.l	d7, d5
@@ -133,15 +137,10 @@ queueRowToVram
 	add.l	#horBuffer, d5
 
 	move.l	d3, d6
-	asl.w	#6, d6	; scroll plane width 64
-	lsl.l	d6	; 2 bytes per pattern
-	add	#vdp_map_bnt, d6
+	lsl.w	#7, d6	; scroll plane width 64, 2 bytes per pattern 
+	add.w	#vdp_map_bnt, d6
 
-	move.l	#horBufferLen, d3
-	sub.w	d7, d3
-	beq	complete
-
-	move.l	d3, d7
+	move.w	d2, d7
 
 lastTransfer
 	haltZ80
@@ -232,8 +231,8 @@ dmaColumnToVram
 
 	toPatterns camX(\camera), \xOffset, d2
 	and.w	#$3F, d2
-	
-	add	d2, d6
+
+	add.w	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
@@ -243,15 +242,15 @@ dmaColumnToVram
 	ble	lastTransfer
 
 	; overflow, draw till bottom side
-	move	#32, d7
-	sub	d3, d7
+	moveq	#32, d7
+	sub.w	d3, d7
 
 	haltZ80
 	jsr	startDMATransfer
 	resumeZ80
 
-	move	#32, d7
-	sub	d3, d7
+	moveq	#32, d7
+	sub.w	d3, d7
 
 	move.l	#verBufferLen, d3
 	sub.w	d7, d3
@@ -263,10 +262,10 @@ dmaColumnToVram
 	add.l	#verBuffer, d5
 
 	move.l	d2, d6
-	lsl.l	d6	; 2 bytes per pattern
-	add	#vdp_map_bnt, d6
+	lsl.w	d6	; 2 bytes per pattern
+	add.w	#vdp_map_bnt, d6
 
-	move.l	d3, d7
+	move.w	d3, d7
 
 lastTransfer
 	haltZ80

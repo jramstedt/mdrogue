@@ -13,7 +13,7 @@ drawFont	MODULE
 
 	move	#vdp_map_ant, d2
 
-	lsl.l	#1, d7	; Each table entry is 2 bytes width
+	lsl.l	d7	; Each table entry is 2 bytes width
 	add.w	d7, d2
 
 	swap	d7	; XXXXYYYY

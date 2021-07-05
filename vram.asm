@@ -9,7 +9,7 @@
 ; trash:
 ; a2, a3, d4
 allocVRAM	MODULE
-	lsl.l	#5, d7	; pattern amount to bytes
+	lsl.w	#5, d7	; pattern amount to bytes
 	lea.l	vrm_first, a3	; vrm_first is previous
 	movea.l	(a3), a2
 	moveq	#0, d6
@@ -19,7 +19,7 @@ allocVRAM	MODULE
 	beq	@notFound
 
 	move.w	vrmStart(a2), d6
-	add.l	d7, d6
+	add.w	d7, d6
 	cmp.w	vrmEnd(a2), d6
 	blo	@allocFromHoleStart
 	beq	@allocFullHole
@@ -183,6 +183,6 @@ dataLen equ sourceEnd-sourceStart
 	ENDIF
 
 	move.l	#sourceStart, d5
-	lsr.l	#1, d7	; bytes to words
+	lsr.w	d7	; bytes to words
 	jsr	_queueDMATransfer
 	ENDM

@@ -267,14 +267,14 @@ collideWithLevel	MODULE
 	; Y pixels to loop
 	moveq	#0, d1
 	move.b	obRadius(a0), d1
-	asl.w	#1, d1		; to diameter; Y pixels, will be decremented in loop
+	asl.w	d1		; to diameter; Y pixels, will be decremented in loop
 
 @yLoop
 	
 	; X amount to loop
 	moveq	#0, d0
 	move.b	obRadius(a0), d0
-	asl.w	#1, d0		; to diameter; X pixels, will be decremented in loop
+	asl.w	d0		; to diameter; X pixels, will be decremented in loop
 
 @xLoop
 	movea.l	lvlCollisionData(a1), a2

@@ -32,7 +32,7 @@ loadLevel	MODULE
 	jsr	allocVRAM	; d6 vram address, d7 allocated bytes
 	move.w	d6, levelVRAMAddress
 
-	lsr.l	d7	; bytes to words
+	lsr.w	d7	; bytes to words
 	jsr	_queueDMATransfer
 
 	; TODO better filling. 
@@ -60,6 +60,7 @@ unloadLevel	MODULE
 	rts
 	MODEND
 
+;
 updateLevel	MODULE
 	movem.l	d0-d7/a0-a6, -(sp)
 

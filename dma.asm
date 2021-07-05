@@ -22,7 +22,7 @@ startDMATransfer	MODULE
 	move.w	d4, vdp_ctrl
 
 	; source
-	lsr.l	#1, d5		; Source address >> 1 (even address)
+	lsr.l	d5		; Source address >> 1 (even address)
 	move.w	#$95FF, d4
 	move.b	d5, d4
 	move.w	d4, vdp_ctrl
@@ -67,7 +67,7 @@ _queueDMATransfer	MODULE
 	cmpa.w	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
 	beq.s	@done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
-	lsr.l	#1, d5		; Source address >> 1 (even address)
+	lsr.l	d5		; Source address >> 1 (even address)
 	swap	d5		; Swap high and low word (low word contains SA23-SA17)
 	move.w	#$977F, d4	; vdp_w_reg+(23<<8) & $7F where 7F is mask for upper bits (SA23-SA17)
 	and.b	d5, d4		; AND d4 with d5 lower 8 bits
@@ -89,8 +89,6 @@ _queueDMATransfer	MODULE
 @done
 	rts
 	MODEND
-
-SlotCount	equ (dma_queue_pointer-dma_queue)/(7*2)
 
 initDMAQueue	MODULE
 	lea	dma_queue, a6

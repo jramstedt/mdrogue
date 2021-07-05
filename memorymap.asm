@@ -66,7 +66,9 @@ vrmDataSize		equ	__rs
 
 ; System stuff
 			rsset	ramStartAddress+$FF008000
-dma_queue		rs.w	7*20
+SlotSize		equ	(8*sizeWord)
+SlotCount		equ	20
+dma_queue		rs.b	SlotSize*SlotCount
 dma_queue_pointer	rs.w	1
 
 vrm_list		rs.b	sDataSize*10
