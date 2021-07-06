@@ -92,8 +92,6 @@ gameLoop
 	; do game processing
 	jsr	processObjects
 	jsr	processPhysicObjects
-
-	jsr	updateLevel
 	
 	; print vertical line of 224/240
 	clr.l	d0
@@ -111,6 +109,7 @@ gameLoop
 
 	; do graphics commands
 	jsr	updatePlaneScrollToCamera
+	jsr	updateLevel
 	jsr	processDMAQueue
 	
 	jsr	waitVBlankOn	; Wait for blanking to stop.

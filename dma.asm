@@ -48,6 +48,35 @@ startDMATransfer	MODULE
 	rts
 	MODEND
 
+; input:
+;	d6 destination
+;	d7 length in words
+startDMAFill	MODULE
+	; length
+	move.w	#$93FF, d4
+	move.b	d7, d4
+	move.w	d4, vdp_ctrl
+
+	lsr.w	#8, d7
+	move.w	#$94FF, d4
+	move.b	d7, d4
+	move.w	d4, vdp_ctrl
+
+	move.w	#$9780, vdp_ctrl
+
+	; Build DMA command
+	lsl.l	#2, d6		; Shift left. 2 bits goes to upper word
+	addq.w	#%01, d6	; Set two lowest bits to VRAM write
+	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
+	swap	d6
+	ori.b	#%10000000, d6
+	move.l	d6, vdp_ctrl
+
+	move.w	#$0, vdp_data
+
+	rts
+
+	MODEND
 
 queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 	move.l	\sourceMem, d5
