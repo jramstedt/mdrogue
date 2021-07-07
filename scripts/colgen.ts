@@ -3,74 +3,8 @@ import { resolve } from 'path'
 import zlib from 'zlib'
 import execa from 'execa'
 import { Image, Canvas, createImageData } from 'canvas'
-import rgbquant from 'rgbquant'
-
-interface Layer {
-  id: number,
-  name: string,
-  type: 'tilelayer' | 'objectgroup' | 'imagelayer' | 'group',
-  properties: { name: string, value: boolean | number | string }[],
-  startx?: number,
-  starty?: number,
-  offsetx: number,
-  offsety: number,
-  x: number,
-  y: number,
-  tintcolor: number,
-  visible: boolean
-}
-
-interface ImageLayer extends Layer {
-  type: 'imagelayer',
-  transparentcolor: string,
-  image: string,
-  width: number,
-  height: number
-}
-function isImageLayer(layer: Layer): layer is ImageLayer {
-  return layer.type === 'imagelayer'
-}
-
-interface TileLayer extends Layer {
-  type: 'tilelayer',
-  encoding: 'csv' | 'base64',
-  compression: 'zlib' | 'gzip' /*| 'zstd'*/,
-  data: string | number[],
-  chunks?: Layer[],
-  width: number,
-  height: number
-}
-function isTileLayer(layer: Layer): layer is TileLayer {
-  return layer.type === 'tilelayer'
-}
-
-interface Group extends Layer {
-  type: 'group',
-  layers: Layer[]
-}
-function isGroup(layer: Layer): layer is Group {
-  return layer.type === 'group'
-}
-
-interface ObjectGroup extends Layer {
-  type: 'objectgroup',
-  objects: unknown[],
-  draworder: 'topdown' | 'index'
-}
-function isObjectGroup(layer: Layer): layer is ObjectGroup {
-  return layer.type === 'objectgroup'
-}
-
-interface Map { 
-  layers: Layer[],
-  editorsettings?: { chunksize?: { width: number, height:number }},
-  tilesets: { firstgid: number }[]
-}
-
-const FLIPPED_HORIZONTALLY_FLAG = 0x80000000
-const FLIPPED_VERTICALLY_FLAG   = 0x40000000
-const FLIPPED_DIAGONALLY_FLAG   = 0x20000000
-const ID_MASK = ~(FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG)
+import RgbQuant from 'rgbquant'
+import { Group, ID_MASK, isGroup, isTileLayer, Layer, TiledMap, TileLayer } from './tiled'
 
 function getTileIndexInTileset(globalId: number): number {
   globalId = globalId & ID_MASK
@@ -100,7 +34,7 @@ if (targetDirectory === undefined || targetDirectory.length === 0) {
   process.exit(2)
 }
 
-const mapData = JSON.parse(fs.readFileSync(mapFilename, { encoding: 'utf8' })) as Map
+const mapData = JSON.parse(fs.readFileSync(mapFilename, { encoding: 'utf8' })) as TiledMap
 
 const chunkSize = [
   mapData.editorsettings?.chunksize?.width ?? 32,
@@ -224,7 +158,7 @@ for (const layer of collisionLayers) {
 function hideParams(...layers: Layer[]): string[] {
   return layers.map(layer => `--hide-layer "${layer.name}"`)
 }
-function filterLayers (map: Map, name: string): Layer[] {
+function filterLayers (map: TiledMap, name: string): Layer[] {
   const layers = [] as Layer[]
 
   const filterLayers = (group: Group, name: string): Layer[] => {
@@ -251,7 +185,7 @@ const planeBLayers = filterLayers(mapData, 'plane b')
 fs.writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawData))
 fs.writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
 
-const tmxrasterizer = `${process.env.USERPROFILE}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
+const tmxrasterizer = `${process.env['USERPROFILE']}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
 const tmxrasterizeroptions = ['--no-smoothing']
 
 const megaDriveLadder = [0x00, 0x34, 0x57, 0x74, 0x90, 0xAC, 0xCE, 0xFF]
@@ -290,7 +224,7 @@ execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ..
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const pixelArray = new Uint8Array(imageData.data)
 
-      const toMegaDrive = new rgbquant({
+      const toMegaDrive = new RgbQuant({
         dithKern: 'Atkinson',
         dithDelta: 1.0 / 8.0,
         colorDist: 'manhattan',
@@ -298,18 +232,18 @@ execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ..
       })
       toMegaDrive.sample(pixelArray)
 
-      const megaDrive: Uint8Array = toMegaDrive.reduce(pixelArray)
+      const megaDrive = toMegaDrive.reduce(pixelArray)
 
-      const quant = new rgbquant({
+      const quant = new RgbQuant({
         colors: 16,
         colorDist: 'manhattan'
       })
       quant.sample(megaDrive)
       
-      //const reducedPalette: Uint8Array = quant.palette()
+      //const reducedPalette = quant.palette()
 
       // #region Render preview png
-      const reducedImage: Uint8Array = quant.reduce(pixelArray)
+      const reducedImage = quant.reduce(pixelArray)
       const output = createImageData(new Uint8ClampedArray(reducedImage), canvas.width, canvas.height)
       ctx.putImageData(output, 0, 0)
       const dataBuffer = canvas.toBuffer('image/png')
