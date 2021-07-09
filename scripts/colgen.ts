@@ -1,10 +1,10 @@
-import fs from 'fs'
-import { resolve } from 'path'
-import zlib from 'zlib'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import zlib from 'node:zlib'
 import execa from 'execa'
-import { Image, Canvas, createImageData } from 'canvas'
-import RgbQuant from 'rgbquant'
+
 import { Group, ID_MASK, isGroup, isTileLayer, Layer, TiledMap, TileLayer } from './tiled'
+import { writeMegaDrivePatterns } from './megadrive'
 
 function getTileIndexInTileset(globalId: number): number {
   globalId = globalId & ID_MASK
@@ -34,7 +34,7 @@ if (targetDirectory === undefined || targetDirectory.length === 0) {
   process.exit(2)
 }
 
-const mapData = JSON.parse(fs.readFileSync(mapFilename, { encoding: 'utf8' })) as TiledMap
+const mapData = JSON.parse(readFileSync(mapFilename, { encoding: 'utf8' })) as TiledMap
 
 const chunkSize = [
   mapData.editorsettings?.chunksize?.width ?? 32,
@@ -182,199 +182,23 @@ const paramCollisionLayers = filterLayers(mapData, 'collision')
 const planeALayers = filterLayers(mapData, 'plane a')
 const planeBLayers = filterLayers(mapData, 'plane b')
 
-fs.writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawData))
-fs.writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
+writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawData))
+writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
 
 const tmxrasterizer = `${process.env['USERPROFILE']}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
 const tmxrasterizeroptions = ['--no-smoothing']
 
-const megaDriveLadder = [0x00, 0x34, 0x57, 0x74, 0x90, 0xAC, 0xCE, 0xFF]
-const palette: [r: number, g: number, b: number][] = []
-for (let r = 0; r <= 0b111; ++r) {
-  for (let g = 0; g <= 0b111; ++g) {
-    for (let b = 0; b <= 0b111; ++b) {
-      palette.push([
-        megaDriveLadder[r], 
-        megaDriveLadder[g], 
-        megaDriveLadder[b]
-      ])
-    }
-  }
-}
+
 
 execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ...planeBLayers), mapFilename, resolve(targetDirectory, 'collision.png')], { windowsVerbatimArguments: true })
   .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
 
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ...paramCollisionLayers), mapFilename, resolve(targetDirectory, 'planeB.png')], { windowsVerbatimArguments: true })
+const planeBImage = resolve(targetDirectory, 'planeB.png')
+execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ...paramCollisionLayers), mapFilename, planeBImage], { windowsVerbatimArguments: true })
   .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-  .then(() => {
-    fs.readFile(resolve(targetDirectory, 'planeB.png'), (err, data) => {
-      if (err !== null) throw err
+  .then(() => writeMegaDrivePatterns('planeB', planeBImage, targetDirectory))
 
-      const image = new Image()
-      image.src = data
-
-      if (image.width % 256 !== 0) console.warn('Image width not multiple of 256.')
-      if (image.height % 256 !== 0) console.warn('Image height not multiple of 256.')
-
-      const canvas = new Canvas(Math.ceil(image.width / 8) * 8, Math.ceil(image.height / 8) * 8)
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(image, 0, 0, image.width, image.height)
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const pixelArray = new Uint8Array(imageData.data)
-
-      const toMegaDrive = new RgbQuant({
-        dithKern: 'Atkinson',
-        dithDelta: 1.0 / 8.0,
-        colorDist: 'manhattan',
-        palette,
-      })
-      toMegaDrive.sample(pixelArray)
-
-      const megaDrive = toMegaDrive.reduce(pixelArray)
-
-      const quant = new RgbQuant({
-        colors: 16,
-        colorDist: 'manhattan'
-      })
-      quant.sample(megaDrive)
-      
-      //const reducedPalette = quant.palette()
-
-      // #region Render preview png
-      const reducedImage = quant.reduce(pixelArray)
-      const output = createImageData(new Uint8ClampedArray(reducedImage), canvas.width, canvas.height)
-      ctx.putImageData(output, 0, 0)
-      const dataBuffer = canvas.toBuffer('image/png')
-      fs.writeFileSync(resolve(targetDirectory, 'planeBreduced.png'), dataBuffer)
-      // #endregion
-  
-      const indexedImage = quant.reduce(pixelArray, 2)
-
-      const tilesWidth = canvas.width >>> 5
-      const tilesHeight = canvas.height >>> 5
-      
-      const patterns: { normal: Uint32Array, flipped: Uint32Array }[] = []
-      const tiles: Uint16Array[] = []
-
-      // PCCV HAAA AAAA AAAA
-      const findPattern = (pattern: { normal: Uint32Array, flipped: Uint32Array }): number => {
-        const { normal } = pattern
-
-        let patternIndex = 0
-        for (; patternIndex < patterns.length; ++patternIndex) {
-          const target = patterns[patternIndex]
-
-          if (normal[0] === target.normal[0] &&
-              normal[1] === target.normal[1] &&
-              normal[2] === target.normal[2] &&
-              normal[3] === target.normal[3] &&
-              normal[4] === target.normal[4] &&
-              normal[5] === target.normal[5] &&
-              normal[6] === target.normal[6] &&
-              normal[7] === target.normal[7])
-            return (patternIndex & 0x07FF) | 0x0000
-
-          if (normal[0] === target.flipped[0] &&
-              normal[1] === target.flipped[1] &&
-              normal[2] === target.flipped[2] &&
-              normal[3] === target.flipped[3] &&
-              normal[4] === target.flipped[4] &&
-              normal[5] === target.flipped[5] &&
-              normal[6] === target.flipped[6] &&
-              normal[7] === target.flipped[7])
-            return (patternIndex & 0x07FF) | 0x0800
-
-          if (normal[0] === target.normal[7] &&
-              normal[1] === target.normal[6] &&
-              normal[2] === target.normal[5] &&
-              normal[3] === target.normal[4] &&
-              normal[4] === target.normal[3] &&
-              normal[5] === target.normal[2] &&
-              normal[6] === target.normal[1] &&
-              normal[7] === target.normal[0])
-            return (patternIndex & 0x07FF) | 0x1000
-
-          if (normal[0] === target.flipped[7] &&
-              normal[1] === target.flipped[6] &&
-              normal[2] === target.flipped[5] &&
-              normal[3] === target.flipped[4] &&
-              normal[4] === target.flipped[3] &&
-              normal[5] === target.flipped[2] &&
-              normal[6] === target.flipped[1] &&
-              normal[7] === target.flipped[0])
-            return (patternIndex & 0x07FF) | 0x1800
-          }
-
-        const nextIndex = patterns.length
-        if (nextIndex > 0x07FF)
-          throw new Error('Too many patterns.')
-
-        patterns[nextIndex] = pattern
-
-        return nextIndex
-      }
-
-      for (let y = 0; y < canvas.height; y += 8) {
-        for (let x = 0; x < canvas.width; x += 8) {
-          // 32x32 pattern per tile
-          // 8x8 pixels per patterns
-          const tileIndex = (y >>> 5) * tilesWidth + (x >>> 5)
-          const patternIndex = ((y >>> 3) % 32) * 32 + ((x >>> 3) % 32)
-
-          const tile = tiles[tileIndex] ??= new Uint16Array(32*32)
-
-          let pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
-          for (let s = 0; s < 8; ++s) {
-            let normal = 0
-            let flipped = 0
-
-            for (let p = 0; p < 8; ++p) {
-              const pixelIndex = (y + s) * canvas.width + (x + p)
-              const colorIndex = indexedImage[pixelIndex]
-
-              normal = normal << 4 | (colorIndex & 0x0F)
-              flipped = flipped >>> 4 | ((colorIndex & 0x0F) << 28)
-            }
-
-            pattern.normal[s] = normal
-            pattern.flipped[s] = flipped
-          }
-
-          // TODO Priority, palette index
-
-          tile[patternIndex] = findPattern(pattern)
-        }
-      }
-
-      console.log(patterns.length)
-
-      const reducedPalette = new Uint32Array(quant.idxi32)
-      const megaDrivePalette = new Uint16Array(reducedPalette.length)
-      for (let index = 0; index < megaDrivePalette.length; ++index) {
-        // ABGR -> 0BGR
-
-        const color = reducedPalette[index]
-        const r = megaDriveLadder.indexOf(color & 0xFF) << 1
-        const g = megaDriveLadder.indexOf((color >>> 8) & 0xFF) << 1
-        const b = megaDriveLadder.indexOf((color >>> 16) & 0xFF) << 1
-
-        megaDrivePalette[index] = r | g << 4 | b << 8
-      }
-
-      fs.writeFileSync(resolve(targetDirectory, 'planeB.bin'), megaDrivePalette)
-      fs.writeFileSync(resolve(targetDirectory, 'palette.bin'), megaDrivePalette)
-
-      // 4 bits per pixel, 2 pixels per byte
-      // word per row
-      // long per pattern
-
-      // patterns 01234567 * 8
-
-      // PCCV HAAA AAAA AAAA
-  })
-})
-
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeBLayers, ...paramCollisionLayers), mapFilename, resolve(targetDirectory, 'planeA.png')], { windowsVerbatimArguments: true })
-  .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) throw new Error(stderr) })
+const planeAImage = resolve(targetDirectory, 'planeA.png')
+execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeBLayers, ...paramCollisionLayers), mapFilename, planeAImage], { windowsVerbatimArguments: true })
+  .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
+  .then(() => writeMegaDrivePatterns('planeA', planeAImage, targetDirectory))

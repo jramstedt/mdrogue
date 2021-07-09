@@ -10,7 +10,7 @@ declare module 'rgbquant' {
 
   type Image = HTMLImageElement| HTMLCanvasElement | Canvas | CanvasRenderingContext2D | ImageData | number[] | Uint8Array | Uint8ClampedArray | Uint32Array
 
-  type Triplet = [r: number, g: number, b: number]
+  export type Triplet = [r: number, g: number, b: number]
 
   interface SharedOptions {
     /** 1 = by global population, 2 = subregion population threshold */
