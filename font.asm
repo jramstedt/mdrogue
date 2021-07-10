@@ -11,7 +11,7 @@
 drawFont	MODULE
 	setVDPAutoIncrement 2
 
-	move	#vdp_map_ant, d2
+	move	#vdp_map_wnt, d2
 
 	lsl.l	d7	; Each table entry is 2 bytes width
 	add.w	d7, d2

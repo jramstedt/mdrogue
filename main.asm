@@ -20,7 +20,7 @@ __main
 
 	reserveVRAM #0, #1	; keep first block empty
 	reserveVRAM #vdp_map_ant, #(64*32*sizeWord/sizePattern)
-	;reserveVRAM #vdp_map_wnt, #(32/sizePattern)
+	reserveVRAM #vdp_map_wnt+(20*32/sizePattern), #(4*32/sizePattern)
 	reserveVRAM #vdp_map_bnt, #(64*32*sizeWord/sizePattern)
 	reserveVRAM #vdp_map_sat, #(80*sizeSpriteDesc/sizePattern)
 	;reserveVRAM #vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
@@ -50,7 +50,7 @@ __main
 	loadPalette testPalette, 1
 
 	lea	testText, a6
-	move.l	#$00030003, d7
+	move.l	#$00160003, d7
 	jsr	drawFont
 
 	move.w	#vdp_w_reg, d0
@@ -102,7 +102,7 @@ gameLoop
 
 	lea	textScrap, a6
 	move.b	#0, 4(a6)
-	move.l	#$00000000, d7
+	move.l	#$00140000, d7
 	jsr	drawFont
 
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).

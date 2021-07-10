@@ -162,8 +162,8 @@ vdp1r	dc.b	%00010100 ; 1: display off, Vert. interrupt off, screen blank off, DM
 	dc.b	%00000000 ; 14: Unused
 	dc.b	%00000000 ; 15: Autoincrement off
 	dc.b	%00000001 ; 16: Vert. scroll 32, Horiz. scroll 64
-	dc.b	%00000000 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
-	dc.b	%00000000 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
+vdp17r	dc.b	%00000000 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
+vdp18r	dc.b	%10010100 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
 	dc.b	%00000000 ; 19: DMA length lo byte
 	dc.b	%00000000 ; 20: DMA length hi byte
 	dc.b	%00000000 ; 21: DMA source address lo byte
