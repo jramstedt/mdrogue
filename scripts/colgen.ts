@@ -158,21 +158,25 @@ for (const layer of collisionLayers) {
 function hideParams(...layers: Layer[]): string[] {
   return layers.map(layer => `--hide-layer "${layer.name}"`)
 }
-function filterLayers (map: TiledMap, name: string): Layer[] {
+function showParams(...layers: Layer[]): string[] {
+  return layers.map(layer => `--show-layer "${layer.name}"`)
+}
+
+function filterLayers (map: TiledMap, ...filters: string[]): Layer[] {
   const layers = [] as Layer[]
 
-  const filterLayers = (group: Group, name: string): Layer[] => {
+  const filterLayers = (group: Group, filters: string[]): Layer[] => {
     const matchingLayers = [] as Layer[]
     for (const layer of group.layers) {
-      if (isGroup(layer)) matchingLayers.push(...filterLayers(layer, name))
-      else if (layer.name.toLocaleLowerCase().includes(name)) matchingLayers.push(layer)
+      if (isGroup(layer)) matchingLayers.push(...filterLayers(layer, filters))
+      else if (filters.every(filter => layer.name.toLocaleLowerCase().includes(filter))) matchingLayers.push(layer)
     }
     return matchingLayers
   }
 
   for (const layer of map.layers) {
-    if (isGroup(layer)) layers.push(...filterLayers(layer, name))
-    else if (layer.name.toLocaleLowerCase().includes(name)) layers.push(layer)
+    if (isGroup(layer)) layers.push(...filterLayers(layer, filters))
+    else if (filters.every(filter => layer.name.toLocaleLowerCase().includes(filter))) layers.push(layer)
   }
 
   return layers
@@ -180,7 +184,10 @@ function filterLayers (map: TiledMap, name: string): Layer[] {
 
 const paramCollisionLayers = filterLayers(mapData, 'collision')
 const planeALayers = filterLayers(mapData, 'plane a')
-const planeBLayers = filterLayers(mapData, 'plane b')
+const planeAHighLayers = filterLayers(mapData, 'plane a', 'high')
+
+const planeBLowLayers = filterLayers(mapData, 'plane b', 'low')
+const planeBHighLayers = filterLayers(mapData, 'plane b', 'high')
 
 writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawData))
 writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
@@ -188,17 +195,21 @@ writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
 const tmxrasterizer = `${process.env['USERPROFILE']}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
 const tmxrasterizeroptions = ['--no-smoothing']
 
-
-
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ...planeBLayers), mapFilename, resolve(targetDirectory, 'collision.png')], { windowsVerbatimArguments: true })
+execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...paramCollisionLayers), mapFilename, resolve(targetDirectory, 'collision.png')], { windowsVerbatimArguments: true })
   .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
 
-const planeBImage = resolve(targetDirectory, 'planeB.png')
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeALayers, ...paramCollisionLayers), mapFilename, planeBImage], { windowsVerbatimArguments: true })
-  .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-  .then(() => writeMegaDrivePatterns('planeB', planeBImage, targetDirectory))
+const planeBLowImage = resolve(targetDirectory, 'planeB-low.png')
+const planeBHighImage = resolve(targetDirectory, 'planeB-high.png')
+Promise.all([
+  execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBLowLayers), mapFilename, planeBLowImage], { windowsVerbatimArguments: true }).then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) }),
+  // execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBHighLayers), mapFilename, planeBHighImage], { windowsVerbatimArguments: true }).then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
+])
+.then(() => writeMegaDrivePatterns('planeB', [
+  { filePath: planeBLowImage, highPriority: false },
+  // { filePath: planeBHighImage, highPriority: true }
+], targetDirectory))
 
 const planeAImage = resolve(targetDirectory, 'planeA.png')
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...hideParams(...planeBLayers, ...paramCollisionLayers), mapFilename, planeAImage], { windowsVerbatimArguments: true })
+execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeALayers), mapFilename, planeAImage], { windowsVerbatimArguments: true })
   .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-  .then(() => writeMegaDrivePatterns('planeA', planeAImage, targetDirectory))
+  .then(() => writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory))
