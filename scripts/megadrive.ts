@@ -11,7 +11,9 @@ for (let r = 0; r <= 0b111; ++r)
     for (let b = 0; b <= 0b111; ++b)
       palette.push([megaDriveLadder[r], megaDriveLadder[g], megaDriveLadder[b]])
 
-export async function writeMegaDrivePatterns (prefix: string, inputLayers: { filePath: string, highPriority: boolean }[], targetDirectory: string): Promise<void> {
+export type Pattern = { normal: Uint32Array, flipped: Uint32Array }
+
+export async function writeMegaDrivePatterns (prefix: string, inputLayers: { filePath: string, highPriority: boolean }[], targetDirectory: string, previousPatterns?: Pattern[]): Promise<Pattern[]> {
   const quant = new RgbQuant({ colors: 16, colorDist: 'manhattan' })
 
   const inputDatas = await Promise.all(inputLayers.map(async layer => {
@@ -49,7 +51,8 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   const mapWidthChunks = mapWidth >>> 8
   const mapHeightChunks = mapHeight >>> 8
 
-  const patterns: { normal: Uint32Array, flipped: Uint32Array }[] = []
+  const patterns: Pattern[] = previousPatterns ?? []
+  const patternStartOffset = patterns.length
   const patternmap = new Uint16Array(mapWidthChunks * mapHeightChunks * 32 * 32)
 
   const chunks: Uint16Array[] = []
@@ -62,7 +65,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   }
   
   // PCCV HAAA AAAA AAAA
-  const findPattern = (pattern: { normal: Uint32Array, flipped: Uint32Array }): number => {
+  const findPattern = (pattern: Pattern): number => {
     const { normal } = pattern
 
     let patternIndex = 0
@@ -108,7 +111,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
           normal[6] === target.flipped[1] &&
           normal[7] === target.flipped[0])
         return (patternIndex & 0x07FF) | 0x1800
-      }
+    }
 
     const nextIndex = patterns.length
     if (nextIndex > 0x07FF)
@@ -146,7 +149,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
         const tile = chunks[chunkIndex]
 
-        let pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
+        let pattern: Pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
         for (let s = 0; s < 8; ++s) {
           let normal = 0
           let flipped = 0
@@ -186,7 +189,8 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
   //#region Patterns
   const allPatterns = concatenate(...patterns.map(pattern => pattern.normal))
-  await writeFile(resolve(targetDirectory, `${prefix}patterns.bin`), allPatterns)
+  const patternsToWrite = allPatterns.subarray(patternStartOffset * 8)
+  await writeFile(resolve(targetDirectory, `${prefix}patterns.bin`), patternsToWrite)
   //#endregion
 
   //#region Palette
@@ -204,4 +208,6 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   }
   await writeFile(resolve(targetDirectory, `${prefix}.pal`), megaDrivePalette)
   //#endregion
+
+  return patterns
 }

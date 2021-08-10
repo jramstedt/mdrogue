@@ -200,16 +200,14 @@ execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...paramCollisionLa
 
 const planeBLowImage = resolve(targetDirectory, 'planeB-low.png')
 const planeBHighImage = resolve(targetDirectory, 'planeB-high.png')
-Promise.all([
-  execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBLowLayers), mapFilename, planeBLowImage], { windowsVerbatimArguments: true }).then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) }),
-  // execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBHighLayers), mapFilename, planeBHighImage], { windowsVerbatimArguments: true }).then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
+const planeBPatterns = Promise.all([
+  execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBLowLayers), mapFilename, planeBLowImage], { windowsVerbatimArguments: true }),
+  // execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBHighLayers), mapFilename, planeBHighImage], { windowsVerbatimArguments: true })
 ])
-.then(() => writeMegaDrivePatterns('planeB', [
-  { filePath: planeBLowImage, highPriority: false },
-  // { filePath: planeBHighImage, highPriority: true }
-], targetDirectory))
+.then(results => { for (const { stdout, stderr } of results) if (stderr.length !== 0) return console.error(new Error(stderr)) })
+.then(() => writeMegaDrivePatterns('planeB', [{ filePath: planeBLowImage, highPriority: false }, /*{ filePath: planeBHighImage, highPriority: true }*/], targetDirectory) )
 
 const planeAImage = resolve(targetDirectory, 'planeA.png')
 execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeALayers), mapFilename, planeAImage], { windowsVerbatimArguments: true })
   .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-  .then(() => writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory))
+  .then(async () => writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory, await planeBPatterns))
