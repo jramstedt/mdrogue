@@ -174,6 +174,6 @@ vcpsign MACRO vec1, vec2
 @end
 	ENDM
 	
-	cnop	0,2
+	EVEN
 ; X Y Abs
 octantLookup	dc.b	$85, $04, $02, $83, $06, $87, $81, $00

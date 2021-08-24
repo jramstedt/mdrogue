@@ -2,7 +2,7 @@
 patternsCol
 	incbin	'assets/col/colpat.bin'
 
-	cnop	0,2
+	EVEN
 spritesCol
 	dc.l	patternsCol
 	dc.w	@sprite8x8-spritesCol
@@ -22,4 +22,4 @@ spritesCol
 @sprite32x32
 	incbin	'assets/col/32x32spr.bin'
 
-	cnop	0,2
+	EVEN

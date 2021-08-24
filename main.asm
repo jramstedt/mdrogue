@@ -18,7 +18,7 @@ __main
 	move.l	#vdp_map_ant/sizePattern, d7
 	jsr	freeVRAM
 
-	reserveVRAM #0, #1	; keep first block empty
+	; reserveVRAM #0, #1	; keep first block empty
 	reserveVRAM #vdp_map_ant, #(64*32*sizeWord/sizePattern)
 	reserveVRAM #vdp_map_wnt+(20*32/sizePattern), #(4*32/sizePattern)
 	reserveVRAM #vdp_map_bnt, #(64*32*sizeWord/sizePattern)

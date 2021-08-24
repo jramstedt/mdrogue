@@ -53,14 +53,19 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
   const patterns: Pattern[] = previousPatterns ?? []
   const patternStartOffset = patterns.length
-  const patternmap = new Uint16Array(mapWidthChunks * mapHeightChunks * 32 * 32)
+  if (patterns.length === 0)  // No patterns, init with one empty pattern.
+    patterns.push({ normal: new Uint32Array(8), flipped: new Uint32Array(8) })
+  
+  const chunkSizePatterns = 32 * 32
+  const patternmap = new ArrayBuffer(mapWidthChunks * mapHeightChunks * chunkSizePatterns * 2)
 
-  const chunks: Uint16Array[] = []
+  const chunks: DataView[] = []
   for (let y = 0; y < mapHeightChunks; y++) {
     const yOffset = y * mapWidthChunks
     for (let x = 0; x < mapWidthChunks; x++) {
       const offset = yOffset + x
-      chunks[offset] = new Uint16Array(patternmap, offset * 32 * 32 * Uint16Array.BYTES_PER_ELEMENT, 32 * 32)
+      const chunkStartBytes = offset * chunkSizePatterns * 2
+      chunks[offset] = new DataView(patternmap, chunkStartBytes, chunkSizePatterns * 2)
     }
   }
   
@@ -68,8 +73,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   const findPattern = (pattern: Pattern): number => {
     const { normal } = pattern
 
-    let patternIndex = 0
-    for (; patternIndex < patterns.length; ++patternIndex) {
+    for (let patternIndex = 0; patternIndex < patterns.length; ++patternIndex) {
       const target = patterns[patternIndex]
 
       if (normal[0] === target.normal[0] &&
@@ -119,7 +123,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
     patterns[nextIndex] = pattern
 
-    return nextIndex
+    return (nextIndex & 0x07FF)
   }
 
   //const reducedPalette = quant.palette()
@@ -145,8 +149,6 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
         // 32x32 pattern per tile
         // 8x8 pixels per patterns
         const chunkIndex = (y >>> 8) * mapWidthChunks + (x >>> 8)
-        const patternIndex = ((y >>> 3) % 32) * 32 + ((x >>> 3) % 32)
-
         const tile = chunks[chunkIndex]
 
         let pattern: Pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
@@ -156,10 +158,10 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
           for (let p = 0; p < 8; ++p) {
             const pixelIndex = (y + s) * canvas.width + (x + p)
-            const colorIndex = indexedImage[pixelIndex]
+            const colorIndex = indexedImage[pixelIndex] & 0x0F
 
-            normal = normal << 4 | (colorIndex & 0x0F)
-            flipped = flipped >>> 4 | ((colorIndex & 0x0F) << 28)
+            normal = (normal >>> 4 | colorIndex << 28) >>> 0
+            flipped = (flipped << 4 | colorIndex) >>> 0
           }
 
           pattern.normal[s] = normal
@@ -170,14 +172,15 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
         let tilePattern = findPattern(pattern)
         if (highPriority) tilePattern |= 0x8000
 
-        tile[patternIndex] = tilePattern
+        const patternIndex = (((y >>> 3) & 0x1F) * 32) + ((x >>> 3) & 0x1F)
+        tile.setUint16(patternIndex * 2, tilePattern)
       }
     }
   }
 
   console.log(`${prefix} patterns: ${patterns.length}`)
 
-  await writeFile(resolve(targetDirectory, `${prefix}tilemap.bin`), patternmap)
+  await writeFile(resolve(targetDirectory, `${prefix}tilemap.bin`), new Uint8Array(patternmap))
 
   // 4 bits per pixel, 2 pixels per byte
   // word per row
@@ -204,7 +207,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
     const g = megaDriveLadder.indexOf((color >>> 8) & 0xFF) << 1
     const b = megaDriveLadder.indexOf((color >>> 16) & 0xFF) << 1
 
-    megaDrivePalette[index] = r | g << 4 | b << 8
+    megaDrivePalette[index] = b | (g << 4 | r) << 8
   }
   await writeFile(resolve(targetDirectory, `${prefix}.pal`), megaDrivePalette)
   //#endregion

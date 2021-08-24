@@ -142,7 +142,7 @@ for (const layer of collisionLayers) {
       const dataChunk = collisionData[chunkY][chunkX]
       const typeChunk = collisionType[chunkY][chunkX]
 
-      const wasSetBefore = (dataChunk.getUint32(dataByteOffset, false) & dataMask) !== 0
+      const wasSetBefore = (dataChunk.getUint32(dataByteOffset) & dataMask) !== 0
 
       const shiftedTileIndex = tileIndex << typeShift
       if (wasSetBefore && (typeChunk.getUint8(typeByteOffset) & typeMask) !== shiftedTileIndex)
@@ -150,7 +150,7 @@ for (const layer of collisionLayers) {
       else
         typeChunk.setUint8(typeByteOffset, typeChunk.getUint8(typeByteOffset) | shiftedTileIndex)
       
-      dataChunk.setUint32(dataByteOffset, dataChunk.getUint32(dataByteOffset, false) | dataMask, false)
+      dataChunk.setUint32(dataByteOffset, dataChunk.getUint32(dataByteOffset) | dataMask)
     }
   }
 }

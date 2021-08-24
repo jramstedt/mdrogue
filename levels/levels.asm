@@ -1,12 +1,13 @@
 incLevel	MACRO
 \0Palette	incbin	\1
 \0Patterns	incbin	\2
-\0PatternLen	equ	filesize(\2)/sizePattern
-\0TilemapA	incbin	\3
+		incbin	\3
+\0PatternLen	equ	(filesize(\2)+filesize(\3))/sizePattern
 \0TilemapB	incbin	\4
-\0Collision	incbin	\5
-\0CollisionType	incbin	\6
-	cnop	0,2
+\0TilemapA	incbin	\5
+\0Collision	incbin	\6
+\0CollisionType	incbin	\7
+	EVEN
 	ENDM
 
 buildLevelDescriptor	MACRO	width, height
@@ -15,8 +16,8 @@ buildLevelDescriptor	MACRO	width, height
 	dc.w	\0PatternLen
 	dc.b	\width
 	dc.b	\height
-	dc.l	\0TilemapA
 	dc.l	\0TilemapB
+	dc.l	\0TilemapA
 	dc.l	\0Collision
 	dc.l	\0CollisionType
 	ENDM
@@ -29,8 +30,8 @@ lvlPattern		rs.l	1
 lvlPatternLen		rs.w	1
 lvlWidth		rs.b	1	; in chunks
 lvlHeight		rs.b	1	; in chunks
-lvlPlaneATiles		rs.l	1
 lvlPlaneBTiles		rs.l	1
+lvlPlaneATiles		rs.l	1
 lvlCollisionData	rs.l	1
 lvlCollisionType	rs.l	1
 levelDesc	equ	__rs
@@ -38,13 +39,12 @@ levelDesc	equ	__rs
 lvlChunkSize	equ	32	; number of patterns in level chunk at at each axis
 lvlChunkArea	equ	lvlChunkSize*lvlChunkSize
 
+	EVEN
 
-	incLevel.testLevel 'assets/graphicstestlevel/level.pal','assets/graphicstestlevel/BigPicPatterns.bin', 'assets/graphicstestlevel/BigPicTilemap.bin', 'assets/graphicstestlevel/BigPicTilemap.bin', 'assets/collisiontestlevel/col.data.bin', 'assets/collisiontestlevel/col.type.bin'
-	incLevel.collisionLevel 'assets/graphicstestlevel/level.pal','assets/graphicstestlevel/BigPicPatterns.bin', 'assets/graphicstestlevel/BigPicTilemap.bin', 'assets/graphicstestlevel/BigPicTilemap.bin', 'assets/collisiontestlevel/col.data.bin', 'assets/collisiontestlevel/col.type.bin'
+	incLevel.testLevel 'assets/testlevel/planeB.pal','assets/testlevel/planeBpatterns.bin','assets/testlevel/planeApatterns.bin','assets/testlevel/planeBtilemap.bin','assets/testlevel/planeAtilemap.bin','assets/testlevel/col.data.bin','assets/testlevel/col.type.bin'
 
 levelDescriptions
 	buildLevelDescriptor.testLevel 4, 2
-	buildLevelDescriptor.collisionLevel 4, 2
 
 ; Collision bit per pattern
 ;		CY	CX	Y	X
