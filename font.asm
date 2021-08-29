@@ -21,6 +21,7 @@ drawFont	MODULE
 	add.w	d7, d2
 	clr.w	d7
 
+	; build VRAM write command
 	lsl.l	#2, d2
 	lsr.w	#2, d2
 	swap	d2
