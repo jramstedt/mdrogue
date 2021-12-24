@@ -71,7 +71,7 @@ calculateCollision MACRO type, skip
 		add.w	d1, obX(a0)
 
 		muls	d7, d4			; d1 = tx 13.19
-		swap	d4
+		swap	d4			; 13.3
 		add.w	d4, obX(a1)
 
 		; Y axis
@@ -83,7 +83,7 @@ calculateCollision MACRO type, skip
 		add.w	d2, obY(a0)
 
 		muls	d7, d4			; d2 = ty 13.19
-		swap	d4
+		swap	d4			; 13.3
 		add.w	d4, obY(a1)
 		
 	ELSE

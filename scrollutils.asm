@@ -34,10 +34,19 @@ chunkOffset MACROS c
 	and.w	#$1F, \c		; in patterns (chunk space)
 
 ;
-copyRowToVram MACRO level, camera, xOffset, yOffset
+copyRowToVram MACRO level, camera, xOffset, yOffset, plane
 	LOCAL	useCamY, checkCamX, useCamX
-	LOCAL	initCopy, checkCopy, startCopyLoop, copy, queueRowToVram, lastTransfer, complete
+	LOCAL	initCopy, checkCopy, startCopyLoop, copy, dmaRowToVram, lastTransfer, complete
 	LOCAL	startFillLoop, fill
+	LOCAL	planeSrc, planeAddr
+
+	IF STRCMP(\plane, 'a')
+planeSrc	equ	lvlPlaneATiles
+planeAddr	equ	vdp_map_ant
+	ELSE
+planeSrc	equ	lvlPlaneBTiles
+planeAddr	equ	vdp_map_bnt
+	ENDIF
 
 	IF yOffset<>0
 		move.w	camY(\camera), d6
@@ -86,7 +95,7 @@ useCamX
 	add	d4, d6
 
 initCopy
-	move.l	lvlPlaneBTiles(\level), a2
+	move.l	planeSrc(\level), a2
 	lsl.l	d6			; 2 bytes per pattern
 	adda.l	d6, a2
 	
@@ -98,13 +107,13 @@ checkCopy
 
 	move	#lvlChunkSize, d3	; number of patterns in row of chunk
 	sub	d4, d3			; number of patterns left in this row
-	beq	queueRowToVram		; 0 needed to fill, skip copying
+	beq	dmaRowToVram		; 0 needed to fill, skip copying
 
 	cmp	d3, d2			; is space left in buffer for full row of patterns
 	bge	startCopyLoop		; if there is then start copying
 	
 	move	d2, d3			; else copy only what is needed to fill buffer
-	beq	queueRowToVram		; 0 needed to fill, skip copying
+	beq	dmaRowToVram		; 0 needed to fill, skip copying
 
 startCopyLoop
 	sub	d3, d2			; d2 = number of patterns left in the screen row
@@ -112,6 +121,7 @@ startCopyLoop
 	sub	#1, d3
 copy
 	move.w	(a2)+, (a3)+
+	; TODO add vram offset to (a3)
 	dbra	d3, copy
 
 	; skip to next chunk, and move to start of the row
@@ -132,7 +142,7 @@ fill
 	bra	checkCopy
 
 ; Horiz. scroll 64
-queueRowToVram
+dmaRowToVram
 	; source
 	move.l	#horBuffer, d5
 
@@ -151,7 +161,7 @@ queueRowToVram
 
 	add.w	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
-	add.l	#vdp_map_bnt, d6
+	add.l	#planeAddr, d6
 
 	setVDPAutoIncrement 2
 
@@ -162,9 +172,7 @@ queueRowToVram
 	moveq	#64, d7
 	sub.w	d2, d7
 
-	haltZ80
 	jsr	startDMATransfer	; draw buffer
-	resumeZ80
 
 	moveq	#64, d7
 	sub.w	d2, d7
@@ -179,23 +187,30 @@ queueRowToVram
 	add.l	#horBuffer, d5
 
 	move.l	d3, d6
-	lsl.w	#7, d6	; scroll plane width 64, 2 bytes per pattern 
-	add.w	#vdp_map_bnt, d6
+	lsl.w	#7, d6	; scroll plane width 64, 2 bytes per pattern
+	add.w	#planeAddr, d6
 
 	move.w	d2, d7
 
 lastTransfer
-	haltZ80
 	jsr	startDMATransfer	; draw buffer
-	resumeZ80
 
 complete
 	ENDM
 
-copyColumnToVram MACRO level, camera, xOffset, yOffset
+copyColumnToVram MACRO level, camera, xOffset, yOffset, plane
 	LOCAL	checkCamY, useCamY, useCamX
-	LOCAL initCopy, checkCopy, startCopyLoop, copy, dmaColumnToVram, lastTransfer, complete
+	LOCAL	initCopy, checkCopy, startCopyLoop, copy, dmaColumnToVram, lastTransfer, complete
 	LOCAL	startFillLoop, fill
+	LOCAL	planeSrc, planeAddr
+
+	IF STRCMP(\plane, 'a')
+planeSrc	equ	lvlPlaneATiles
+planeAddr	equ	vdp_map_ant
+	ELSE
+planeSrc	equ	lvlPlaneBTiles
+planeAddr	equ	vdp_map_bnt
+	ENDIF
 
 	IF xOffset<>0
 		move.w	camX(\camera), d4
@@ -241,12 +256,13 @@ useCamY
 	; full rows
 	chunkOffset d2
 	move.l	d2, d5
-	lsl.l	#5, d2		; d2 is number of patterns (rows * lvlChunkSize)
+	lsl.l	#5, d2			; d2 is number of patterns (rows * lvlChunkSize)
 	add	d2, d6
 
 initCopy
-	move.l	lvlPlaneBTiles(\level), a2
-	lsl.l	d6	; 2 bytes per pattern
+	move.l	planeSrc(\level), a2
+
+	lsl.l	d6			; 2 bytes per pattern
 	adda.l	d6, a2
 
 	move	#verBufferLen, d2	; number of patterns needed to fill screen column (patterns left in buffer)
@@ -271,6 +287,7 @@ startCopyLoop
 	sub	#1, d3
 copy
 	move.w	(a2), (a3)+
+	; TODO add vram offset to (a3)
 	adda.l	#lvlChunkSize<<1, a2	; increase by full row of patterns (32), 2 bytes per pattern
 	dbra	d3, copy
 
@@ -319,7 +336,7 @@ dmaColumnToVram
 
 	add.w	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
-	add.l	#vdp_map_bnt, d6
+	add.l	#planeAddr, d6
 
 	setVDPAutoIncrement $80
 
@@ -330,9 +347,7 @@ dmaColumnToVram
 	moveq	#32, d7
 	sub.w	d3, d7
 
-	haltZ80
-	jsr	startDMATransfer
-	resumeZ80
+	jsr	startDMATransfer	; draw buffer
 
 	moveq	#32, d7
 	sub.w	d3, d7
@@ -348,14 +363,12 @@ dmaColumnToVram
 
 	move.l	d2, d6
 	lsl.w	d6	; 2 bytes per pattern
-	add.w	#vdp_map_bnt, d6
+	add.w	#planeAddr, d6
 
 	move.w	d3, d7
 
 lastTransfer
-	haltZ80
-	jsr	startDMATransfer
-	resumeZ80
+	jsr	startDMATransfer	; draw buffer
 
 complete
 
@@ -387,9 +400,7 @@ fillEmptyRowToVram MACRO level, camera, xOffset, yOffset
 	moveq	#64, d7
 	sub.w	d2, d7
 
-	haltZ80
 	jsr	startDMAFill	; draw buffer
-	resumeZ80
 
 	moveq	#64, d7
 	sub.w	d2, d7
@@ -405,9 +416,7 @@ fillEmptyRowToVram MACRO level, camera, xOffset, yOffset
 	move.w	d2, d7
 
 lastFill
-	haltZ80
 	jsr	startDMAFill	; draw buffer
-	resumeZ80
 
 complete
 	ENDM

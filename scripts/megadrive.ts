@@ -1,8 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { Image, Canvas, createImageData } from 'canvas'
+import canvas from 'canvas'
 import RgbQuant, { Triplet } from 'rgbquant'
-import { concatenate } from './utils'
+
+import { concatenate } from './utils.js'
+
+const { Image, Canvas, createImageData } = canvas
 
 const megaDriveLadder = [0x00, 0x34, 0x57, 0x74, 0x90, 0xAC, 0xCE, 0xFF]
 const palette: Triplet[] = []
@@ -160,8 +163,8 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
             const pixelIndex = (y + s) * canvas.width + (x + p)
             const colorIndex = indexedImage[pixelIndex] & 0x0F
 
-            normal = (normal >>> 4 | colorIndex << 28) >>> 0
-            flipped = (flipped << 4 | colorIndex) >>> 0
+            normal = (normal << 4 | colorIndex) >>> 0
+            flipped = (flipped >>> 4 | colorIndex << 28) >>> 0
           }
 
           pattern.normal[s] = normal
@@ -191,7 +194,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   // PCCV HAAA AAAA AAAA
 
   //#region Patterns
-  const allPatterns = concatenate(...patterns.map(pattern => pattern.normal))
+  const allPatterns = concatenate(...patterns.map(pattern => pattern.normal.map(pattern => ((pattern & 0xFF000000) >>> 24) | ((pattern & 0xFF0000) >>> 8) | ((pattern & 0xFF00) << 8) | ((pattern & 0xFF) << 24) )))
   const patternsToWrite = allPatterns.subarray(patternStartOffset * 8)
   await writeFile(resolve(targetDirectory, `${prefix}patterns.bin`), patternsToWrite)
   //#endregion

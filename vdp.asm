@@ -92,10 +92,21 @@ copyPatterns	MODULE
 	MODEND
 
 dmaClearVRAM MACRO
+	setVDPRegister 1, %00010100	; DMA On
 	setVDPAutoIncrement 1
 	setVDPRegister 19, $FF
 	setVDPRegister 20, $FF
 	setVDPRegister 23, %10000000
 	move.l	#vdp_w_vram+$80, vdp_ctrl
 	move.w	#$0, vdp_data
+	ENDM
+
+dmaOn MACRO
+	bset	#4, vdp1rState+1	; DMA On
+	move.w	vdp1rState, vdp_ctrl
+	ENDM
+
+dmaOff MACRO
+	bclr	#4, vdp1rState+1	; DMA Off
+	move.w	vdp1rState, vdp_ctrl
 	ENDM

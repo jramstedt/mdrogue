@@ -79,6 +79,8 @@ pad2State		rs.b	1	;  SACBRLDU
 
 lcgSeed			rs.l	1
 
+vdp1rState		rs.w	1
+
 			rsset	ramStartAddress
 
 ; 0000 - 7FFF -> address can be save as word

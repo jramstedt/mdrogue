@@ -66,7 +66,7 @@ vrotate MACRO vec, angle
 
 	ENDM
 
-;
+; Capelli, Ron, Fast Approximation To the Arctangent, p. 389-391. Graphics Gems II
 varctan MACRO vec, angle
 	movem.w	0(\vec), d2/d3
 	moveq	#0, d4
@@ -115,6 +115,12 @@ varctan MACRO vec, angle
 	ENDM
 
 ; vector cross product sign
+; Ritter, Jack, Fast Sign of Cross Product Calculation, p. 392-393, code: p. 613-614. Graphics Gems II
+;
+; can be used to determine sign of angle between two vectors
+; -1 counter-clockwise rotation
+;  1 clockwise rotation
+;  0 parallel, zero length
 vcpsign MACRO vec1, vec2
 	move.w	0(\vec1), d2
 	beq	@v1zero
@@ -155,10 +161,23 @@ vcpsign MACRO vec1, vec2
 @abs
 	tst.w	d0
 	bpl.s	@calc
+
+	tst.w	d2	; is positive
+	bpl.s	*+4	; skip neg
 	neg.w	d2
+
+	tst.w	d3	; is positive
+	bpl.s	*+4	; skip neg
 	neg.w	d3
+
+	tst.w	d4	; is positive
+	bpl.s	*+4	; skip neg
 	neg.w	d4
+
+	tst.w	d5	; is positive
+	bpl.s	*+4	; skip neg
 	neg.w	d5
+
 	exg	d2, d4
 	exg	d3, d5
 

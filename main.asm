@@ -26,14 +26,15 @@ __main
 	;reserveVRAM #vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
 	reserveVRAM #vdp_map_hst, #1
 
+	jsr	waitDMAOn	; wait all background DMAs to finish
+
 	jsr	initDMAQueue
 
+	; TODO should be loaded later, after menus etc.
 	move.l	#0, d6
 	jsr	loadLevel
 
 	allocAndQueueDMA fontPatterns, fontTilemap, fontVRAMAddress
-
-	;queueDMATransfer #testLevelTilemap, #vdp_map_bnt, #(64*32)
 
 	jsr	findFreeObject
 	move.b	#$10, obClass(a2)
@@ -44,8 +45,6 @@ __main
 	move.b	#0, obPhysics(a2)
 	move.b	#$1F, obCollision(a2)
 
-	jsr	waitDMAOn
-
 	; loadPalette testPalette, 0
 	loadPalette testPalette, 1
 
@@ -53,12 +52,22 @@ __main
 	move.l	#$00160003, d7
 	jsr	drawFont
 
+	; process initial DMA queue
+	move.w	#vdp_w_reg+%100010100, vdp1rState
+	jsr	processDMAQueue
+
+	; start game
 	move.w	#vdp_w_reg, d0
 	move.b	vdp1r, d0
 	or.w	#%101000000, d0	; #1 reg, display on
+	move.w	d0, vdp1rState
 	move.w	d0, vdp_ctrl
 
 	jsr	initScrolling
+
+	; wait this frame to finish before gameLoop start.
+	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
+	jsr	waitVBlankOn	; Wait for blanking to stop.
 
 gameLoop
 	; do input processing
@@ -88,7 +97,7 @@ gameLoop
 	move.b	d0, pad1State
 
 	lcg	d0
-	
+
 	; do game processing
 	jsr	processObjects
 	jsr	processPhysicObjects

@@ -40,11 +40,12 @@ loadLevel	MODULE
 	move.l	#0, camX(a0)		; clears x and y
 	move.l	#0, camXprev(a0)	; clears x and y
 
-lc = 0
-	REPT 32
-	copyRowToVram a1, a0, 0, lc
-lc = lc+8
-	ENDR
+;lc = 0
+;	REPT 32
+;	; copyRowToVram a1, a0, 0, lc, 'a'
+;	; copyRowToVram a1, a0, 0, lc, 'b'
+;lc = lc+8
+;	ENDR
 
 	rts
 	MODEND
@@ -80,12 +81,14 @@ updateLevel	MODULE
 	bmi	@leftBorder
 
 @rightBorder
-	copyColumnToVram a1, a0, 320, 0
+	copyColumnToVram a1, a0, 320, 0, 'a'
+	copyColumnToVram a1, a0, 320, 0, 'b'
 
 	bra	@checkY
 
 @leftBorder
-	copyColumnToVram a1, a0, 0, 0
+	copyColumnToVram a1, a0, 0, 0, 'a'
+	copyColumnToVram a1, a0, 0, 0, 'b'
 	
 	bra	@checkY
 
@@ -99,12 +102,14 @@ updateLevel	MODULE
 	bmi	@topBorder
 
 @bottomBorder
-	copyRowToVram a1, a0, 0, 224
+	copyRowToVram a1, a0, 0, 224, 'a'
+	copyRowToVram a1, a0, 0, 224, 'b'
 
 	bra	@exit
 
 @topBorder
-	copyRowToVram a1, a0, 0, 0
+	copyRowToVram a1, a0, 0, 0, 'a'
+	copyRowToVram a1, a0, 0, 0, 'b'
 
 	bra	@exit
 
@@ -121,7 +126,7 @@ updatePlaneScrollToCamera	MODULE
 	setVDPAutoIncrement 2
 
 	setVDPWriteAddressVSRAM 0
-	move.w	#0, vdp_data
+	move.w	camY(a0), vdp_data
 	move.w	camY(a0), vdp_data
 
 	move.w	camX(a0), d7
@@ -129,7 +134,7 @@ updatePlaneScrollToCamera	MODULE
 	and.w	#$1FF, d7
 
 	setVDPWriteAddressVRAM vdp_map_hst
-	move.w	#0, vdp_data
+	move.w	d7, vdp_data
 	move.w	d7, vdp_data
 	rts
 	MODEND

@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import zlib from 'node:zlib'
-import execa from 'execa'
+import { inflateSync, gunzipSync } from 'node:zlib'
+import { execa } from 'execa'
 
-import { Group, ID_MASK, isGroup, isTileLayer, Layer, TiledMap, TileLayer } from './tiled'
-import { writeMegaDrivePatterns } from './megadrive'
+import { type Group, ID_MASK, isGroup, isTileLayer, type Layer, type TiledMap, type TileLayer } from './tiled.js'
+import { writeMegaDrivePatterns } from './megadrive.js'
 
 function getTileIndexInTileset(globalId: number): number {
   globalId = globalId & ID_MASK
@@ -100,9 +100,9 @@ for (const layer of collisionLayers) {
     data = Buffer.from(layer.data, 'base64')
 
     if (layer.compression === 'zlib')
-      data = zlib.inflateSync(data)
+      data = inflateSync(data)
     else if(layer.compression === 'gzip')
-      data = zlib.gunzipSync(data)
+      data = gunzipSync(data)
     //else if(layer.compression === 'zstd')
     //  data = zstd.decompressSync(data)
     else
