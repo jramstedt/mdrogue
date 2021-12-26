@@ -114,7 +114,6 @@ varctan MACRO vec, angle
 
 	ENDM
 
-; vector cross product sign
 ; Ritter, Jack, Fast Sign of Cross Product Calculation, p. 392-393, code: p. 613-614. Graphics Gems II
 ;
 ; can be used to determine sign of angle between two vectors
