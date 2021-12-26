@@ -82,7 +82,7 @@
 	dc.l	$00000000						; 1B8H End address of SRAM
 	dc.b	"            "						; 1BCH Modem ('MO','xxxx','yy.zzz')
 	dc.b	"                                        "		; 1C8H Notes (unused)
-	dc.b	"JUE             "					; 1F0H Country codes
+	dc.b	"F               "					; 1F0H Hardware enable code
 
 	include 'memorymap.asm'
 	include 'megadrive.asm'
