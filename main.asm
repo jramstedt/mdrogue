@@ -26,8 +26,6 @@ __main
 	;reserveVRAM #vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
 	reserveVRAM #vdp_map_hst, #1
 
-	jsr	waitDMAOn	; wait all background DMAs to finish
-
 	jsr	initDMAQueue
 
 	; TODO should be loaded later, after menus etc.

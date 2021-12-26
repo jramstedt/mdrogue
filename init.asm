@@ -91,9 +91,11 @@
 
 EntryPoint
 	tst.w	io_expRst	; Test expansion port reset
-	bne	Main		; Branch if Not Equal (to zero) - to Main
+	bne	HotStart	; Branch if Not Equal (to zero) - to HotStart
 	tst.w	io_reset	; Test reset button
-	bne	Main		; Branch if Not Equal (to zero) - to Main
+	bne	HotStart	; Branch if Not Equal (to zero) - to HotStart
+
+; Cold start
 
 ; TMSS
 	move.b	io_ver, d0
@@ -131,7 +133,7 @@ clearRamLoop
 ; clean init registers
 	movem.l	ramStartAddress, d0-d7/a0-a6
 	lea	stackStartAddress, sp
-	move.w	#$2000, sr	; supervisor
+	move.w	#$2700, sr	; supervisor, interrupt level 7
 
 	move.w	#$100, Z80_reset
 	move.w	#$100, Z80_busreq
@@ -141,7 +143,10 @@ clearRamLoop
 	move.w	#$100, Z80_reset
 
 	move.l	#1, lcgSeed
-Main
+
+HotStart
+	jsr	waitDMAOn	; wait all background DMAs to finish, DMA can be running if hot started with reset.
+
 	bra	__main ; Begin external main
 
 VDPRegisters
