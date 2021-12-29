@@ -35,13 +35,13 @@ __main
 	allocAndQueueDMA fontPatterns, fontTilemap, fontVRAMAddress
 
 	jsr	findFreeObject
-	move.b	#$10, obClass(a2)
+	move.b	#(idPlayer<<4)|0, obClass(a2)
 
 	jsr	findFreeObject
-	move.b	#$20, obClass(a2)
+	move.b	#(idCollider<<4)|0, obClass(a2)
 	move.b	#16, obRadius(a2)
 	move.b	#0, obPhysics(a2)
-	move.b	#$1F, obCollision(a2)
+	move.b	#$2F, obCollision(a2)
 
 	; loadPalette testPalette, 0
 	loadPalette testPalette, 1

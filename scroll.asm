@@ -27,7 +27,7 @@ loadLevel	MODULE
 ; load patterns
 	move.l	lvlPattern(a1), d5
 
-	moveq	#0,	d7
+	moveq	#0, d7
 	move.w	lvlPatternLen(a1), d7
 	jsr	allocVRAM	; d6 vram address, d7 allocated bytes
 	move.w	d6, levelVRAMAddress

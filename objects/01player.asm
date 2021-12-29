@@ -28,6 +28,8 @@ objPlayer	MODULE
 	lsr.w	#5, d6		; address to pattern number
 	or.w	d6, obVRAM(a0)
 
+	move.b	#0, obClassData(a0)
+
 @input
 	; TODO set velocity
 	btst	#0, pad1State
@@ -51,6 +53,34 @@ objPlayer	MODULE
 	add.w	d0, obX(a0)
 
 	jsr collideWithLevel
+
+	; can shoot?
+	tst	obClassData(a0)
+	beq	@shoot
+
+	sub.b	#1, obClassData(a0)
+	bne	@display
+
+@shoot	btst	#6, pad1State
+	bne	@display
+
+	; shoot
+	jsr	findFreeObject
+	move.b	#(idBullet<<4)|0, obClass(a2)
+	move.b	#8, obRadius(a2)
+	move.b	#1, obPhysics(a2)
+	move.b	#$42, obCollision(a2)
+
+	move.w	obX(a0), d0
+	move.w	d0, obX(a2)
+
+	move.w	obY(a0), d0
+	move.w	d0, obY(a2)
+
+	move.w	#1<<3|3, obVelX(a2)
+	move.w	#0, obVelY(a2)
+
+	move.b	#10, obClassData(a0)
 
 @display
 	; update main camera to player coordinates!

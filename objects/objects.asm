@@ -206,7 +206,7 @@ animateSprite	MODULE
 ; input:
 ;	a0 object
 deleteObject	MODULE
-	moveq	#(obDataSize/sizeLong), d0
+	moveq	#(obDataSize/sizeLong)-1, d0
 	moveq	#0, d1
 @loop
 	move.l	d1, (a0)+
