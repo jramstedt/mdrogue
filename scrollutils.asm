@@ -3,7 +3,7 @@ toPatterns MACRO positionPixels, offsetPixels, out
 	moveq	#0, \out
 	move.w	\positionPixels, \out
 	IF offsetPixels<>0
-		add	#\offsetPixels, \out
+		add.w	#\offsetPixels, \out
 	ENDIF
 	asr.w	#3, \out
 	ENDM
