@@ -147,13 +147,13 @@ lc = lc+14
 
 ;
 processDMAQueue	MODULE
-	setVDPAutoIncrement 2
-
 	movea.w	(dma_queue_pointer).w, a6
 	suba	#dma_queue, a6
 
 	haltZ80
 	dmaOn
+
+	setVDPAutoIncrement 2
 
 	jmp	@jumpTable(a6)
 
