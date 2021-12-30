@@ -15,7 +15,7 @@ objBullet	MODULE
 	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 
-	move.l	#4*4, d7 ; hard coded for one sprite
+	move.l	#4, d7 ; hard coded for one sprite
 	jsr	allocVRAM
 	lsr.w	#5, d6		; address to pattern number
 	or.w	d6, obVRAM(a0)
@@ -44,7 +44,7 @@ objBullet	MODULE
 @delete
 	move.w	obVRAM(a0), d6
 	lsl.w	#5, d6		; pattern number to address
-	move.l	#4*4, d7
+	move.l	#4, d7
 	jsr	freeVRAM
 
 	jsr	deleteObject

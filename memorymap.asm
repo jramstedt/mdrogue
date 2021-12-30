@@ -2,7 +2,7 @@ sizeByte		equ	$01
 sizeWord		equ	$02
 sizeLong		equ	$04
 
-sizeSpriteDesc		equ	sDataSize
+sizeSpriteDesc		equ	8
 sizePattern		equ	$20
 sizePalette		equ	$20
 
@@ -71,8 +71,8 @@ SlotCount		equ	20
 dma_queue		rs.b	SlotSize*SlotCount
 dma_queue_pointer	rs.w	1
 
-vrm_list		rs.b	sDataSize*10
-vrm_first		dc.l	vrm_list
+vrm_list		rs.b	vrmDataSize*12
+vrm_first		equ	vrm_list
 
 pad1State		rs.b	1	;  SACBRLDU
 pad2State		rs.b	1	;  SACBRLDU

@@ -10,8 +10,7 @@
 ; a2, a3, d4
 allocVRAM	MODULE
 	lsl.w	#5, d7	; pattern amount to bytes
-	lea.l	vrm_first, a3	; vrm_first is previous
-	movea.l	(a3), a2
+	lea.l	vrm_first, a2	; vrm_first is previous
 	moveq	#0, d6
 
 @loop
@@ -24,7 +23,11 @@ allocVRAM	MODULE
 	blo	@allocFromHoleStart
 	beq	@allocFullHole
 	
+	cmp.l	#vrm_first, vrmNext(a2)
+	beq	@notFound
+
 	movea.l a2, a3	; set current as previous
+
 	movea.l	vrmNext(a2), a2
 	bra	@loop
 
@@ -43,6 +46,7 @@ allocVRAM	MODULE
 
 @notFound	; No memory left in VRAM.
 	moveq	#0, d6
+	moveq	#0, d7
 	rts
 	MODEND
 
@@ -57,9 +61,9 @@ reserveVRAM MACRO sourceMem, lenPatterns
 ; d7 number of patterns
 _reserveVRAM	MODULE
 	lsl.l	#5, d7	; pattern amount to bytes
-	lea.l	vrm_first, a3	; vrm_first is previous
-	movea.l	(a3), a2
+	lea.l	vrm_first, a2	; vrm_first is previous
 
+	add	d6, d7
 @loop
 	tst.w	(a2)
 	beq	@notFound
@@ -67,7 +71,6 @@ _reserveVRAM	MODULE
 	cmp.w	vrmStart(a2), d6
 	blo	@notFound
 
-	add	d6, d7
 	cmp.w	vrmEnd(a2), d7
 	blo	@reserveHole
 	beq	@reserveFullHole
@@ -122,11 +125,11 @@ _reserveVRAM	MODULE
 ; trash:
 ; a3, d5, d6, d7
 freeVRAM	MODULE
-	move.l	d6, d5
-	lsl	#5, d7
-	add	d7, d5	; d5 is the VRAM end address
+	move.w	d6, d5
+	lsl.w	#5, d7
+	add.w	d7, d5	; d5 is the VRAM end address
+	lea.l	vrm_first, a2
 	lea.l	vrm_first, a3
-	movea.l	(a3), a2
 
 @loop
 	tst.w	(a2)
@@ -137,7 +140,9 @@ freeVRAM	MODULE
 
 	cmp.w	vrmStart(a2), d5
 	beq	@mergeStart
-	blo	@notFound
+
+	cmp.l	#vrm_first, vrmNext(a2)
+	beq	@notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
@@ -168,6 +173,14 @@ freeVRAM	MODULE
 	move.w	d5, vrmEnd(a2)
 	move.l	vrmNext(a3), vrmNext(a2)
 	move.l	a2, vrmNext(a3)
+	rts
+	MODEND
+
+initVRAM	MODULE
+	lea.l	vrm_list, a2
+	move.l	#vrm_first, vrmNext(a2)	; first hole points to itself
+	move.w	#$0000, vrmStart(a2)
+	move.w	#$FFFF, vrmEnd(a2)
 	rts
 	MODEND
 
