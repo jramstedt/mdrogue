@@ -28,31 +28,47 @@ objPlayer	MODULE
 	lsr.w	#5, d6		; address to pattern number
 	or.w	d6, obVRAM(a0)
 
-	move.b	#0, obClassData(a0)
+	move.b	#0, obClassData(a0)	; shoot timer
+	move.l	#0, obClassData+4(a0)	; last move direction
 
 @input
-	; TODO set velocity
-	btst	#0, pad1State
-	seq	d0
-	andi	#1<<3|3, d0
-	sub.w	d0, obY(a0)
+	; read pad1State and lookup direction vector
+	lea	dirVector, a3
 
-	btst	#1, pad1State
-	seq	d0
-	andi	#1<<3|3, d0
-	add.w	d0, obY(a0)
+	move.b	pad1State, d0
+	andi.b	#%1111, d0
+	lsl.w	#2, d0
+	adda.w	d0, a3
+	
+	tst.l	(a3)		; check if vector is zero length
+	beq 	@noMovement	; if zero there is no movement.
+	
+	movem.w	(a3), d0/d1
+	movem.w	d0/d1, obClassData+4(a0)
+	bra @setVelocity
 
-	btst	#2, pad1State
-	seq	d0
-	andi	#1<<3|3, d0
-	sub.w	d0, obX(a0)
+@noMovement
+	; TODO NTSC vs. PAL?
+	; halve velocity each frame
+	clr.w	d3
+	movem.w	obVelX(a0), d0/d1
+	asr.w	d0
+	addx.w	d3, d0
+	asr.w	d1
+	addx.w	d3, d1
 
-	btst	#3, pad1State
-	seq	d0
-	andi	#1<<3|3, d0
+@setVelocity
+	movem.w	d0/d1, obVelX(a0)
+
+	; TODO increase velocity over time
+
+	asr.w	#4, d0
+	asr.w	#4, d1
+
 	add.w	d0, obX(a0)
+	add.w	d1, obY(a0)
 
-	jsr collideWithLevel
+	jsr	collideWithLevel
 
 	; can shoot?
 	tst	obClassData(a0)
@@ -71,14 +87,15 @@ objPlayer	MODULE
 	move.b	#1, obPhysics(a2)
 	move.b	#$42, obCollision(a2)
 
-	move.w	obX(a0), d0
-	move.w	d0, obX(a2)
+	move.l	obX(a0), d0	; X and Y
+	move.l	d0, obX(a2)
 
-	move.w	obY(a0), d0
-	move.w	d0, obY(a2)
+	movem.w	obClassData+4(a0), d0/d1
 
-	move.w	#1<<3|3, obVelX(a2)
-	move.w	#0, obVelY(a2)
+	asr.w	#3, d0
+	asr.w	#3, d1
+
+	movem.w	d0/d1, obVelX(a2)
 
 	move.b	#10, obClassData(a0)
 
@@ -134,3 +151,28 @@ objPlayer	MODULE
 	rts
 	
 	MODEND
+
+	EVEN
+
+dirVector			; RLDU
+	dc.w	$0000, $0000	; 0000 all directions are pressed down
+	dc.w	$0000, $0100	; 0001
+	dc.w	$0000, $FF00	; 0010
+	dc.w	$0000, $0000	; 0011
+
+	dc.w	$0100, $0000 	; 0100
+	dc.w	$00B5, $00B5	; 0101
+	dc.w	$00B5, $FF4B	; 0110
+	dc.w	$0100, $0000	; 0111 
+
+	dc.w	$FF00, $0000	; 1000
+	dc.w	$FF4B, $00B5	; 1001
+	dc.w	$FF4B, $FF4B	; 1010
+	dc.w	$FF00, $0000	; 1011 
+
+	dc.w	$0000, $0000	; 1100
+	dc.w	$0000, $0100	; 1101
+	dc.w	$0000, $FF00	; 1110
+	dc.w	$0000, $0000	; 1111 none is pressed
+
+	EVEN
