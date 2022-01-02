@@ -107,10 +107,11 @@ skipTMSS
 ; VDP
 	move.l	#vdp_w_reg, d0
 	lea	VDPRegisters, a0
+	lea	vdp_ctrl, a1
 
 initVDPLoop
 	move.b	(a0)+, d0
-	move.w	d0, vdp_ctrl
+	move.w	d0, (a1)
 	add.w	#$0100, d0
 	cmpa.w	#VDPRegistersEnd, a0
 	blo.s	initVDPLoop

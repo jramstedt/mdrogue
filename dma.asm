@@ -10,35 +10,39 @@
 ;	d5 source
 ;	d6 destination
 ;	d7 length in words
+; trashes:
+;	d4, d5, d6, d7, a6
 startDMATransfer	MODULE
+	lea	vdp_ctrl, a6
+
 	haltZ80
 	dmaOn
 
 	; length
 	move.w	#$93FF, d4
 	move.b	d7, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
 	lsr.w	#8, d7
 	move.w	#$94FF, d4
 	move.b	d7, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
 	; source
 	lsr.l	d5		; Source address >> 1 (even address)
 	move.w	#$95FF, d4
 	move.b	d5, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
 	lsr.l	#8, d5
 	move.w	#$96FF, d4
 	move.b	d5, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
 	lsr.l	#8, d5
 	move.w	#$977F, d4
-	and.b	d5, d4		; would move be safe?
-	move.w	d4, vdp_ctrl
+	and.b	d5, d4
+	move.w	d4, (a6)
 
 	; Build DMA command
 	lsl.l	#2, d6		; Shift left. 2 bits goes to upper word
@@ -46,7 +50,7 @@ startDMATransfer	MODULE
 	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
 	swap	d6
 	ori.b	#%10000000, d6
-	move.l	d6, vdp_ctrl
+	move.l	d6, (a6)
 
 	dmaOff
 	resumeZ80
@@ -57,21 +61,25 @@ startDMATransfer	MODULE
 ; input:
 ;	d6 destination
 ;	d7 length in words
+; trashes:
+;	d4, d6, d7, a6
 startDMAFill	MODULE
+	lea	vdp_ctrl, a6
+
 	haltZ80
 	dmaOn
 
 	; length
 	move.w	#$93FF, d4
 	move.b	d7, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
 	lsr.w	#8, d7
 	move.w	#$94FF, d4
 	move.b	d7, d4
-	move.w	d4, vdp_ctrl
+	move.w	d4, (a6)
 
-	move.w	#$9780, vdp_ctrl
+	move.w	#$9780, (a6)
 
 	; Build DMA command
 	lsl.l	#2, d6		; Shift left. 2 bits goes to upper word
@@ -79,7 +87,7 @@ startDMAFill	MODULE
 	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
 	swap	d6
 	ori.b	#%10000000, d6
-	move.l	d6, vdp_ctrl
+	move.l	d6, (a6)
 
 	move.w	#$0, vdp_data
 

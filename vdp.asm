@@ -103,10 +103,20 @@ dmaClearVRAM MACRO
 
 dmaOn MACRO
 	bset	#4, vdp1rState+1	; DMA On
-	move.w	vdp1rState, vdp_ctrl
+	IF narg=1
+		move.w	vdp1rState, \1
+	ELSE
+		move.w	vdp1rState, vdp_ctrl
+	ENDIF
+
 	ENDM
 
 dmaOff MACRO
 	bclr	#4, vdp1rState+1	; DMA Off
-	move.w	vdp1rState, vdp_ctrl
+	IF narg=1
+		move.w	vdp1rState, \1
+	ELSE
+		move.w	vdp1rState, vdp_ctrl
+	ENDIF
+
 	ENDM

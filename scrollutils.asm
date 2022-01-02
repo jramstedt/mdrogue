@@ -161,7 +161,7 @@ dmaRowToVram
 
 	add.w	d2, d6
 	add.w	d6, d6	; 2 bytes per pattern
-	add.l	#planeAddr, d6
+	add.w	#planeAddr, d6
 
 	setVDPAutoIncrement 2
 
@@ -336,7 +336,7 @@ dmaColumnToVram
 
 	add.w	d2, d6
 	add.w	d6, d6	; 2 bytes per pattern
-	add.l	#planeAddr, d6
+	add.w	#planeAddr, d6
 
 	setVDPAutoIncrement $80
 

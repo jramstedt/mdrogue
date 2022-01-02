@@ -7,8 +7,11 @@
 ; a6	address for text
 ; d7	position. YYYYXXXX
 ; trash:
-; d0, d1, d2, d3, d4, a5
+; d0, d1, d2, d3, d4, a3, a4, a5
 drawFont	MODULE
+	lea	vdp_ctrl, a3
+	lea	vdp_data, a4
+
 	setVDPAutoIncrement 2
 
 	move.l	#vdp_map_wnt, d2
@@ -60,15 +63,15 @@ drawFont	MODULE
 	move.l	(a5, d0.l), d1	; d1 is pattern index
 	add.l	d4, d1
 
-	move.l	d2, vdp_ctrl
-	move.l	d1, vdp_data
+	move.l	d2, (a3)
+	move.l	d1, (a4)
 	
 	add.l	#128, d0	; row is 128 bytes
 	move.l	(a5, d0.l), d1	; d1 is pattern index
 	add.l	d4, d1
 
-	move.l	d3, vdp_ctrl
-	move.l	d1, vdp_data
+	move.l	d3, (a3)
+	move.l	d1, (a4)
 
 	add.l	#(4<<16), d2
 	add.l	#(4<<16), d3
