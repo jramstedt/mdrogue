@@ -34,7 +34,9 @@ objBullet	MODULE
 	move.w	obVelY(a0), d0
 	add.w	d0, obY(a0)
 
-	; jsr collideWithLevel
+	movem.w	obX(a0), d0/d1
+	jsr	levelCollision
+	bne	@delete
 
 	move	#spritesCol, a6
 	jsr	displaySprite
