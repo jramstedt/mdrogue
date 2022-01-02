@@ -190,20 +190,16 @@ levelCollision	MODULE
 	; Yi = Yp % 32
 
 	; Y
-	asr.w	#6, d1		; to pixels, to patterns
+	asr.w	#4, d1		; >>3 to pixels, (>>3 + <<2) == >>1 to grid and then to 4 bytes per row
+				; 32bits = 4bytes in row
 
 	; Y offset inside chunk
-	moveq	#$1F, d2
+	moveq	#$7C, d2
 	and.w	d1, d2		; number of rows
-	lsl.b	#2, d2		; 32bits = 4bytes in row, d2 is byte offset
 	adda.w	d2, a2
 	
-	; >> 5 to chunks
-	; lsr.w	#5, d1
-	; lsl.w	#7, d1		; offset in bytes
-	clr.l	d3
-	and.w	#$FFE0, d1	; truncate to chunk start
-	lsl.l	#2, d1		; 32bits = 4bytes in row, full chunks now
+	moveq	#0, d3
+	and.w	#$FF80, d1	; truncate to chunk start
 	move.b	lvlWidth(a1), d3
 	mulu	d3, d1
 	
@@ -221,12 +217,9 @@ levelCollision	MODULE
 	and.b	d0, d2	; d2 is x in patterns
 	; We can use btst directly with d2 now.
 
-	; >> 5 to chunks
 	; collision data chunk is 32*32 bits = 32 longs, 128 bytes
-	; lsr.w	#5, d0
-	; lsl.w	#7, d0
 	and.w	#$FFE0, d0	; truncate to chunk start
-	lsl.w	#2, d0		; 
+	lsl.w	#2, d0
 	adda.w	d0, a2
 
 	move.l	(a2), d0
@@ -267,14 +260,13 @@ collideWithLevel	MODULE
 	; Y pixels to loop
 	moveq	#0, d1
 	move.b	obRadius(a0), d1
-	asl.w	d1		; to diameter; Y pixels, will be decremented in loop
+	add.w	d1, d1		; (*2) to diameter; Y pixels, will be decremented in loop
 
 @yLoop
-	
 	; X amount to loop
 	moveq	#0, d0
 	move.b	obRadius(a0), d0
-	asl.w	d0		; to diameter; X pixels, will be decremented in loop
+	add.w	d0, d0		; (*2) to diameter; X pixels, will be decremented in loop
 
 @xLoop
 	movea.l	lvlCollisionData(a1), a2
