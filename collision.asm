@@ -198,11 +198,9 @@ levelCollision	MODULE
 	and.w	d1, d2		; number of rows
 	adda.w	d2, a2
 	
-	moveq	#0, d3
 	and.w	#$FF80, d1	; truncate to chunk start
-	move.b	lvlWidth(a1), d3
-	mulu	d3, d1
-	
+	move.b	lvlWidth(a1), d2
+	mulu	d2, d1
 	adda.w	d1, a2
 
 	; Xp = x / 8
@@ -219,7 +217,8 @@ levelCollision	MODULE
 
 	; collision data chunk is 32*32 bits = 32 longs, 128 bytes
 	and.w	#$FFE0, d0	; truncate to chunk start
-	lsl.w	#2, d0
+	add.w	d0, d0	; \	lsl.w	#2, d0
+	add.w	d0, d0	; /
 	adda.w	d0, a2
 
 	move.l	(a2), d0
@@ -229,7 +228,7 @@ levelCollision	MODULE
 	MODEND
 
 ; clampToGrid
-clampToGrid	MACRO	point, corner
+clampToGrid	MACRO	corner, point
 	LOCAL clampMax, end
 	cmp.\0	\corner, \point
 	bgt	clampMax
@@ -281,32 +280,20 @@ collideWithLevel	MODULE
 	; Position to grid cell
 	; Sets data address
 	and.w	#$FFC0, d5	; truncate to grid cell
+	move.w	d5, d7
 
-	; Chunk Y offset
-	moveq	#0, d6
-	move.b	lvlWidth(a1), d6
-
-	move	#$F800, d7	; FFE0<<6
-	and.w	d5, d7
-	asr.w	#4, d7		; 6 - 2
-	mulu	d6, d7
-	adda.w	d7, a2
+	asr.w	#4, d7
 
 	; Y offset inside chunk
-	move	#$7C0, d7	; 1F<<6
-	and.w	d5, d7
-	asr.w	#4, d7		; 6 - 2
+	moveq	#$7C, d6
+	and.w	d7, d6
+	adda.w	d6, a2
+
+	; Chunk Y offset
+	and.w	#$FF80, d7
+	move.b	lvlWidth(a1), d6
+	mulu	d6, d7
 	adda.w	d7, a2
-
-	move.w	obY(a0), d3
-	; TODO here should be type checking and clamping for diagonal tiles.
-	clampToGrid.w d3, d5	; d3 = closest point Y
-
-	; Y diff
-	sub.w	obY(a0), d3
-	move.w	d3, d5		; d5 = Y diff
-	bpl.s	*+4		; skip neg
-	neg.w	d3		; abs
 
 	; X grid cell
 	moveq	#0, d4
@@ -316,28 +303,39 @@ collideWithLevel	MODULE
 	add.w	obX(a0), d4
 
 	and.w	#$FFC0, d4	; truncate to grid cell
+	move.w	d4, d7
 
-	; Chunk X offset
-	move	#$F800, d7	; FFE0<<6
-	and.w	d4, d7
-	asr.w	#4, d7		; 6 - 2
-	adda.w	d7, a2
+	asr.w	#6, d7
 
 	; X offset inside chunk
-	move	#$7C0, d7	; 1F<<6
-	and.w	d4, d7
-	asr.w	#6, d7		; to pixels, to patterns
+	moveq	#$1F, d6
+	and.b	d7, d6
 
-	move.l	(a2), d6
-	btst.l	d7, d6
-	beq.s	@continue	; free tile, skip collision calculation
+	; Chunk X offset
+	and.w	#$FFE0, d7
+	add.w	d7, d7	; \	lsl.w	#2, d7
+	add.w	d7, d7	; /
+	adda.w	d7, a2
+
+	move.l	(a2), d7
+	btst.l	d6, d7
+	beq	@continue	; free tile, skip collision calculation
 
 	; clamp to pattern
+
+	move.w	obY(a0), d3
+	; TODO here should be type checking and clamping for diagonal tiles.
+	clampToGrid.w d5, d3 	; d3 = closest point Y
+
+	; Y diff
+	sub.w	obY(a0), d3
+	move.w	d3, d5		; d5 = Y diff
+	bpl.s	*+4		; skip neg
+	neg.w	d3		; abs
+
 	move.w	obX(a0), d2
 	; TODO here should be type checking and clamping for diagonal tiles.
-	clampToGrid.w d2, d4	; d2 = closest point X
-
-				; free: d4, d6, d7
+	clampToGrid.w d4, d2	; d2 = closest point X
 
 	; X diff
 	sub.w	obX(a0), d2
@@ -353,7 +351,6 @@ collideWithLevel	MODULE
 
 				; free: d6, d7
 
-	moveq	#0, d6
 	move.b	obRadius(a0), d6
 	asl.w	#3, d6		; to 13.3
 
