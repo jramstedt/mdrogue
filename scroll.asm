@@ -3,7 +3,7 @@
 ; handles map scrolling and loading when needed
 
 initScrolling	MODULE
-	setVDPRegister 11, %00000000	; scroll
+	setVDPRegister 11, %00000000, vdp_ctrl	; scroll
 	rts
 	MODEND
 
@@ -18,8 +18,8 @@ loadLevel	MODULE
 	move.l	a1, loadedLevelAddress
 
 ; load palette
-	setVDPAutoIncrement 2
-	setVDPWriteAddressCRAM 0
+	setVDPAutoIncrement 2, vdp_ctrl
+	setVDPWriteAddressCRAM 0, vdp_ctrl
 
 	move.l	lvlPalette(a1), a0
 	bsr	copyPalette
@@ -121,20 +121,23 @@ updateLevel	MODULE
 
 updatePlaneScrollToCamera	MODULE
 	lea.l	mainCamera, a0
+	
+	lea.l	vdp_ctrl, a3
+	lea.l	vdp_data, a4
 
 	; we are using fullscreen scroll, set both planes.
-	setVDPAutoIncrement 2
+	setVDPAutoIncrement 2, (a3)
 
-	setVDPWriteAddressVSRAM 0
-	move.w	camY(a0), vdp_data
-	move.w	camY(a0), vdp_data
+	setVDPWriteAddressVSRAM 0, (a3)
+	move.w	camY(a0), (a4)
+	move.w	camY(a0), (a4)
 
 	move.w	camX(a0), d7
 	neg.w	d7
 	and.w	#$1FF, d7
 
-	setVDPWriteAddressVRAM vdp_map_hst
-	move.w	d7, vdp_data
-	move.w	d7, vdp_data
+	setVDPWriteAddressVRAM vdp_map_hst, (a3)
+	move.w	d7, (a4)
+	move.w	d7, (a4)
 	rts
 	MODEND

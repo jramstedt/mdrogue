@@ -16,7 +16,7 @@ startDMATransfer	MODULE
 	lea	vdp_ctrl, a6
 
 	haltZ80
-	dmaOn
+	dmaOn	(a6)
 
 	; length
 	move.w	#$93FF, d4
@@ -52,7 +52,7 @@ startDMATransfer	MODULE
 	ori.b	#%10000000, d6
 	move.l	d6, (a6)
 
-	dmaOff
+	dmaOff	(a6)
 	resumeZ80
 
 	rts
@@ -67,7 +67,7 @@ startDMAFill	MODULE
 	lea	vdp_ctrl, a6
 
 	haltZ80
-	dmaOn
+	dmaOn	(a6)
 
 	; length
 	move.w	#$93FF, d4
@@ -91,7 +91,7 @@ startDMAFill	MODULE
 
 	move.w	#$0, vdp_data
 
-	dmaOff
+	dmaOff	(a6)
 	resumeZ80
 
 	rts
@@ -158,16 +158,19 @@ processDMAQueue	MODULE
 	movea.w	(dma_queue_pointer).w, a6
 	suba	#dma_queue, a6
 
-	haltZ80
-	dmaOn
+	lea	vdp_ctrl, a5
 
-	setVDPAutoIncrement 2
+	haltZ80
+	dmaOn	(a5)
+
+	setVDPAutoIncrement 2, (a5)
 
 	jmp	@jumpTable(a6)
 
 @jumpTable
-	resumeZ80
-	rts
+	jmp	@done
+	nop
+	nop
 	nop
 	nop
 	
@@ -189,7 +192,7 @@ lc = lc+1
 	ENDR
 
 @done
-	dmaOff
+	dmaOff	(a5)
 	resumeZ80
 
 	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer

@@ -12,7 +12,7 @@ drawFont	MODULE
 	lea	vdp_ctrl, a3
 	lea	vdp_data, a4
 
-	setVDPAutoIncrement 2
+	setVDPAutoIncrement 2, (a3)
 
 	move.l	#vdp_map_wnt, d2
 

@@ -163,7 +163,7 @@ dmaRowToVram
 	add.w	d6, d6	; 2 bytes per pattern
 	add.w	#planeAddr, d6
 
-	setVDPAutoIncrement 2
+	setVDPAutoIncrement 2, vdp_ctrl
 
 	cmp	#64-horBufferLen, d2
 	ble	lastTransfer
@@ -338,7 +338,7 @@ dmaColumnToVram
 	add.w	d6, d6	; 2 bytes per pattern
 	add.w	#planeAddr, d6
 
-	setVDPAutoIncrement $80
+	setVDPAutoIncrement $80, vdp_ctrl
 
 	cmp	#32-verBufferLen, d3
 	ble	lastTransfer
@@ -391,7 +391,7 @@ fillEmptyRowToVram MACRO level, camera, xOffset, yOffset
 	add.w	d6, d6	; 2 bytes per pattern
 	add.l	#vdp_map_bnt, d6
 
-	setVDPAutoIncrement 2
+	setVDPAutoIncrement 2, vdp_ctrl
 
 	cmp	#64-horBufferLen, d2
 	ble	lastFill
