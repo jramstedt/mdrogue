@@ -57,17 +57,20 @@ isubf MACRO
 	ENDM
 
 sinCos MACRO table, angle, sin, cos
-	lsl.w	#2, \2	; to long
+	add.w	\2, \2	; \ lsl.w	#2, \2
+	add.w	\2, \2	; / to long
 	movem.w	(\1, \2.w), \3/\4
 	ENDM
 
 sin MACRO table, angle, sin
-	lsl.w	#2, \2	; to long
+	add.w	\2, \2	; \ lsl.w	#2, \2
+	add.w	\2, \2	; / to long
 	move.w	(\1, \2.w), \3
 	ENDM
 
 cos MACRO table, angle, cos
-	lsl.w	#2, \2	; to long
+	add.w	\2, \2	; \ lsl.w	#2, \2
+	add.w	\2, \2	; / to long
         move.w	(2, \1, \2.w), \3
         ENDM
 

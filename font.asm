@@ -49,7 +49,8 @@ drawFont	MODULE
 	move.l	d0, d1
 
 	and.b	#$1F, d0	; Get char index in row
-	lsl.w	#2, d0		; Each character is 4 bytes width
+	add.w	d0, d0		; \ lsl.w	#2, d0
+	add.w	d0, d0		; / Each character is 4 bytes wide
 
 	lsr.b	#5, d1		; /32, calculates row number
 	lsl.w	#8, d1		; Calculate data offset, each row is 128 bytes width, character is two rows

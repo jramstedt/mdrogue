@@ -11,8 +11,8 @@ processObjects	MODULE
 	move.b	obClass(a0), d0
 	beq.s	@skip
 
-	andi.b	#$F0, d0	; mask class
-	lsr.b	#3, d0		; class to word pointer
+	andi.b	#$F0, d0			; mask class
+	lsr.b	#3, d0				; class to word pointer
 
 	lea	objectsOrigin-sizeWord.w, a2	; class start at 1, decrement address by one word
 	move.w	(a2,d0.w), a2
@@ -26,12 +26,13 @@ processObjects	MODULE
 
 	move.b	spriteCount, d0
 	beq	@exit
-	lsl	#2, d0	; 4 words per sprite
+	add.w	d0, d0				; lsl.w	#2, d0
+	add.w	d0, d0				; 4 words per sprite
 	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
 
 	move.b	spriteCount, d0
-	sub	#1, d0
-	lsl	#3, d0	; 8 bytes per sprite
+	sub.b	#1, d0
+	lsl.w	#3, d0				; 8 bytes per sprite
 
 @exit
 	lea	spriteAttrTable, a0
