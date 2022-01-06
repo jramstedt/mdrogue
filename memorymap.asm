@@ -35,6 +35,12 @@ obVRAM			rs.w	1	; P = priority
 obClassData		rs.b	32-__rs
 obDataSize		equ	__rs	; 32 bytes
 
+classDataValidate	MACRO
+			IF __rs>obDataSize
+				INFORM	3, "Class data overflow (%h/%h)", __rs, obDataSize
+			endif
+			ENDM
+
 ; camera variables
 			rsreset
 camX			rs.w	1	; 
@@ -80,6 +86,11 @@ pad2State		rs.b	1	;  SACBRLDU
 lcgSeed			rs.l	1
 
 vdp1rState		rs.w	1
+
+
+			IF __rs>$FFFFFFFF
+				INFORM	3, "RAM overflow (%h)", __rs
+			endif
 
 			rsset	ramStartAddress
 

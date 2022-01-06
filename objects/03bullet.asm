@@ -1,12 +1,16 @@
 objBullet	MODULE
 	moveq	#0, d0
-	move.b	obState(a0), d0	; a0 is object address
+	move.b	obState(a0), d0		; a0 is object address
 	move.w	@routineJmpTable(pc,d0.w), d1
 	jmp	@routineJmpTable(pc,d1.w)
 
 @routineJmpTable
 	dc.w	@main-@routineJmpTable
 	dc.w	@display-@routineJmpTable
+
+		rsset	obClassData
+lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
+		classDataValidate
 
 @main ; inits the object
 	addq.b	#1<<1, obState(a0)	; set object state to @display
@@ -15,17 +19,17 @@ objBullet	MODULE
 	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 
-	move.l	#4, d7 ; hard coded for one sprite
+	move.l	#4, d7 			; hard coded for one sprite
 	jsr	allocVRAM
-	lsr.w	#5, d6		; address to pattern number
+	lsr.w	#5, d6			; address to pattern number
 	or.w	d6, obVRAM(a0)
 
-	move.b	#50, obClassData(a0)
+	move.b	#50, lifeTimer(a0)
 
 	rts
 
 @display
-	sub.b	#1, obClassData(a0)
+	sub.b	#1, lifeTimer(a0)
 	beq	@delete
 
 	move.w	obVelX(a0), d0
@@ -45,7 +49,7 @@ objBullet	MODULE
 
 @delete
 	move.w	obVRAM(a0), d6
-	lsl.w	#5, d6		; pattern number to address
+	lsl.w	#5, d6			; pattern number to address
 	move.l	#4, d7
 	jsr	freeVRAM
 

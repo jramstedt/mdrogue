@@ -10,6 +10,15 @@ objPlayer	MODULE
 	dc.w	@display-@routineJmpTable
 	dc.w	@delete-@routineJmpTable
 
+		rsset	obClassData
+shootTimer	rs.b	1		; in frames TODO PAL/NTSC
+		rs.b	3		; free
+moveDirX	rs.w	1		; last move direction X
+moveDirY	rs.w	1		; last move direction Y
+		classDataValidate
+
+moveDir		equ	moveDirX
+
 @main ; inits the object
 	addq.b	#1<<1, obState(a0)	; set object state to @input
 	move.w	#$0800, obRender(a0)
@@ -23,13 +32,13 @@ objPlayer	MODULE
 	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 
-	move.l	#4*4, d7 ; hard coded for one sprite
+	move.l	#4*4, d7 		; hard coded for one sprite
 	jsr	allocVRAM
-	lsr.w	#5, d6		; address to pattern number
+	lsr.w	#5, d6			; address to pattern number
 	or.w	d6, obVRAM(a0)
 
-	move.b	#0, obClassData(a0)	; shoot timer
-	move.l	#0, obClassData+4(a0)	; last move direction
+	move.b	#0, shootTimer(a0)	; shoot timer
+	move.l	#0, moveDir(a0)		; last move direction
 
 @input
 	; read pad1State and lookup direction vector
@@ -40,11 +49,11 @@ objPlayer	MODULE
 	lsl.w	#2, d0
 	adda.w	d0, a3
 	
-	tst.l	(a3)		; check if vector is zero length
-	beq 	@noMovement	; if zero there is no movement.
+	tst.l	(a3)			; check if vector is zero length
+	beq 	@noMovement		; if zero there is no movement.
 	
 	movem.w	(a3), d0/d1
-	movem.w	d0/d1, obClassData+4(a0)
+	movem.w	d0/d1, moveDir(a0)
 	bra @setVelocity
 
 @noMovement
@@ -71,10 +80,10 @@ objPlayer	MODULE
 	jsr	collideWithLevel
 
 	; can shoot?
-	tst	obClassData(a0)
+	tst	shootTimer(a0)
 	beq	@shoot
 
-	sub.b	#1, obClassData(a0)
+	sub.b	#1, shootTimer(a0)
 	bne	@display
 
 @shoot	btst	#6, pad1State
@@ -87,17 +96,17 @@ objPlayer	MODULE
 	move.b	#1, obPhysics(a2)
 	move.b	#$42, obCollision(a2)
 
-	move.l	obX(a0), d0	; X and Y
+	move.l	obX(a0), d0		; X and Y
 	move.l	d0, obX(a2)
 
-	movem.w	obClassData+4(a0), d0/d1
+	movem.w	moveDir(a0), d0/d1
 
 	asr.w	#3, d0
 	asr.w	#3, d1
 
 	movem.w	d0/d1, obVelX(a2)
 
-	move.b	#10, obClassData(a0)
+	move.b	#10, shootTimer(a0)
 
 @display
 	; update main camera to player coordinates!
@@ -118,18 +127,18 @@ objPlayer	MODULE
 	move.w	obX(a0), d3
 	asr.w	#3, d3
 	addx.w	d2, d3
-	sub.w	#160, d3	; move offset by half screen width
+	sub.w	#160, d3		; move offset by half screen width
 	move.w	d3, camX(a2)
 
 	move.w	obY(a0), d3
 	asr.w	#3, d3
 	addx.w	d2, d3
-	sub.w	#112, d3	; move offset by half screen height
+	sub.w	#112, d3		; move offset by half screen height
 	move.w	d3, camY(a2)
 
-	;move.l	obX(a0), d1	; XXXX YYYY
+	;move.l	obX(a0), d1		; XXXX YYYY
 	;and.l	#$FFF8FFF8, d1
-	;lsr.l	#3, d1		; convert to full pixels
+	;lsr.l	#3, d1			; convert to full pixels
 	;move.l	d1, camX(a2)
 
 	move	#aniOrc, a6
@@ -142,7 +151,7 @@ objPlayer	MODULE
 
 @delete
 	move.w	obVRAM(a0), d6
-	lsl.w	#5, d6		; pattern number to address
+	lsl.w	#5, d6			; pattern number to address
 	move.l	#4*4, d7
 	jsr	freeVRAM
 
@@ -154,25 +163,25 @@ objPlayer	MODULE
 
 	EVEN
 
-dirVector			; RLDU
-	dc.w	$0000, $0000	; 0000 all directions are pressed down
-	dc.w	$0000, $0100	; 0001
-	dc.w	$0000, $FF00	; 0010
-	dc.w	$0000, $0000	; 0011
+dirVector				; RLDU
+	dc.w	$0000, $0000		; 0000 all directions are pressed down
+	dc.w	$0000, $0100		; 0001
+	dc.w	$0000, $FF00		; 0010
+	dc.w	$0000, $0000		; 0011
 
-	dc.w	$0100, $0000 	; 0100
-	dc.w	$00B5, $00B5	; 0101
-	dc.w	$00B5, $FF4B	; 0110
-	dc.w	$0100, $0000	; 0111 
+	dc.w	$0100, $0000 		; 0100
+	dc.w	$00B5, $00B5		; 0101
+	dc.w	$00B5, $FF4B		; 0110
+	dc.w	$0100, $0000		; 0111
 
-	dc.w	$FF00, $0000	; 1000
-	dc.w	$FF4B, $00B5	; 1001
-	dc.w	$FF4B, $FF4B	; 1010
-	dc.w	$FF00, $0000	; 1011 
+	dc.w	$FF00, $0000		; 1000
+	dc.w	$FF4B, $00B5		; 1001
+	dc.w	$FF4B, $FF4B		; 1010
+	dc.w	$FF00, $0000		; 1011
 
-	dc.w	$0000, $0000	; 1100
-	dc.w	$0000, $0100	; 1101
-	dc.w	$0000, $FF00	; 1110
-	dc.w	$0000, $0000	; 1111 none is pressed
+	dc.w	$0000, $0000		; 1100
+	dc.w	$0000, $0100		; 1101
+	dc.w	$0000, $FF00		; 1110
+	dc.w	$0000, $0000		; 1111 none is pressed
 
 	EVEN
