@@ -101,7 +101,7 @@ startDMAFill	MODULE
 queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 	move.l	\sourceMem, d5
 	move.l	\destVRAM, d6
-	move.l	\lenWords, d7
+	move.w	\lenWords, d7
 	jsr	_queueDMATransfer
 	ENDM
 

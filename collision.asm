@@ -219,9 +219,8 @@ levelCollision	MODULE
 	and.w	#$FFE0, d0	; truncate to chunk start
 	add.w	d0, d0	; \	lsl.w	#2, d0
 	add.w	d0, d0	; /
-	adda.w	d0, a2
 
-	move.l	(a2), d0
+	move.l	(a2, d0.w), d0
 	btst.l	d2, d0		; bittest with x position
 
 	rts
@@ -315,9 +314,8 @@ collideWithLevel	MODULE
 	and.w	#$FFE0, d7
 	add.w	d7, d7	; \	lsl.w	#2, d7
 	add.w	d7, d7	; /
-	adda.w	d7, a2
 
-	move.l	(a2), d7
+	move.l	(a2, d7.w), d7
 	btst.l	d6, d7
 	beq	@continue	; free tile, skip collision calculation
 
