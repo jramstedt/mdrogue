@@ -18,8 +18,8 @@
             "presentation": {
                 "echo": false,
                 "reveal": "never",
-                "focus": false,
-                "panel": "dedicated"
+                "panel": "dedicated",
+                "showReuseMessage": false
             },
             "problemMatcher": {
                 "owner": "external",
