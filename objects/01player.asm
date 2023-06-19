@@ -141,10 +141,10 @@ moveDir		equ	moveDirX
 	;lsr.l	#3, d1			; convert to full pixels
 	;move.l	d1, camX(a2)
 
-	move	#aniOrc, a6
+	move	#aniOrc, a5
 	jsr	animateSprite
 
-	move	#spritesOrc, a6
+	move	#spritesOrc, a5
 	jsr	displaySprite
 
 	rts

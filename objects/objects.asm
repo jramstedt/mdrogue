@@ -114,16 +114,16 @@ cleanupObjectList	MODULE
 
 ; input:
 ;	a0 object
-;	a6 rom address
+;	a5 rom address
 displaySprite	MODULE
-	movea.l	(a6), a4		; a4 is patterns start in ROM
+	movea.l	(a5), a4		; a4 is patterns start in ROM
 
 	move.w	#$00F0, d0
 	and.b	obAnim(a0), d0		; get animation number
 	lsr.b	#4-1, d0		; convert number to offset (word per pointer)
 
-	move.w	sizeLong(a6, d0.w), d0	; d0 is offset to metasprite data from rom address
-	lea	(a6, d0.w), a3		; a3 is metasprite data address
+	move.w	sizeLong(a5, d0.w), d0	; d0 is offset to metasprite data from rom address
+	lea	(a5, d0.w), a3		; a3 is metasprite data address
 
 	moveq	#$3F, d3
 	and.b	obAnim+1(a0), d3	; get frame number
@@ -231,9 +231,9 @@ displaySprite	MODULE
 
 ; input:
 ;	a0 object
-;	a6 animation table
+;	a5 animation table
 ; trash:
-;	d0, d1, d2, a5, a6
+;	d0, d1, d2, a5
 animateSprite	MODULE
 	subq.b	#1, obFrameTime(a0)
 	bmi	@processAnim
@@ -244,11 +244,11 @@ animateSprite	MODULE
 	move.b	obAnim(a0), d0	; get animation number
 	and.b	#$F0, d0
 	lsr.b	#4-1, d0	; convert number to table offset (word per pointer)
-	move	(a6, d0.w), d0	; d0 is offset to animation data
-	lea	(a6, d0.w), a6	; a5 is animation script address
+	move	(a5, d0.w), d0	; d0 is offset to animation data
+	lea	(a5, d0.w), a5	; a5 is animation script address
 
 	moveq	#0, d2
-	move.b	(a6)+, d2	; d2 is animation speed
+	move.b	(a5)+, d2	; d2 is animation speed
 
 @nextFrame
 	move.w	obAnim(a0), d0
@@ -256,7 +256,7 @@ animateSprite	MODULE
 
 	and.w	#$0FC0, d0
 	lsr.w	#6, d0	; d0 is animation index
-	move.b	(a6, d0.w), d0	; d0 is frame or opcode
+	move.b	(a5, d0.w), d0	; d0 is frame or opcode
 	bmi	@processOpcode
 
 	add.b	d2, obFrameTime(a0)

@@ -42,7 +42,7 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 	jsr	levelCollision
 	bne	@delete
 
-	move	#spritesCol, a6
+	move	#spritesCol, a5
 	jsr	displaySprite
 
 	rts

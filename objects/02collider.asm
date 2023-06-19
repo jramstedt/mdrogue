@@ -57,10 +57,10 @@ objCollider	MODULE
 	add	d0, obX(a0)
 
 @display
-	;move	#aniOrc, a6
+	;move	#aniOrc, a5
 	;jsr	animateSprite
 
-	move	#spritesCol, a6
+	move	#spritesCol, a5
 	jsr	displaySprite
 
 	rts
