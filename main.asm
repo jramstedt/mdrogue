@@ -15,6 +15,7 @@
 
 __main
 	jsr	initVRAM
+	jsr	initGameObjects
 
 	; reserveVRAM #0, #1	; keep first block empty
 	reserveVRAM #vdp_map_ant, #(64*32*sizeWord/sizePattern)
@@ -96,6 +97,7 @@ gameLoop
 
 	; do game processing
 	jsr	processObjects
+	jsr	cleanupObjectList
 	jsr	processPhysicObjects
 	
 	; print vertical line of 224/240

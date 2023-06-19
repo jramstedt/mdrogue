@@ -120,18 +120,30 @@ calculateCollision MACRO type, skip
 
 ;
 processPhysicObjects	MODULE
-	lea.l	gameObjects, a0
-	lea.l	obDataSize(a0), a0	; start from second object.
+	movem	a5-a6, -(sp)
+
+	lea.l	hiGameObjectsFirst, a6
+	tst.w	(a6)			; is empty?
+	beq.s	@exit
+
+	movea.w	llNext(a6), a6		; load first node, will be skipped
 
 @sourceLoop
+	movea.w	llNext(a6), a6		; next node
+	movea.l	llPtr(a6), a0		; a0 is game object
+
 	tst.b	obClass(a0)
 	beq.s	@skipSource
 
 	move.w	obPhysics(a0), d0	; obPhysics on upper byte, obCollision on lower
 	lsr.b	#4, d0			; object collision groups to masks
 
-	lea.l	gameObjects, a1
+	lea.l	hiGameObjectsFirst, a5
+
 @targetLoop
+	movea.w	llNext(a5), a5		; next node
+	movea.l	llPtr(a5), a1		; a1 is game object
+
 	tst.b	obClass(a1)
 	beq.s	@skipTarget
 
@@ -139,24 +151,23 @@ processPhysicObjects	MODULE
 	and.b	d0, d3			; test group against mask, if not matched skip.
 	beq.s	@skipTarget
 
-	andi.w	#$0100, d3	; mask kinematic only
+	andi.w	#$0100, d3		; mask kinematic only
 	beq.s	@targetDynamic
-	and.w	d0, d3		; test if both kinematic
+	and.w	d0, d3			; test if both kinematic
 	bne.s	@skipTarget
 
 	jmp	@targetKinematic
 
 @skipTarget
-	lea	obDataSize(a1), a1
-
 	cmpa.w	a0, a1
-	blo.s	@targetLoop
+	blo.s	@targetLoop		; reached source?
 
 @skipSource
-	lea	obDataSize(a0), a0
-	cmpa.l	#(gameObjects+(obDataSize*gameObjectsLen)), a0
-	blo.s	@sourceLoop
+	tst.w	llNext(a6)		; is last?
+	bne.s	@sourceLoop
 
+@exit
+	movem	(sp)+, a5-a6
 	rts
 
 @targetDynamic

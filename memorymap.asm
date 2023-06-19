@@ -41,6 +41,14 @@ classDataValidate	MACRO
 			endif
 			ENDM
 
+; Linked list node
+			rsreset
+llNext			rs.w	1
+llPrev			rs.w	1
+llStatus		rs.b	0	; 24-bit address, MSB 8 bits are ignored
+llPtr			rs.l	1
+llNodeSize		equ	__rs
+
 ; camera variables
 			rsreset
 camX			rs.w	1	; 
@@ -53,13 +61,12 @@ camDataSize		equ		__rs
 			rsreset
 sVpos			rs.w	1	; 000000VVVVVVVVVV
 sSize			rs.b	1	; 0000HHVV
-sLinkData		rs.b	1	; 0XXXXXXX
+sNext			rs.b	1	; 0XXXXXXX
 sRender			rs.w	1	; PCCVHNNNNNNNNNNN
 sHpos			rs.w	1	; 000000HHHHHHHHHH
 sDataSize		equ		__rs
 
 ; VRAM MAPPING
-
 ; VRAM hole for memory manager
 			rsreset
 vrmNext			rs.l	1
@@ -67,8 +74,10 @@ vrmStart		rs.w	1	; in patterns ($20 bytes)
 vrmEnd			rs.w	1	; in patterns ($20 bytes)
 vrmDataSize		equ	__rs
 
-
+; https://www.muchen.ca/documents/CPEN412/2020-01-09-Lecture-2.html
+; 24-bit address, MSB 8 bits are ignored
 ; FFFF8000 - FFFFFFFF -> address can be save as word and sign extended on read
+; Address instructions such as MOVEA and ADDA sign extends words
 
 ; System stuff
 			rsset	ramStartAddress+$FF008000
@@ -87,6 +96,20 @@ lcgSeed			rs.l	1
 
 vdp1rState		rs.w	1
 
+; Game object lists
+maxGameObjects		equ	512
+allGameObjects		rs.b	obDataSize*maxGameObjects		; Game Objects
+allGameObjectNodes	rs.b	llNodeSize*maxGameObjects		; Nodes for Doubly linked lists below, indexing corresponds to allGameObjects
+
+hiGameObjectsFirst	rs.w	1	; Doubly linked list
+hiGameObjectsLast	rs.w	1	; hi priority objects, updated every frame
+
+;lowGameObjectsFirst	rs.w	1	; Doubly linked list 
+;lowGameObjectsLast	rs.w	1	; low priority objects, one per frame
+;lowGameObjectsCurrent	rs.w	1	; Last processed node in lowGameObjectsHead, must be updated if node is removed!
+
+freeGameObjectsFirst	rs.w	1	; Singly linked list head for nodes of free objects
+gameObjectsMaximum	rs.w	1	; Maximum count of used gameObjects. Use as index if gameObjectsFree is empty
 
 			IF __rs>$FFFFFFFF
 				INFORM	3, "RAM overflow (%h)", __rs
@@ -94,15 +117,14 @@ vdp1rState		rs.w	1
 
 			rsset	ramStartAddress
 
-; 0000 - 7FFF -> address can be save as word
+; FF0000 - FF7FFF
 
 ; Game globals
+
 mainCamera		rs.b	camDataSize
-gameObjectsLen		equ	128
-gameObjects		rs.b	obDataSize*gameObjectsLen
 
 ; 128 sprites max. 80 can be rendered. 20 per line or 320px
-spriteAttrTable		rs.b 	sDataSize*gameObjectsLen	; RAM buffer for sprite attribute table
+spriteAttrTable		rs.b 	sDataSize*128	; RAM buffer for sprite attribute table
 ;spriteOrder		rs.b	80		; Sorted sprites (for linked list indexes)
 
 spriteCount		rs.b	1		; number of sprites to render
@@ -117,5 +139,6 @@ horBuffer		rs.w	horBufferLen	; Used on map scrolling DMA. H40.
 verBufferLen		equ	31
 verBuffer		rs.w	verBufferLen	; Used on map scrolling DMA. V30.
 
-
 textScrap		rs.b	10
+
+; STACK!

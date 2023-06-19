@@ -5,27 +5,37 @@
 processObjects	MODULE
 	move.b	#0, spriteCount
 
-	lea.l	gameObjects, a0
-	moveq	#0, d0
-@loop
+	lea.l	hiGameObjectsFirst, a6
+
+@processNext
+	tst.w	llNext(a6)			; is last?
+	beq.s	@dmaSprites
+
+	movea.w	llNext(a6), a6
+	tst.b	llStatus(a6)
+	beq.s	@processNext			; deleted, skip
+
+	movea.l	llPtr(a6), a0			; a0 is game object
 	move.b	obClass(a0), d0
-	beq.s	@skip
+	beq.s	@processNext
 
-	andi.b	#$F0, d0			; mask class
+	andi.w	#$00F0, d0			; mask class
 	lsr.b	#3, d0				; class to word pointer
+	lea.l	objectRoutines-sizeWord.w, a1	; class start at 1, decrement address by one word
+	move.w	(a1, d0.w), a1			; load object code address
 
-	lea	objectsOrigin-sizeWord.w, a2	; class start at 1, decrement address by one word
-	move.w	(a2,d0.w), a2
-	jsr	(a2)				; jump to object code
+	movem	d0-d7/a0-a6, -(sp)
+	jsr	(a1)				; jump to object code
+	movem	(sp)+, d0-d7/a0-a6
 
+	bra	@processNext
+
+@dmaSprites
+	; DMA sprite table
 	moveq	#0, d0
-@skip
-	lea	obDataSize(a0), a0
-	cmpa.l	#(gameObjects+(obDataSize*gameObjectsLen)), a0
-	blo.s	@loop
-
 	move.b	spriteCount, d0
 	beq	@exit
+
 	add.w	d0, d0				; lsl.w	#2, d0
 	add.w	d0, d0				; 4 words per sprite
 	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
@@ -35,10 +45,70 @@ processObjects	MODULE
 	lsl.w	#3, d0				; 8 bytes per sprite
 
 @exit
-	lea	spriteAttrTable, a0
-	add	d0, a0
-	move.b	#0, sLinkData(a0)
+	; TODO spriteAttrTable is linked list. Handle adding sprites better (metasprite links?, sorting?)
+	lea	spriteAttrTable, a0 
+	move.b	#0, sNext(a0, d0.w)		; pointer to next must be zero on last sprite.
 
+	rts
+	MODEND
+
+;
+cleanupObjectList	MODULE
+	lea.l	hiGameObjectsFirst, a0
+
+@processNext
+	tst.w	llNext(a0)			; is last?
+	beq.s	@exit
+
+	movea.w	llNext(a0), a0			; node
+
+	tst.b	llStatus(a0)
+	bne.s	@processNext			; not deleted
+
+	; remove from hi
+	movea.w	llNext(a0), a1
+	movea.w	llPrev(a0), a2
+
+	tst.w	llPrev(a0)
+	beq.s	*+8			; Was first in list, skip updating previous
+	move.w	a1, llNext(a2)
+	bra.s	*+8			; Was not first, skip updating hiGameObjectsFirst
+	move.w	a1, hiGameObjectsFirst
+
+	tst.w	llNext(a0)
+	beq.s	*+8			; Was last in list, skip updating next
+	move.w	a2, llPrev(a1)
+	bra.s	*+8			; Was not last, skip updating hiGameObjectsLast
+	move.w	a2, hiGameObjectsLast
+
+	; insert into free objects
+	lea.l	freeGameObjectsFirst, a1
+	tst.w	(a1)
+	bne.s	@insert
+
+	; free list is empty
+	move.w	#0, llNext(a0)
+	move.w	#0, llPrev(a0)
+	move.w	a0, freeGameObjectsFirst
+
+	; FIXME this will fail if first is removed, should be the "move.w	a2, XXXX" target (see above)
+	movea.l	a2, a0			; reprocess previous node because it has changed
+	bra	@processNext
+
+@insert
+	movea.w	(a1), a1		; a1 is node address of first
+
+	move.w	llPrev(a1), d0		; d0 should be zero
+	move.w	a0, llPrev(a1)
+	move.w	a1, llNext(a0)
+	move.w	d0, llPrev(a0)
+	move.w	a0, freeGameObjectsFirst
+
+	; FIXME this will fail if first is removed, should be the "move.w	a2, XXXX" target (see above)
+	movea.l	a2, a0			; reprocess previous node because it has changed
+	bra	@processNext
+
+@exit
 	rts
 	MODEND
 
@@ -206,24 +276,91 @@ animateSprite	MODULE
 
 ; input:
 ;	a0 object
-deleteObject	MODULE
-	moveq	#(obDataSize/sizeLong)-1, d0
-	moveq	#0, d1
-@loop
-	move.l	d1, (a0)+
-	dbra	d0, @loop
+; trashes
+;	a0, a1, a2
+freeObject	MODULE
+	; calculate node address
+	move.l	a0, d0
+	subi.l	#allGameObjects, d0
+	lsr.w	#2, d0			; NOTE obDataSize is 32 bytes, llNodeSize is 8 bytes
+	lea.l	allGameObjectNodes, a0
+
+	move.b	#$00, llStatus(a0, d0.w)	; Mark for removal
 	rts
+
 	MODEND
 
+; output:
+;	a2 object
+; trashes:
+;	d0, a0, a1, a2
 findFreeObject	MODULE
-	lea.l	gameObjects, a2
-	move.w	#127, d0	; see memorymap.asm, max 128 game objects
-@loop
-	tst.b	(a2)
-	beq.s	@found
-	lea	obDataSize(a2), a2
-	dbra	d0, @loop
+	movem.l	d0/a0-a1, -(sp)
 
-@found
+	lea.l	freeGameObjectsFirst, a0
+	tst.w	(a0)
+	bne.s	@useFreeNode
+
+	; Free game objects is empty
+	; Allocate new node
+	move.w	gameObjectsMaximum, d0
+	add.w	#1, gameObjectsMaximum
+
+	lea.l	allGameObjectNodes, a0
+	lea.l	allGameObjects, a2
+
+	lsl.l	#3, d0		; NOTE llNodeSize is 8 bytes
+	adda.l	d0, a0		; a0 is address of linked list node
+
+	lsl.l	#2, d0		; NOTE obDataSize is 32 bytes, shift by 2 more to get 3+2=5
+	adda.l	d0, a2		; a2 is address of free game object
+
+	move.l	a2, llPtr(a0)
+
+@insertToHi
+	moveq	#0, d0
+
+	lea.l	hiGameObjectsLast, a1
+	tst.w	(a1)
+	movea.w	(a1), a1	; a1 is node address
+	beq.s	@emptyHi	; if empty don't update last node
+
+	move.w	llNext(a1), d0
+	move.w	a0, llNext(a1)
+
+@insert
+	move.w	a1, llPrev(a0)
+	move.w	d0, llNext(a0)
+	move.w	a0, hiGameObjectsLast
+
+	; NOTE obDataSize is 32 bytes
+	moveq	#0, d0
+	movea.l	a2, a0
+	REPT obDataSize/sizeLong
+	move.l	d0, (a0)+
+	ENDR
+
+	movem.l	(sp)+, d0/a0-a1
+	rts
+
+@useFreeNode
+	movea.w	(a0), a0	; a0 is node address
+	movea.l	llPtr(a0), a2
+	move.b	#$FF, llStatus(a0)
+
+	; move next free to first
+	move.w	llNext(a0), freeGameObjectsFirst
+
+	bra.s	@insertToHi
+
+@emptyHi
+	move.w	a0, hiGameObjectsFirst
+
+	bra.s 	@insert
+
+	MODEND
+
+initGameObjects	MODULE
+	clr.w	gameObjectsMaximum
 	rts
 	MODEND

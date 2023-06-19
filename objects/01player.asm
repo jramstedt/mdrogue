@@ -155,7 +155,7 @@ moveDir		equ	moveDirX
 	move.l	#4*4, d7
 	jsr	freeVRAM
 
-	jsr	deleteObject
+	jsr	freeObject
 
 	rts
 	

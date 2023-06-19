@@ -1,3 +1,6 @@
 *.lst
 *.sym
 .zedstate
+
+scripts/test
+plan

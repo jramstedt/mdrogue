@@ -53,7 +53,7 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 	move.l	#4, d7
 	jsr	freeVRAM
 
-	jsr	deleteObject
+	jsr	freeObject
 
 	rts
 
