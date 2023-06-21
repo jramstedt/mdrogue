@@ -63,13 +63,13 @@ unloadLevel	MODULE
 
 ;
 updateLevel	MODULE
-	movem.l	d0-d7/a0-a6, -(sp)
+	movem.l	d0-d7/a0-a3, -(sp)
 
 	lea.l	mainCamera, a0
 	move.l	(loadedLevelAddress), a1
 
-	clr.l	d0
-	clr.l	d1
+	moveq	#0, d0
+	moveq	#0, d1
 
 @checkX
 	move.w	camXprev(a0), d0
@@ -115,7 +115,7 @@ updateLevel	MODULE
 
 @exit
 	move.l	camX(a0), camXprev(a0)	; copies both x and y
-	movem.l	(sp)+, d0-d7/a0-a6
+	movem.l	(sp)+, d0-d7/a0-a3
 	rts
 	MODEND
 
