@@ -116,9 +116,30 @@ calculateCollision MACRO type, skip
 		ENDIF
 	ENDIF
 
+	lea.l	objectCollisionHandlers-sizeWord.w, a4	; class start at 1, decrement address by one word
+
+	; Source
+	move.b	obClass(a0), d1
+	andi.w	#$00F0, d1				; mask class
+	lsr.b	#3, d1					; class to word pointer
+	move.w	(a4, d1.w), a2				; load object code address
+
+	; Target
+	move.b	obClass(a1), d2
+	andi.w	#$00F0, d2				; mask class
+	lsr.b	#3, d2					; class to word pointer
+	move.w	(a4, d2.w), a3				; load object code address
+
+	movem	d0-d7/a0-a6, -(sp)
+	jsr	(a2)					; jump to object code
+	exg	a0, a1
+	jsr	(a3)
+	movem	(sp)+, d0-d7/a0-a6
+
 	ENDM
 
-;
+; Checks collisions by starting outer iterator from second node (source).
+; Inner iterator checks each node against source node until source node is reached.
 processPhysicObjects	MODULE
 	movem	a5-a6, -(sp)
 
@@ -129,11 +150,14 @@ processPhysicObjects	MODULE
 	movea.w	llNext(a6), a6		; load first node, will be skipped
 
 @sourceLoop
+	tst.w	llNext(a6)		; is last?
+	beq.s	@exit
+
 	movea.w	llNext(a6), a6		; next node
 	movea.l	llPtr(a6), a0		; a0 is game object
 
 	tst.b	obClass(a0)
-	beq.s	@skipSource
+	beq.s	@sourceLoop
 
 	move.w	obPhysics(a0), d0	; obPhysics on upper byte, obCollision on lower
 	lsr.b	#4, d0			; object collision groups to masks
@@ -142,29 +166,25 @@ processPhysicObjects	MODULE
 
 @targetLoop
 	movea.w	llNext(a5), a5		; next node
+
+	cmpa.w	a6, a5			; reached source?
+	beq.s	@sourceLoop
+
 	movea.l	llPtr(a5), a1		; a1 is game object
 
 	tst.b	obClass(a1)
-	beq.s	@skipTarget
+	beq.s	@targetLoop
 
 	move.w	obPhysics(a1), d3	; obPhysics on upper byte, obCollision on lower
 	and.b	d0, d3			; test group against mask, if not matched skip.
-	beq.s	@skipTarget
+	beq.s	@targetLoop
 
 	andi.w	#$0100, d3		; mask kinematic only
 	beq.s	@targetDynamic
 	and.w	d0, d3			; test if both kinematic
-	bne.s	@skipTarget
+	bne.s	@targetLoop
 
-	jmp	@targetKinematic
-
-@skipTarget
-	cmpa.w	a0, a1
-	blo.s	@targetLoop		; reached source?
-
-@skipSource
-	tst.w	llNext(a6)		; is last?
-	bne.s	@sourceLoop
+	bra	@targetKinematic
 
 @exit
 	movem	(sp)+, a5-a6
@@ -172,20 +192,20 @@ processPhysicObjects	MODULE
 
 @targetDynamic
 	btst	#8, d0
-	beq.s	@dtod	; both dynamic
+	beq	@dtod	; both dynamic
 
 	; if target dynamic bounce target
-	calculateCollision 'ktod', @skipTarget
-	jmp @skipTarget
+	calculateCollision 'ktod', @targetLoop
+	bra	@targetLoop
 	
 	; if both dynamic calculate bounce (radius ratio)
-@dtod	calculateCollision 'dtod', @skipTarget
-	jmp @skipTarget
+@dtod	calculateCollision 'dtod', @targetLoop
+	bra	@targetLoop
 
 @targetKinematic
 	; if source dynamic bounce source
-	calculateCollision 'dtok', @skipTarget
-	jmp @skipTarget
+	calculateCollision 'dtok', @targetLoop
+	bra	@targetLoop
 
 	MODEND
 

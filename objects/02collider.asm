@@ -76,3 +76,8 @@ objCollider	MODULE
 	rts
 
 	MODEND
+
+objCollisionCollider MODULE
+	rts
+
+	MODEND

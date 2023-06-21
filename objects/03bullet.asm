@@ -58,3 +58,8 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 	rts
 
 	MODEND
+
+objCollisionBullet MODULE
+	rts
+
+	MODEND

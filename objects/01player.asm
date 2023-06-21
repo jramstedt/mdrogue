@@ -158,7 +158,17 @@ moveDir		equ	moveDirX
 	jsr	freeObject
 
 	rts
-	
+
+	MODEND
+
+objCollisionPlayer MODULE
+	movem.w	moveDir(a0), d0/d1
+	asl.w	#3, d0
+	asl.w	#3, d1
+	movem.w	d0/d1, obVelX(a1)
+
+	rts
+
 	MODEND
 
 	EVEN

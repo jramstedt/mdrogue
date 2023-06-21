@@ -9,3 +9,8 @@ idCollider	equ	((ptrCollider-objectRoutines)/sizeWord)+1
 	include 'objects/02collider.asm'
 idBullet	equ	((ptrBullet-objectRoutines)/sizeWord)+1
 	include 'objects/03bullet.asm'
+
+objectCollisionHandlers
+	dc.w	objCollisionPlayer
+	dc.w	objCollisionCollider
+	dc.w	objCollisionBullet
