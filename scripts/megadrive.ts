@@ -12,7 +12,7 @@ const palette: Triplet[] = []
 for (let r = 0; r <= 0b111; ++r)
   for (let g = 0; g <= 0b111; ++g)
     for (let b = 0; b <= 0b111; ++b)
-      palette.push([megaDriveLadder[r], megaDriveLadder[g], megaDriveLadder[b]])
+      palette.push([megaDriveLadder[r] ?? 0, megaDriveLadder[g] ?? 0, megaDriveLadder[b] ?? 0])
 
 export type Pattern = { normal: Uint32Array, flipped: Uint32Array }
 
@@ -78,6 +78,8 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
     for (let patternIndex = 0; patternIndex < patterns.length; ++patternIndex) {
       const target = patterns[patternIndex]
+
+      if (target === undefined) continue
 
       if (normal[0] === target.normal[0] &&
           normal[1] === target.normal[1] &&
@@ -154,6 +156,9 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
         const chunkIndex = (y >>> 8) * mapWidthChunks + (x >>> 8)
         const tile = chunks[chunkIndex]
 
+        if (tile === undefined)
+          throw new Error(`No chunk found at ${chunkIndex}`)
+
         let pattern: Pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
         for (let s = 0; s < 8; ++s) {
           let normal = 0
@@ -161,7 +166,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 
           for (let p = 0; p < 8; ++p) {
             const pixelIndex = (y + s) * canvas.width + (x + p)
-            const colorIndex = indexedImage[pixelIndex] & 0x0F
+            const colorIndex = (indexedImage[pixelIndex] ?? 0) & 0x0F
 
             normal = (normal << 4 | colorIndex) >>> 0
             flipped = (flipped >>> 4 | colorIndex << 28) >>> 0
@@ -205,7 +210,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   for (let index = 0; index < megaDrivePalette.length; ++index) {
     // ABGR -> 0BGR
 
-    const color = reducedPalette[index]
+    const color = reducedPalette[index] ?? 0
     const r = megaDriveLadder.indexOf(color & 0xFF) << 1
     const g = megaDriveLadder.indexOf((color >>> 8) & 0xFF) << 1
     const b = megaDriveLadder.indexOf((color >>> 16) & 0xFF) << 1
