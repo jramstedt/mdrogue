@@ -36,18 +36,17 @@ processObjects	MODULE
 	move.b	spriteCount, d0
 	beq	@exit
 
+	lea	spriteAttrTable, a0
+
 	add.w	d0, d0				; lsl.w	#2, d0
 	add.w	d0, d0				; 4 words per sprite
-	queueDMATransfer #spriteAttrTable, #vdp_map_sat, d0
+	queueDMATransfer a0, #vdp_map_sat, d0
 
-	move.b	spriteCount, d0
-	sub.b	#1, d0
-	lsl.w	#3, d0				; 8 bytes per sprite
+	add.w	d0, d0				; 8 bytes per sprite
 
 @exit
 	; TODO spriteAttrTable is linked list. Handle adding sprites better (metasprite links?, sorting?)
-	lea	spriteAttrTable, a0 
-	move.b	#0, sNext(a0, d0.w)		; pointer to next must be zero on last sprite.
+	move.b	#0, sNext-sDataSize(a0, d0.w)		; pointer to next must be zero on last sprite.
 
 	rts
 	MODEND
