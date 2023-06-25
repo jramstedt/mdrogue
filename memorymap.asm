@@ -51,10 +51,10 @@ llNodeSize		equ	__rs
 
 ; camera variables
 			rsreset
-camX			rs.w	1	; 
-camY			rs.w	1	; 
-camXprev		rs.w	1	; 
-camYprev		rs.w	1	;
+camX			rs.w	1	; 16.0
+camY			rs.w	1	; 16.0
+camXprev		rs.w	1	; 16.0
+camYprev		rs.w	1	; 16.0
 camDataSize		equ		__rs
 
 ; sprite attributes

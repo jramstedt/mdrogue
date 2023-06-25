@@ -115,8 +115,6 @@ cleanupObjectList	MODULE
 ;	a0 object
 ;	a5 rom address
 displaySprite	MODULE
-	movea.l	(a5), a4		; a4 is patterns start in ROM
-
 	move.w	#$00F0, d0
 	and.b	obAnim(a0), d0		; get animation number
 	lsr.b	#4-1, d0		; convert number to offset (word per pointer)
@@ -133,12 +131,12 @@ displaySprite	MODULE
 	move.w	(a3)+, d0		; d0 is	sprite count
 
 	; sDataSize + 2 dplc data = 10 bytes
+	; TODO change data format to include frame offsets
 
-	;mulu	#10, d0
 	move.w	d0, d2
-	lsl.w	#3, d0			; * 8
 	add.w	d2, d2			; * 2
-	add.w	d2, d0			; *= 10
+	lsl.w	#3, d0			; * 8
+	add.w	d2, d0			; = * 10
 
 	adda	d0, a3
 	dbra	d3, @findFrame
@@ -147,45 +145,45 @@ displaySprite	MODULE
 	lea	spriteAttrTable, a2
 	move.b	spriteCount, d0
 	lsl.w	#3, d0			; sprite attribute is 8 bytes
-	add	d0, a2
+	adda	d0, a2
+
+	lea	mainCamera, a4
+	move.l	#$80, d2		; offset to upper left corner of screen area
 
 	move.w	(a3)+, d0		; d0 is	sprite count
 	subq.w	#1, d0			; decrement one for loop
 @drawSprite
-	addq.b	#1, spriteCount
-
 	movem.w	(a3)+, d3-d7		; d3, d4, d5, d6, d7
-
-	lea.l	mainCamera, a5
-	move.l	#$80, d2		; offset to upper left corner
-
-	; TODO Cull sprites that are out of screen
 
 	; X flip
 	btst.b	#3, obRender(a0)
 	beq.s	@x			; not set, skip flip
 	neg.w	d6
-	move.w	d4, d1
-	lsr.w	#7, d1			; to multiples of eight
-	andi.b	#%11000, d1
-	addi.b	#8, d1
+	move.w	d4, d1			; get H size
+	lsr.w	#10-3, d1		; move to low nibble and *8 (to pixels)
+	andi.b	#%11000, d1		; clean
+	addi.b	#8, d1			; right side of pattern
 	sub.w	d1, d6
 
 @x	move.w	obX(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
-	sub.w	camX(a5), d1
+	sub.w	camX(a4), d1
 	add.w	d1, d6
-	
-	;bne.s	*+4
-	;dbra	d0, @drawSprite	; if 0, dont draw (will mask), TODO not needed when culling
+
+	; cull X
+	move.w	d6, d1
+	subi.w	#$60, d1
+	ble	@nextSprite
+	subi.w	#$160, d1
+	bge	@nextSprite
 
 	; Y flip
 	btst.b	#4, obRender(a0)
 	beq.s	@y			; not set, skip flip
 	neg.w	d3
 	move.w	d4, d1
-	lsr.w	#5, d1			; to multiples of eight
+	lsr.w	#8-3, d1		; to multiples of eight
 	andi.b	#%11000, d1
 	addi.b	#8, d1
 	sub.w	d1, d3
@@ -193,21 +191,24 @@ displaySprite	MODULE
 @y	move.w	obY(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
-	sub.w	camY(a5), d1
+	sub.w	camY(a4), d1
 	add.w	d1, d3
 
-	;lea.l	mainCamera, a5
-	;move.l	obX(a0), d1	; XXXX YYYY
-	;and.l	#$FFF8FFF8, d1
-	;lsr.l	#3, d1		; convert to full pixels
-	;sub.l	camX(a5), d1	; XXXX YYYY
-	
+	; cull Y
+	move.w	d3, d1
+	subi.w	#$60, d1
+	ble	@nextSprite
+	subi.w	#$100, d1
+	bge	@nextSprite
+
+	; prepare spriteAttrTable
+	addq.b	#1, spriteCount
 	move.b	spriteCount, d4
 	add.w	obVRAM(a0), d5		; add real VRAM pattern id to dplc relative tile position
 
 	; write to spriteAttrTable
 	movem.w	d3-d6, (a2)
-	addi	#sDataSize, a2
+	adda	#sDataSize, a2
 
 	; DMA
 	lsl	#5, d5			; 32 bytes per pattern
@@ -216,13 +217,14 @@ displaySprite	MODULE
 	move.w	d7, d5
 	and.w	#$7FF0, d5
 	add.w	d5, d5			; lsr 4 + lsl 5 = lsl 1. Byte offset to metasprite pattern data
-	add.l	a4, d5
+	add.l	(a5), d5
 
 	and.w	#$000F, d7
 	addq	#1, d7
 	lsl.w	#4, d7			; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
 	jsr	_queueDMATransfer
 
+@nextSprite
 	dbra	d0, @drawSprite
 
 	rts
