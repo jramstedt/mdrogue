@@ -383,10 +383,9 @@ collideWithLevel	MODULE
 	move.b	obRadius(a0), d6
 	asl.w	#3, d6		; to 13.3
 
-	cmp.w	d6, d2		; if d2 >= radius then continue
-	bge.s	@continue
-
 	sub.w	d2, d6		; displacement
+	blt.s	@continue	; if d2 >= radius then continue
+
 	swap	d6		; 13.19
 	divu	d2, d6		; 0.16
 				; d6 = displacement / approxlen

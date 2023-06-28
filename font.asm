@@ -11,6 +11,7 @@
 drawFont	MODULE
 	lea	vdp_ctrl, a3
 	lea	vdp_data, a4
+	lea.l	fontTilemap, a5
 
 	setVDPAutoIncrement 2, (a3)
 
@@ -51,6 +52,8 @@ drawFont	MODULE
 	sub	#$20, d0
 	move.l	d0, d1
 
+	; 16x16 characters. 
+
 	and.b	#$1F, d0	; Get char index in row
 	add.w	d0, d0		; \ lsl.w	#2, d0
 	add.w	d0, d0		; / Each character is 4 bytes wide
@@ -59,7 +62,6 @@ drawFont	MODULE
 	lsl.w	#8, d1		; Calculate data offset, each row is 128 bytes width, character is two rows
 	add.l	d1, d0
 
-	lea.l	fontTilemap, a5
 	move.l	(a5, d0.l), d1	; d1 is pattern index
 	add.l	d4, d1
 
