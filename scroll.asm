@@ -102,12 +102,14 @@ updateLevel	MODULE
 	bmi	@topBorder
 
 @bottomBorder
+	moveq	#0, d3
 	copyRowToVram a1, a0, 0, 224, 'a'
 	copyRowToVram a1, a0, 0, 224, 'b'
 
 	bra	@exit
 
 @topBorder
+	moveq	#0, d3
 	copyRowToVram a1, a0, 0, 0, 'a'
 	copyRowToVram a1, a0, 0, 0, 'b'
 
