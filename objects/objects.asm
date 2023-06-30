@@ -304,6 +304,7 @@ findFreeObject	MODULE
 
 	; Free game objects is empty
 	; Allocate new node
+	moveq	#0, d0
 	move.w	gameObjectsMaximum, d0
 	add.w	#1, gameObjectsMaximum
 
