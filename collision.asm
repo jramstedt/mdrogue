@@ -209,27 +209,33 @@ processPhysicObjects	MODULE
 
 	MODEND
 
-; d0 X
-; d1 Y
-; trashes d0 d1 d2 d3 a1
+;
+; Checks if point is in tile with collision type set
+;
+; input
+;  d0 X
+;  d1 Y
+; trashes
+;  d0 d1 d2 a1
 levelCollision	MODULE
 	move.l	(loadedLevelAddress), a1
-	movea.l	lvlCollisionData(a1), a2	; a2 will be the address to collision data byte at d0,d1 (needs to be bittest with x position)
+	movea.l	lvlCollision(a1), a2
 
 	; Yp = y / 8
 	; Yc = Yp / 32
 	; Yi = Yp % 32
 
 	; Y
-	asr.w	#4, d1		; >>3 to pixels, (>>3 + <<2) == >>1 to grid and then to 4 bytes per row
-				; 32bits = 4bytes in row
+	asr.w	#3+3-4, d1		; >>3 to pixels, >>3 to patterns, <<4 to 16 bytes per row
+					; 32 nibbles = 16bytes in row
 
 	; Y offset inside chunk
-	moveq	#$7C, d2
-	and.w	d1, d2		; number of rows
+	move.w	#$01F0, d2
+	and.w	d1, d2
 	adda.w	d2, a2
 	
-	and.w	#$FF80, d1	; truncate to chunk start
+	and.w	#$FE00, d1		; truncate to chunk start
+	moveq	#0, d2
 	move.b	lvlWidth(a1), d2
 	mulu	d2, d1
 	adda.w	d1, a2
@@ -238,22 +244,24 @@ levelCollision	MODULE
 	; Xc = Xp / 32
 	; Xi = Xp % 32
 
+	moveq	#$70, d1
+
 	; X
-	asr.w	#6, d0		; to pixels, to patterns
+	asr.w	#3+3+1, d0		; to pixels, to patterns, to nibbles (two collision tiles per byte)
+	bcc.s	*+4			; is X even, skip odd masking
+	moveq	#$07, d1
 
 	; X offset inside chunk
-	moveq	#$1F, d2
-	and.b	d0, d2	; d2 is x in patterns
-	; We can use btst directly with d2 now.
-
-	; collision data chunk is 32*32 bits = 32 longs, 128 bytes
-	and.w	#$FFE0, d0	; truncate to chunk start
-	add.w	d0, d0	; \	lsl.w	#2, d0
-	add.w	d0, d0	; /
-
-	move.l	(a2, d0.w), d0
-	btst.l	d2, d0		; bittest with x position
-
+	moveq	#$0F, d2
+	and.b	d0, d2
+	
+	and.w	#$FFF0, d0		; truncate to chunk start
+	lsl.w	#9-4, d0
+	adda.w	d0, a2
+	
+	; Check if collision
+	move.b	(a2, d2.w), d0
+	and.b	d1, d0
 	rts
 	MODEND
 
@@ -266,7 +274,7 @@ clampToGrid	MACRO	corner, point
 	bra	end
 
 clampMax
-	add.\0	#1<<6, \corner	; add one full pattern
+	add.\0	#1<<6, \corner		; add one full pattern
 	cmp.\0	\corner, \point
 	blt	end
 	move.\0	\corner, \point
@@ -289,38 +297,41 @@ collideWithLevel	MODULE
 	; Y pixels to loop
 	moveq	#0, d1
 	move.b	obRadius(a0), d1
-	add.w	d1, d1		; (*2) to diameter; Y pixels, will be decremented in loop
+	add.w	d1, d1			; (*2) to diameter; Y pixels, will be decremented in loop
 
 @yLoop
 	; X amount to loop
 	moveq	#0, d0
 	move.b	obRadius(a0), d0
-	add.w	d0, d0		; (*2) to diameter; X pixels, will be decremented in loop
+	add.w	d0, d0			; (*2) to diameter; X pixels, will be decremented in loop
 
 @xLoop
-	movea.l	lvlCollisionData(a1), a2
+	movea.l	lvlCollision(a1), a2
 
 	; Y grid cell
 	moveq	#0, d5
 	move.b	obRadius(a0), d5
 	sub.w	d1, d5
-	asl.w	#3, d5		; to 13.3
+	asl.w	#3, d5			; to 13.3
 	add.w	obY(a0), d5
 
 	; Position to grid cell
 	; Sets data address
-	and.w	#$FFC0, d5	; truncate to grid cell
+	and.w	#$FFC0, d5		; truncate to grid cell
 	move.w	d5, d7
 
-	asr.w	#4, d7
+	; Y
+	asr.w	#3+3-4, d7		; >>3 to pixels, >>3 to patterns, <<4 to 16 bytes per row
+					; 32 nibbles = 16bytes in ro
 
 	; Y offset inside chunk
-	moveq	#$7C, d6
+	move.w	#$01F0, d6
 	and.w	d7, d6
 	adda.w	d6, a2
 
 	; Chunk Y offset
-	and.w	#$FF80, d7
+	and.w	#$FE00, d7
+	moveq	#0, d6
 	move.b	lvlWidth(a1), d6
 	mulu	d6, d7
 	adda.w	d7, a2
@@ -329,25 +340,31 @@ collideWithLevel	MODULE
 	moveq	#0, d4
 	move.b	obRadius(a0), d4
 	sub.w	d0, d4
-	asl.w	#3, d4		; to 13.3
+	asl.w	#3, d4			; to 13.3
 	add.w	obX(a0), d4
 
-	and.w	#$FFC0, d4	; truncate to grid cell
+	and.w	#$FFC0, d4		; truncate to grid cell
 	move.w	d4, d7
 
-	asr.w	#6, d7
+	; Mask for collision type
+	moveq	#$70, d2
+
+	; X
+	asr.w	#3+3+1, d7		; to pixels, to patterns, to nibbles
+	bcc.s	*+4			; is X even, skip odd masking
+	moveq	#$07, d2
 
 	; X offset inside chunk
-	moveq	#$1F, d6
+	moveq	#$0F, d6
 	and.b	d7, d6
 
 	; Chunk X offset
-	and.w	#$FFE0, d7
-	add.w	d7, d7	; \	lsl.w	#2, d7
-	add.w	d7, d7	; /
+	and.w	#$FFF0, d7
+	lsl.w	#9-4, d7
+	adda.w	d7, a2
 
-	move.l	(a2, d7.w), d7
-	btst.l	d6, d7
+	move.b	(a2, d6.w), d7
+	and.b	d2, d7
 	beq	@continue	; free tile, skip collision calculation
 
 	; clamp to pattern

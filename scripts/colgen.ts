@@ -34,15 +34,15 @@ if (targetDirectory === undefined || targetDirectory.length === 0) {
   process.exit(2)
 }
 
-const mapData = JSON.parse(readFileSync(mapFilename, { encoding: 'utf8' })) as TiledMap
+const mapData: TiledMap = JSON.parse(readFileSync(mapFilename, { encoding: 'utf8' }))
 
 const chunkSize = [
   mapData.editorsettings?.chunksize?.width ?? 32,
   mapData.editorsettings?.chunksize?.height ?? 32,
-]
+] as const
 const chunkVolume = chunkSize[0] * chunkSize[1]
 
-const tileLayers = mapData.layers.filter(layer => isTileLayer(layer)) as TileLayer[]
+const tileLayers = mapData.layers.filter(isTileLayer)
 
 const minX = tileLayers.reduce((min, layer) => Math.min(min, layer.startx ?? layer.x), Infinity)
 const maxX = tileLayers.reduce((max, layer) => Math.max(max, (layer.startx ?? layer.x) + layer.width), -Infinity)
@@ -52,42 +52,38 @@ const maxY = tileLayers.reduce((max, layer) => Math.max(max, (layer.starty ?? la
 const mapPatterns = [
   maxX - minX,
   maxY - minY
-]
+] as const
 const mapPatternsVolume = mapPatterns[0] * mapPatterns[1]
 
 const chunks = [
   Math.ceil(mapPatterns[0] / chunkSize[0]),
   Math.ceil(mapPatterns[1] / chunkSize[1])
-]
+] as const
 
-const rawData = new ArrayBuffer(mapPatternsVolume >>> 3) // one bit per pattern
 const rawType = new ArrayBuffer(mapPatternsVolume >>> 1) // nibble per pattern
 
-const collisionData = [] as DataView[][]
-const collisionType = [] as DataView[][]
+const collisionType: DataView[][] = []
 for (let chunkY = 0; chunkY < chunks[1]; ++chunkY) {
-  const dataRow = collisionData[chunkY] = [] as DataView[]
-  const typeRow = collisionType[chunkY] = [] as DataView[]
+  const typeRow = collisionType[chunkY] ??= []
   const rowOffset = chunkY * chunks[0]
 
   for (let chunkX = 0; chunkX < chunks[0]; ++chunkX) {
     const dataOffset = (rowOffset + chunkX) * chunkVolume
 
-    dataRow[chunkX] = new DataView(rawData, dataOffset >>> 3, chunkVolume >>> 3)
     typeRow[chunkX] = new DataView(rawType, dataOffset >>> 1, chunkVolume >>> 1)
   }
 }
 
-const collisionLayers = mapData.layers.filter(layer => {
-  if (!isTileLayer(layer)) return false
+const collisionLayers = mapData.layers
+  .filter(isTileLayer)
+  .filter(layer => {
+    if (layer.properties === undefined) return false
+    for(const property of layer.properties)
+      if(property.name === 'collision' && property.value === true)
+        return true
 
-  if (layer.properties === undefined) return false
-  for(const property of layer.properties)
-    if(property.name === 'collision' && property.value === true)
-      return true
-
-  return false
-}) as TileLayer[]
+    return false
+  })
 
 mapData.tilesets.sort((first, second) => first.firstgid - second.firstgid)
 
@@ -122,35 +118,31 @@ for (const layer of collisionLayers) {
 
     for (let x = 0; x < layer.width; ++x) {
       const globalTileId = dataView[y * layer.width + x]
-      if (globalTileId === 0) continue  // empty tile
+      if (globalTileId === 0) continue  // free tile
 
       const realX = layer.x + x
       const chunkX = Math.trunc(realX / chunkSize[0])
 
+      const typeChunk = collisionType[chunkY][chunkX]
+
       const tileIndex = getTileIndexInTileset(globalTileId)
+      const tileType = (tileIndex + 1) << 4 // Zero is free tile
       // console.log(realX, realY, globalTileId)
 
       const patternInChunkPosition = (realY % chunkSize[1]) * chunkSize[0] + (realX % chunkSize[0])
-
       const typeByteOffset = patternInChunkPosition >>> 1
-      const dataByteOffset = (patternInChunkPosition >>> 5) << 2
 
-      const dataMask = 1 << (realX & 31)
       const typeShift = (realX & 1) * 4
       const typeMask = 0xF0 >>> typeShift
 
-      const dataChunk = collisionData[chunkY][chunkX]
-      const typeChunk = collisionType[chunkY][chunkX]
+      const currentType = typeChunk.getUint8(typeByteOffset)
+      const wasSetBefore = (currentType & typeMask) !== 0
 
-      const wasSetBefore = (dataChunk.getUint32(dataByteOffset) & dataMask) !== 0
-
-      const shiftedTileIndex = tileIndex << typeShift
-      if (wasSetBefore && (typeChunk.getUint8(typeByteOffset) & typeMask) !== shiftedTileIndex)
-        typeChunk.setUint8(typeByteOffset, typeChunk.getUint8(typeByteOffset) | typeMask)
+      const shiftedTileType = tileType >>> typeShift
+      if (wasSetBefore && (currentType & typeMask) !== shiftedTileType)  // If one layer has already added different. Just set it to solid.
+        typeChunk.setUint8(typeByteOffset, (currentType & ~typeMask) | (0x10 >>> typeShift))
       else
-        typeChunk.setUint8(typeByteOffset, typeChunk.getUint8(typeByteOffset) | shiftedTileIndex)
-      
-      dataChunk.setUint32(dataByteOffset, dataChunk.getUint32(dataByteOffset) | dataMask)
+        typeChunk.setUint8(typeByteOffset, currentType | shiftedTileType)
     }
   }
 }
@@ -163,10 +155,10 @@ function showParams(...layers: Layer[]): string[] {
 }
 
 function filterLayers (map: TiledMap, ...filters: string[]): Layer[] {
-  const layers = [] as Layer[]
+  const layers: Layer[] = []
 
   const filterLayers = (group: Group, filters: string[]): Layer[] => {
-    const matchingLayers = [] as Layer[]
+    const matchingLayers: Layer[] = [] 
     for (const layer of group.layers) {
       if (isGroup(layer)) matchingLayers.push(...filterLayers(layer, filters))
       else if (filters.every(filter => layer.name.toLocaleLowerCase().includes(filter))) matchingLayers.push(layer)
@@ -189,8 +181,7 @@ const planeAHighLayers = filterLayers(mapData, 'plane a', 'high')
 const planeBLowLayers = filterLayers(mapData, 'plane b', 'low')
 const planeBHighLayers = filterLayers(mapData, 'plane b', 'high')
 
-writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawData))
-writeFileSync(resolve(targetDirectory, 'col.type.bin'), new DataView(rawType))
+writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawType))
 
 const tmxrasterizer = `${process.env['USERPROFILE']}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
 const tmxrasterizeroptions = ['--no-smoothing']
