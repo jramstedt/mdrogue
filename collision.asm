@@ -282,9 +282,9 @@ end
 	ENDM
 
 ; a0 obj
-; trashes a1, a2, d0, d1, d2, d3, d4, d5, d6, d7
+; trashes a1, a2, a3, d0, d1, d2, d3, d4, d5, d6, d7
 collideWithLevel	MODULE
-	move.l	(loadedLevelAddress), a1
+	movea.l	(loadedLevelAddress), a1
 
 	; ! note
 	; d0, d1 loop counters
@@ -305,7 +305,6 @@ collideWithLevel	MODULE
 	move.b	obRadius(a0), d0
 	add.w	d0, d0			; (*2) to diameter; X pixels, will be decremented in loop
 
-@xLoop
 	movea.l	lvlCollision(a1), a2
 
 	; Y grid cell
@@ -336,6 +335,9 @@ collideWithLevel	MODULE
 	mulu	d6, d7
 	adda.w	d7, a2
 
+@xLoop
+	movea.l	a2, a3
+
 	; X grid cell
 	moveq	#0, d4
 	move.b	obRadius(a0), d4
@@ -347,12 +349,10 @@ collideWithLevel	MODULE
 	move.w	d4, d7
 
 	; Mask for collision type
-	moveq	#$70, d2
 
 	; X
 	asr.w	#3+3+1, d7		; to pixels, to patterns, to nibbles
-	bcc.s	*+4			; is X even, skip odd masking
-	moveq	#$07, d2
+	scs	d2
 
 	; X offset inside chunk
 	moveq	#$0F, d6
@@ -361,27 +361,173 @@ collideWithLevel	MODULE
 	; Chunk X offset
 	and.w	#$FFF0, d7
 	lsl.w	#9-4, d7
-	adda.w	d7, a2
+	adda.w	d7, a3
 
-	move.b	(a2, d6.w), d7
-	and.b	d2, d7
-	beq	@continue	; free tile, skip collision calculation
+	move.b	(a3, d6.w), d6
 
-	; clamp to pattern
+	move.l	d5, d7			; save d5 to be restored
 
+	tst	d2
+	bne.s	@odd
+
+@even	and.b	#$70, d6
+	lsr.b	#3, d6
+	move.w	@tileHandleTable(pc, d6.w), d6
+	jmp	@tileHandleTable(pc, d6.w)
+
+@odd	and.b	#$07, d6
+	lsl.b	d6
+	move.w	@tileHandleTable(pc, d6.w), d6
+	jmp	@tileHandleTable(pc, d6.w)
+
+@tileHandleTable
+	dc.w	@continue-@tileHandleTable	; free tile, skip collision calculation
+	dc.w	@square-@tileHandleTable
+	dc.w	@nwSlope-@tileHandleTable
+	dc.w	@neSlope-@tileHandleTable
+	dc.w	@seSlope-@tileHandleTable
+	dc.w	@swSlope-@tileHandleTable
+
+@nwSlope
+	move.w	obX(a0), d2
 	move.w	obY(a0), d3
-	; TODO here should be type checking and clamping for diagonal tiles.
+
+	; p = d2,d3  v = 0,1  w = 1,0
+	; t = dot(p - v, w - v) / ||w - v||
+	; p' = p - v
+	; t = p'x + (p'y*-1) >> 1  ==>  t = p'x - p'y >> 1
+	; r = v + t*(w-v)
+
+	; p'
+	sub.w	d4, d2
+	cmp.w	#1<<6, d2
+	bgt	@square		; d3 is on right
+
+	sub.w	d5, d3
+	cmp.w	#1<<6, d3
+	bgt	@square		; d3 is below
+
+	; d5 should actually be bottom of the pattern, but @square wants upper left. Adjust vectors here.
+	sub.w	#1<<6, d3
+	add.w	#1<<6, d5
+
+	; t
+	sub.w	d3, d2
+	asr.w	d2
+
+	; r
+	move.w	d2, d3		; (v-w)x is 1
+	neg.w	d3		; (v-w)y is -1, so negate d3
+
+	add.w	d4, d2
+	add.w	d5, d3
+	bra	@displace
+
+@neSlope
+	move.w	obX(a0), d2
+	move.w	obY(a0), d3
+
+	; p = d2,d3  v = 0,0  w = 1,1
+	; t = dot(p - v, w - v) / ||w - v||
+	; p' = p - v
+	; t = p'x + p'y >> 1
+	; r = v + t*(w-v)
+
+	; p'
+	sub.w	d4, d2
+	blt.s	@square		; d3 is on left
+
+	sub.w	d5, d3
+	cmp.w	#1<<6, d3
+	bgt.s	@square		; d3 is below
+
+	; t
+	add.w	d3, d2
+	asr.w	d2
+
+	; r
+	move.w	d2, d3
+
+	add.w	d4, d2
+	add.w	d5, d3
+	bra.s	@displace
+
+@swSlope
+	move.w	obX(a0), d2
+	move.w	obY(a0), d3
+
+	; p = d2,d3  v = 0,0  w = 1,1
+	; t = dot(p - v, w - v) / ||w - v||
+	; p' = p - v
+	; t = p'x + p'y >> 1
+	; r = v + t*(w-v)
+
+	; p'
+	sub.w	d5, d3
+	blt.s	@square		; d3 is above
+
+	sub.w	d4, d2
+	cmp.w	#1<<6, d2
+	bgt.s	@square		; d3 is on right
+
+	; t
+	add.w	d3, d2
+	asr.w	d2
+
+	; r
+	move.w	d2, d3
+
+	add.w	d4, d2
+	add.w	d5, d3
+	bra.s	@displace
+
+@seSlope
+	move.w	obX(a0), d2
+	move.w	obY(a0), d3
+
+	; p = d2,d3  v = 0,1  w = 1,0
+	; t = dot(p - v, w - v) / ||w - v||
+	; p' = p - v
+	; t = p'x + (p'y*-1) >> 1  ==>  t = p'x - p'y >> 1
+	; r = v + t*(w-v)
+
+	; p'
+	sub.w	d4, d2
+	blt.s	@square		; d3 is on left
+
+	sub.w	d5, d3
+	blt.s	@square		; d3 is above
+	
+	; d5 should actually be bottom of the pattern, but @square wants upper left. Adjust vectors here.
+	sub.w	#1<<6, d3
+	add.w	#1<<6, d5
+
+	; t
+	sub.w	d3, d2
+	asr.w	d2
+
+	; r
+	move.w	d2, d3		; (v-w)x is 1
+	neg.w	d3		; (v-w)y is -1, so negate d3
+
+	add.w	d4, d2
+	add.w	d5, d3
+
+	bra.s	@displace
+
+@square						; clamp to pattern
+	move.w	obY(a0), d3
 	clampToGrid.w d5, d3 	; d3 = closest point Y
 
+	move.w	obX(a0), d2
+	clampToGrid.w d4, d2	; d2 = closest point X
+
+@displace
 	; Y diff
 	sub.w	obY(a0), d3
 	move.w	d3, d5		; d5 = Y diff
 	bpl.s	*+4		; skip neg
 	neg.w	d3		; abs
-
-	move.w	obX(a0), d2
-	; TODO here should be type checking and clamping for diagonal tiles.
-	clampToGrid.w d4, d2	; d2 = closest point X
 
 	; X diff
 	sub.w	obX(a0), d2
@@ -395,7 +541,7 @@ collideWithLevel	MODULE
 	approxlen d2, d3	; d2 is length now
 	beq.s	@continue	; d2 is zero; avoid division by zero
 
-				; free: d6, d7
+				; free: d3, d6
 
 	move.b	obRadius(a0), d6
 	asl.w	#3, d6		; to 13.3
@@ -418,6 +564,8 @@ collideWithLevel	MODULE
 	sub.w	d5, obY(a0)
 
 @continue
+	move.l	d7, d5			; restore d5
+
 	; loop
 	subq.w	#1<<3, d0
 	bpl	@xLoop
