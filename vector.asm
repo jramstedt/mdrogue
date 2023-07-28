@@ -15,10 +15,9 @@ vscale MACRO src, dest
 	muls.w	\1, 2(\2)
 	ENDM
 
-; 0.16 FP
 ; input: |x| and |y|
 ; output: x as approximate length
-approxlen MACRO x, y
+approxlenOld MACRO x, y
 	cmp.w	\y, \x
 	bhi.s	*+4		; x bigger, skip exchange
 	exg	\y, \x
@@ -37,6 +36,23 @@ approxlen MACRO x, y
 	swap	\x		; >> 16, to original precision
 	add.w	\y, \x		; since we saved one bit of precision before (-1 from calculation), we need to add it back
 
+	ENDM
+
+; Other options to calculate hypotenuse:
+; Ohashi, Yoshikazu, Fast Linear Approximations of Euclidean Distance in Higher Dimensions, Graphics Gems IV, p. 121-124
+; https://en.wikipedia.org/wiki/Alpha_max_plus_beta_min_algorithm
+
+; Paeth, Alan W., A Fast Approximation To the Hypotenuse, p. 427-431, code: p. 758. Graphics Gems
+; input: |x| and |y|
+; output: x as approximate length
+approxlen MACRO x, y
+	cmp.w	\y, \x
+	bhi.s	*+4		; x bigger, skip exchange
+	exg	\y, \x
+	
+	add.w	\y, \x
+	lsr.w	\y
+	sub.w	\y, \x
 	ENDM
 
 ;
@@ -68,18 +84,17 @@ vrotate MACRO vec, angle
 
 ; Capelli, Ron, Fast Approximation To the Arctangent, p. 389-391. Graphics Gems II
 varctan MACRO vec, angle
-	movem.w	0(\vec), d2/d3
 	moveq	#0, d4
 	moveq	#0, d5
 
-	tst.w	d2
+	move.w	0(\vec), d2
 	spl	d4
 	bpl.s	*+4	; skip neg
 	neg.w	d2	; abs
 	and.b	#%100, d4
 	or.b	d4, d5
 
-	tst.w	d3
+	move.w	2(\vec), d3
 	spl	d4
 	bpl.s	*+4	; skip neg
 	neg.w	d3	; abs
