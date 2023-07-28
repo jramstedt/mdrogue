@@ -24,6 +24,7 @@ calculateCollision MACRO type, skip
 	; check real distance
 	
 	approxlen d3, d4
+	beq	\skip	; approxlen is zero, skip detection 
 	cmp.w	d5, d3	; if d3 >= radius+radius then skip
 	bge	\skip
 
@@ -393,7 +394,7 @@ collideWithLevel	MODULE
 	move.w	obY(a0), d3
 
 	; p = d2,d3  v = 0,1  w = 1,0
-	; t = dot(p - v, w - v) / ||w - v||
+	; t = dot(p - v, w - v) / ||w - v||^2
 	; p' = p - v
 	; t = p'x + (p'y*-1) >> 1  ==>  t = p'x - p'y >> 1
 	; r = v + t*(w-v)
@@ -428,7 +429,7 @@ collideWithLevel	MODULE
 	move.w	obY(a0), d3
 
 	; p = d2,d3  v = 0,0  w = 1,1
-	; t = dot(p - v, w - v) / ||w - v||
+	; t = dot(p - v, w - v) / ||w - v||^2
 	; p' = p - v
 	; t = p'x + p'y >> 1
 	; r = v + t*(w-v)
@@ -457,7 +458,7 @@ collideWithLevel	MODULE
 	move.w	obY(a0), d3
 
 	; p = d2,d3  v = 0,0  w = 1,1
-	; t = dot(p - v, w - v) / ||w - v||
+	; t = dot(p - v, w - v) / ||w - v||^2
 	; p' = p - v
 	; t = p'x + p'y >> 1
 	; r = v + t*(w-v)
@@ -486,7 +487,7 @@ collideWithLevel	MODULE
 	move.w	obY(a0), d3
 
 	; p = d2,d3  v = 0,1  w = 1,0
-	; t = dot(p - v, w - v) / ||w - v||
+	; t = dot(p - v, w - v) / ||w - v||^2
 	; p' = p - v
 	; t = p'x + (p'y*-1) >> 1  ==>  t = p'x - p'y >> 1
 	; r = v + t*(w-v)
