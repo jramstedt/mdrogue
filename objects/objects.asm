@@ -46,7 +46,7 @@ processObjects	MODULE
 
 @exit
 	; TODO spriteAttrTable is linked list. Handle adding sprites better (metasprite links?, sorting?)
-	move.b	#0, sNext-sDataSize(a0, d0.w)		; pointer to next must be zero on last sprite.
+	move.b	#0, sNext-sDataSize(a0, d0.w)	; pointer to next must be zero on last sprite.
 
 	rts
 	MODEND
