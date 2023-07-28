@@ -26,9 +26,6 @@ moveDir		equ	moveDirX
 	move.b	#1, obPhysics(a0)
 	move.b	#$1F, obCollision(a0)
 
-	move.w	#160<<3, obX(a0)
-	move.w	#120<<3, obY(a0)
-
 	move.w	#$1000, obAnim(a0)
 	move.b	#0, obFrameTime(a0)
 

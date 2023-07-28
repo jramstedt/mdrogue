@@ -35,12 +35,24 @@ __main
 
 	jsr	findFreeObject
 	move.b	#(idPlayer<<4)|0, obClass(a2)
+	move.w	#160<<3, obX(a2)
+	move.w	#120<<3, obY(a2)
 
 	jsr	findFreeObject
 	move.b	#(idCollider<<4)|0, obClass(a2)
 	move.b	#16, obRadius(a2)
 	move.b	#0, obPhysics(a2)
 	move.b	#$2F, obCollision(a2)
+	move.w	#80<<3, obX(a2)
+	move.w	#120<<3, obY(a2)
+
+	jsr	findFreeObject
+	move.b	#(idCollider<<4)|0, obClass(a2)
+	move.b	#8, obRadius(a2)
+	move.b	#0, obPhysics(a2)
+	move.b	#$2F, obCollision(a2)
+	move.w	#160<<3, obX(a2)
+	move.w	#120<<3, obY(a2)
 
 	; loadPalette testPalette, 0
 	loadPalette testPalette, 1

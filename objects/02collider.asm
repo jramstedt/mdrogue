@@ -12,9 +12,6 @@ objCollider	MODULE
 	addq.b	#1<<1, obState(a0)	; set object state to @display
 	move.w	#$0000, obRender(a0)
 
-	move.w	#80<<3, obX(a0)
-	move.w	#120<<3, obY(a0)
-
 	moveq.l	#0, d6
 	moveq.l	#0, d7
 	move.b	obRadius(a0), d7
