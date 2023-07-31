@@ -242,7 +242,7 @@ findTarget MODULE
 	move.w	@dirJmpTable(pc, d7.w), d7
 
 	movea	#0, a3				; last target
-	move.l	#160<<3, d4			; last target distance (320/2)
+	move.l	#(160+90)<<3, d4			; last target distance (320/2) ; TODO FIXME hardcoded
 
 	lea.l	hiGameObjectsFirst, a2
 @processNext
@@ -311,6 +311,7 @@ findTarget MODULE
 	; t = dot(e - p, v) / ||v||^2
 
 	; y is -1 relative to mathematical coordinates
+	; Distance is used only for comparison. It doesn't need to be in correct units or correct world scale.
 
 @none	; Distance from player.
 	; X diff
@@ -349,6 +350,10 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
+	asl.w	d0		; double scale to limit into 22.25' and prioritise projected distance from player
+	cmp.w	d0, d2
+	bmi.s	@outside
+
 	; t + d
 	add.w	d0, d2
 
@@ -365,6 +370,9 @@ findTarget MODULE
 	sub.w	d3, d2
 	bmi.s	@behind
 
+	; t >> 1
+	asr.w	d2
+
 	; sin(-45) = -0.70710678118654752440084436210485
 	; cos(-45) = +0.70710678118654752440084436210485
 
@@ -379,9 +387,12 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
-	; (t + d) >> 1
+	; Note: d0 is already doubled, since its not shifted right
+	cmp.w	d0, d2
+	bmi.s	@outside
+
+	; t + d
 	add.w	d0, d2
-	asr.w	d2
 	
 	rts
 @e
@@ -406,6 +417,10 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d1		; abs
 
+	asl.w	d1		; double scale to limit into 22.25' and prioritise projected distance from player
+	cmp.w	d1, d2
+	bmi.s	@outside
+
 	; t + d
 	add.w	d1, d2
 
@@ -422,6 +437,9 @@ findTarget MODULE
 	add.w	d3, d2
 	bmi.s	@behind
 
+	; t >> 1
+	asr.w	d2
+
 	; sin(45) = +0.70710678118654752440084436210485
 	; cos(45) = +0.70710678118654752440084436210485
 
@@ -436,14 +454,21 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
-	; (t + d) >> 1
+	; Note: d0 is already doubled, since its not shifted right
+	cmp.w	d0, d2
+	bmi.s	@outside
+
+	; t + d
 	add.w	d0, d2
-	asr.w	d2
 	
 	rts
 
 @behind
 	add.w	#$7FFF, d2
+	rts
+
+@outside
+	move.w	#$7FFF, d2
 	rts
 
 @s
@@ -470,6 +495,10 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
+	asl.w	d0		; double scale to limit into 22.25' and prioritise projected distance from player
+	cmp.w	d0, d2
+	bmi.s	@outside
+
 	; t + d
 	add.w	d0, d2
 
@@ -487,6 +516,9 @@ findTarget MODULE
 	add.w	d3, d2
 	bmi.s	@behind
 
+	; t >> 1
+	asr.w	d2
+
 	; sin(135) = +0.70710678118654752440084436210485
 	; cos(135) = -0.70710678118654752440084436210485
 
@@ -501,9 +533,12 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
-	; (t + d) >> 1
+	; Note: d0 is already doubled, since its not shifted right
+	cmp.w	d0, d2
+	bmi.s	@outside
+
+	; t + d
 	add.w	d0, d2
-	asr.w	d2
 
 	rts
 @w
@@ -529,6 +564,10 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d1		; abs
 
+	asl.w	d1		; double scale to limit into 22.25' and prioritise projected distance from player
+	cmp.w	d1, d2
+	bmi.s	@outside
+
 	; t + d
 	add.w	d1, d2
 
@@ -546,6 +585,9 @@ findTarget MODULE
 	sub.w	d3, d2
 	bmi.s	@behind
 
+	; t >> 1
+	asr.w	d2
+
 	; sin(-135) = -0.70710678118654752440084436210485
 	; cos(-135) = -0.70710678118654752440084436210485
 
@@ -560,9 +602,12 @@ findTarget MODULE
 	bpl.s	*+4		; skip neg
 	neg.w	d0		; abs
 
-	; (t + d) >> 1
+	; Note: d0 is already doubled, since its not shifted right
+	cmp.w	d0, d2
+	bmi.s	@outside
+
+	; t + d
 	add.w	d0, d2
-	asr.w	d2
 	
 	rts
 
