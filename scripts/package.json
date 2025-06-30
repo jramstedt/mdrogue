@@ -3,21 +3,20 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "colgen.mjs",
   "scripts": {
-    "colgen": "pnpm --silent i && ts-node-esm -T -- colgen.ts",
+    "colgen": "pnpm --silent i && node --experimental-strip-types -- colgen.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "canvas": "2.11.2",
-    "execa": "7.2.0",
+    "canvas": "3.1.2",
+    "execa": "9.6.0",
     "rgbquant": "1.1.2",
-    "ts-node": "10.9.1",
-    "typescript": "5.1.6"
+    "typescript": "5.8.3"
   },
   "devDependencies": {
-    "@types/node": "20.4.5"
-  }
+    "@types/node": "24.0.7"
+  },
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }

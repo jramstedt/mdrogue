@@ -1,9 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import canvas from 'canvas'
-import RgbQuant, { Triplet } from 'rgbquant'
+import RgbQuant, { type Triplet } from 'rgbquant'
 
-import { concatenate } from './utils.js'
+import { concatenate } from './utils.ts'
 
 const { Image, Canvas, createImageData } = canvas
 

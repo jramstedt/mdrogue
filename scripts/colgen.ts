@@ -1,10 +1,10 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { inflateSync, gunzipSync } from 'node:zlib'
 import { execa } from 'execa'
 
-import { type Group, ID_MASK, isGroup, isTileLayer, type Layer, type TiledMap, type TileLayer } from './tiled.js'
-import { writeMegaDrivePatterns } from './megadrive.js'
+import { type Group, ID_MASK, isGroup, isTileLayer, type Layer, type TiledMap, type TileLayer } from './tiled.ts'
+import { writeMegaDrivePatterns } from './megadrive.ts'
 
 function getTileIndexInTileset(globalId: number): number {
   globalId = globalId & ID_MASK
@@ -34,7 +34,7 @@ if (targetDirectory === undefined || targetDirectory.length === 0) {
   process.exit(2)
 }
 
-const mapData: TiledMap = JSON.parse(readFileSync(mapFilename, { encoding: 'utf8' }))
+const mapData: TiledMap = JSON.parse(await readFile(mapFilename, { encoding: 'utf8' }))
 
 const chunkSize = [
   mapData.editorsettings?.chunksize?.width ?? 32,
@@ -147,11 +147,11 @@ for (const layer of collisionLayers) {
   }
 }
 
-function hideParams(...layers: Layer[]): string[] {
-  return layers.map(layer => `--hide-layer "${layer.name}"`)
+function hideParams(...layers: Layer[]) {
+  return layers.flatMap(layer => ['--hide-layer', layer.name])
 }
-function showParams(...layers: Layer[]): string[] {
-  return layers.map(layer => `--show-layer "${layer.name}"`)
+function showParams(...layers: Layer[]) {
+  return layers.flatMap(layer => ['--show-layer', layer.name])
 }
 
 function filterLayers (map: TiledMap, ...filters: string[]): Layer[] {
@@ -181,24 +181,21 @@ const planeAHighLayers = filterLayers(mapData, 'plane a', 'high')
 const planeBLowLayers = filterLayers(mapData, 'plane b', 'low')
 const planeBHighLayers = filterLayers(mapData, 'plane b', 'high')
 
-writeFileSync(resolve(targetDirectory, 'col.data.bin'), new DataView(rawType))
+writeFile(resolve(targetDirectory, 'col.data.bin'), new DataView(rawType))
 
-const tmxrasterizer = `${process.env['USERPROFILE']}\\Downloads\\tiled-windows-64bit-snapshot\\tmxrasterizer.exe`
+const tmxrasterizer = `${process.env['ProgramFiles']}\\Tiled\\tmxrasterizer.exe`
 const tmxrasterizeroptions = ['--no-smoothing']
 
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...paramCollisionLayers), mapFilename, resolve(targetDirectory, 'collision.png')], { windowsVerbatimArguments: true })
-  .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-
-const planeBLowImage = resolve(targetDirectory, 'planeB-low.png')
-const planeBHighImage = resolve(targetDirectory, 'planeB-high.png')
-const planeBPatterns = Promise.all([
-  execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBLowLayers), mapFilename, planeBLowImage], { windowsVerbatimArguments: true }),
-  // execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeBHighLayers), mapFilename, planeBHighImage], { windowsVerbatimArguments: true })
-])
-.then(results => { for (const { stdout, stderr } of results) if (stderr.length !== 0) return console.error(new Error(stderr)) })
-.then(() => writeMegaDrivePatterns('planeB', [{ filePath: planeBLowImage, highPriority: false }, /*{ filePath: planeBHighImage, highPriority: true }*/], targetDirectory) )
+execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...paramCollisionLayers)} ${mapFilename} ${resolve(targetDirectory, 'collision.png')}`
 
 const planeAImage = resolve(targetDirectory, 'planeA.png')
-execa(tmxrasterizer, [...tmxrasterizeroptions, ...showParams(...planeALayers), mapFilename, planeAImage], { windowsVerbatimArguments: true })
-  .then(async ({ stdout, stderr }) => { if (stderr.length !== 0) return console.error(new Error(stderr)) })
-  .then(async () => writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory, await planeBPatterns))
+const planeBLowImage = resolve(targetDirectory, 'planeB-low.png')
+const planeBHighImage = resolve(targetDirectory, 'planeB-high.png')
+
+await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeBLowLayers)} ${mapFilename} ${planeBLowImage}`,
+// await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeBHighLayers)} ${mapFilename} ${planeBHighImage}`,
+await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeALayers)} ${mapFilename} ${planeAImage}`
+
+const planeBPatterns = writeMegaDrivePatterns('planeB', [{ filePath: planeBLowImage, highPriority: false }, /*{ filePath: planeBHighImage, highPriority: true }*/], targetDirectory)
+await writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory, await planeBPatterns)
+

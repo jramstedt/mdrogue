@@ -1,7 +1,7 @@
-import type { Canvas, CanvasRenderingContext2D } from 'canvas'
-
 declare module 'rgbquant' {
-  enum HistogramMethod {
+  import type { Canvas, CanvasRenderingContext2D } from 'canvas'
+
+  const enum HistogramMethod {
     TopPopulation = 1,
     MinPopulation = 2
   }
