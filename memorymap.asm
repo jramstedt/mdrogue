@@ -45,8 +45,8 @@ classDataValidate	MACRO
 			rsreset
 llNext			rs.w	1
 llPrev			rs.w	1
-llStatus		rs.b	0	; 24-bit address, MSB 8 bits are ignored
-llPtr			rs.l	1
+llStatus		rs.b	0
+llPtr			rs.l	1	; 24-bit address, MSB 8 bits are ignored
 llNodeSize		equ	__rs
 
 ; camera variables

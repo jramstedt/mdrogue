@@ -57,8 +57,7 @@ unloadLevel	MODULE
 	move.l	levelVRAMAddress, d6
 	move.l	(loadedLevelAddress), a3
 	move.w	lvlPatternLen(a3), d7
-	jsr	freeVRAM
-	rts
+	jmp	freeVRAM			; freeVRAM will call rts
 	MODEND
 
 ;

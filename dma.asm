@@ -15,7 +15,6 @@
 startDMATransfer	MODULE
 	lea	vdp_ctrl, a6
 
-	haltZ80
 	dmaOn	(a6)
 
 	; length
@@ -50,10 +49,12 @@ startDMATransfer	MODULE
 	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
 	swap	d6
 	ori.b	#%10000000, d6
+
+	fastHaltZ80
 	move.l	d6, (a6)
+	resumeZ80
 
 	dmaOff	(a6)
-	resumeZ80
 
 	rts
 	MODEND
@@ -66,7 +67,6 @@ startDMATransfer	MODULE
 startDMAFill	MODULE
 	lea	vdp_ctrl, a6
 
-	haltZ80
 	dmaOn	(a6)
 
 	; length
@@ -87,12 +87,14 @@ startDMAFill	MODULE
 	ror.w	#2, d6		; Rotate right. Moves two added bits to highest bits.
 	swap	d6
 	ori.b	#%10000000, d6
+
+	fastHaltZ80
 	move.l	d6, (a6)
 
 	move.w	#$0, vdp_data
+	resumeZ80
 
 	dmaOff	(a6)
-	resumeZ80
 
 	rts
 
@@ -113,8 +115,8 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 ;	a6, d4, d5, d6
 _queueDMATransfer	MODULE
 	movea.w	(dma_queue_pointer).w, a6	; Move current pointer to a6
-	cmpa.w	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
-	beq.s	.done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
+	cmpa.w	#dma_queue_pointer, a6		; Compare dma_queue_pointer RAM address to current pointer
+	beq.s	.done				; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
 	lsr.l	d5		; Source address >> 1 (even address)
 	swap	d5		; Swap high and low word (low word contains SA23-SA17)
@@ -160,8 +162,8 @@ processDMAQueue	MODULE
 
 	lea	vdp_ctrl, a5
 
-	haltZ80
 	dmaOn	(a5)
+	fastHaltZ80
 
 	setVDPAutoIncrement 2, (a5)
 
@@ -192,8 +194,8 @@ lc = lc+1
 	ENDR
 
 .done
-	dmaOff	(a5)
 	resumeZ80
+	dmaOff	(a5)
 
 	move.w	#dma_queue, (dma_queue_pointer).w	; Reset dma_queue_pointer
 

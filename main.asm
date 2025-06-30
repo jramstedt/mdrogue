@@ -14,6 +14,14 @@
 	include 'objects/objecttable.asm'
 
 __main
+	; Enable controllers
+	fastHaltZ80
+	move.b	#$40, io_ctrl1  ; enable output
+	move.b	#$40, io_data1  ; Select 00CBRLDU
+	move.b	#$40, io_ctrl2  ; enable output
+	move.b	#$40, io_data2  ; Select 00CBRLDU
+	resumeZ80
+
 	jsr	initVRAM
 	jsr	initGameObjects
 
@@ -83,10 +91,8 @@ gameLoop
 	clr.l	d0
 	clr.l	d1
 
-	haltZ80
-	move.b	#$40, io_ctrl1  ; enable output
+	fastHaltZ80
 	move.b	#$40, io_data1  ; Select 00CBRLDU
-	move.b	#$40, io_ctrl2  ; enable output
 	move.b	#$40, io_data2  ; Select 00CBRLDU
 	move.b	io_data1, d0    ; Read 00CBRLDU
 	swap	d0
@@ -105,6 +111,7 @@ gameLoop
 	swap	d0
 	move.b	d0, pad1State
 
+	; step rnd
 	lcg	d0
 
 	; do game processing
