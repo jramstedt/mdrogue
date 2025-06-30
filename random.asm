@@ -8,7 +8,7 @@ lcg MACRO dest
 lfsr MACRO dest
 	move.w	lcgSeed, \dest
 	lsr.w	\dest
-	bcc	end
+	bcc	.end
 	eor.w	#$B400, \dest
-@end	move.w	\dest, lcgSeed
+.end	move.w	\dest, lcgSeed
 	ENDM

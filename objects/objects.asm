@@ -7,17 +7,17 @@ processObjects	MODULE
 
 	lea.l	hiGameObjectsFirst, a6
 
-@processNext
+.processNext
 	tst.w	llNext(a6)			; is last?
-	beq.s	@dmaSprites
+	beq.s	.dmaSprites
 
 	movea.w	llNext(a6), a6
 	tst.b	llStatus(a6)
-	beq.s	@processNext			; deleted, skip
+	beq.s	.processNext			; deleted, skip
 
 	movea.l	llPtr(a6), a0			; a0 is game object
 	move.b	obClass(a0), d0
-	beq.s	@processNext
+	beq.s	.processNext
 
 	andi.w	#$00F0, d0			; mask class
 	lsr.b	#3, d0				; class to word pointer
@@ -28,13 +28,13 @@ processObjects	MODULE
 	jsr	(a1)				; jump to object code
 	movem	(sp)+, d0-d7/a0-a6
 
-	bra	@processNext
+	bra	.processNext
 
-@dmaSprites
+.dmaSprites
 	; DMA sprite table
 	moveq	#0, d0
 	move.b	spriteCount, d0
-	beq	@exit
+	beq	.exit
 
 	lea	spriteAttrTable, a0
 
@@ -44,7 +44,7 @@ processObjects	MODULE
 
 	add.w	d0, d0				; 8 bytes per sprite
 
-@exit
+.exit
 	; TODO spriteAttrTable is linked list. Handle adding sprites better (metasprite links?, sorting?)
 	move.b	#0, sNext-sDataSize(a0, d0.w)	; pointer to next must be zero on last sprite.
 
@@ -55,14 +55,14 @@ processObjects	MODULE
 cleanupObjectList	MODULE
 	lea.l	hiGameObjectsFirst, a0
 
-@processNext
+.processNext
 	tst.w	llNext(a0)			; is last?
-	beq.s	@exit
+	beq.s	.exit
 
 	movea.w	llNext(a0), a0			; node
 
 	tst.b	llStatus(a0)
-	bne.s	@processNext			; not deleted
+	bne.s	.processNext			; not deleted
 
 	; remove from hi
 	movea.w	llNext(a0), a1
@@ -83,7 +83,7 @@ cleanupObjectList	MODULE
 	; insert into free objects
 	lea.l	freeGameObjectsFirst, a1
 	tst.w	(a1)
-	bne.s	@insert
+	bne.s	.insert
 
 	; free list is empty
 	move.w	#0, llNext(a0)
@@ -92,9 +92,9 @@ cleanupObjectList	MODULE
 
 	; FIXME this will fail if first is removed, should be the "move.w	a2, XXXX" target (see above)
 	movea.l	a2, a0			; reprocess previous node because it has changed
-	bra	@processNext
+	bra	.processNext
 
-@insert
+.insert
 	movea.w	(a1), a1		; a1 is node address of first
 
 	move.w	llPrev(a1), d0		; d0 should be zero
@@ -105,9 +105,9 @@ cleanupObjectList	MODULE
 
 	; FIXME this will fail if first is removed, should be the "move.w	a2, XXXX" target (see above)
 	movea.l	a2, a0			; reprocess previous node because it has changed
-	bra	@processNext
+	bra	.processNext
 
-@exit
+.exit
 	rts
 	MODEND
 
@@ -124,10 +124,10 @@ displaySprite	MODULE
 
 	moveq	#$3F, d3
 	and.b	obAnim+1(a0), d3	; get frame number
-	beq	@drawSprites
+	beq	.drawSprites
 
 	subq	#1, d3			; decrement one for loop
-@findFrame
+.findFrame
 	move.w	(a3)+, d0		; d0 is	sprite count
 
 	; sDataSize + 2 dplc data = 10 bytes
@@ -139,9 +139,9 @@ displaySprite	MODULE
 	add.w	d2, d0			; = * 10
 
 	adda	d0, a3
-	dbra	d3, @findFrame
+	dbra	d3, .findFrame
 
-@drawSprites
+.drawSprites
 	lea	spriteAttrTable, a2
 	move.b	spriteCount, d0
 	lsl.w	#3, d0			; sprite attribute is 8 bytes
@@ -152,12 +152,12 @@ displaySprite	MODULE
 
 	move.w	(a3)+, d0		; d0 is	sprite count
 	subq.w	#1, d0			; decrement one for loop
-@drawSprite
+.drawSprite
 	movem.w	(a3)+, d3-d7		; d3, d4, d5, d6, d7
 
 	; X flip
 	btst.b	#3, obRender(a0)
-	beq.s	@x			; not set, skip flip
+	beq.s	.x			; not set, skip flip
 	neg.w	d6
 	move.w	d4, d1			; get H size
 	lsr.w	#10-3, d1		; move to low nibble and *8 (to pixels)
@@ -165,7 +165,7 @@ displaySprite	MODULE
 	addi.b	#8, d1			; right side of pattern
 	sub.w	d1, d6
 
-@x	move.w	obX(a0), d1
+.x	move.w	obX(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camX(a4), d1
@@ -174,13 +174,13 @@ displaySprite	MODULE
 	; cull X
 	move.w	d6, d1
 	subi.w	#$60, d1
-	ble	@nextSprite
+	ble	.nextSprite
 	subi.w	#$160, d1
-	bge	@nextSprite
+	bge	.nextSprite
 
 	; Y flip
 	btst.b	#4, obRender(a0)
-	beq.s	@y			; not set, skip flip
+	beq.s	.y			; not set, skip flip
 	neg.w	d3
 	move.w	d4, d1
 	lsr.w	#8-3, d1		; to multiples of eight
@@ -188,7 +188,7 @@ displaySprite	MODULE
 	addi.b	#8, d1
 	sub.w	d1, d3
 
-@y	move.w	obY(a0), d1
+.y	move.w	obY(a0), d1
 	asr.w	#3, d1
 	addx.w	d2, d1
 	sub.w	camY(a4), d1
@@ -197,9 +197,9 @@ displaySprite	MODULE
 	; cull Y
 	move.w	d3, d1
 	subi.w	#$60, d1
-	ble	@nextSprite
+	ble	.nextSprite
 	subi.w	#$100, d1
-	bge	@nextSprite
+	bge	.nextSprite
 
 	; prepare spriteAttrTable
 	addq.b	#1, spriteCount
@@ -224,8 +224,8 @@ displaySprite	MODULE
 	lsl.w	#4, d7			; lsl 5 + lsr 1 = lsl 4. Amount of words for all patterns
 	jsr	_queueDMATransfer
 
-@nextSprite
-	dbra	d0, @drawSprite
+.nextSprite
+	dbra	d0, .drawSprite
 
 	rts
 	MODEND
@@ -237,10 +237,10 @@ displaySprite	MODULE
 ;	d0, d1, d2, a5
 animateSprite	MODULE
 	subq.b	#1, obFrameTime(a0)
-	bmi	@processAnim
+	bmi	.processAnim
 	rts
 
-@processAnim
+.processAnim
 	moveq	#0, d0
 	move.b	obAnim(a0), d0	; get animation number
 	and.b	#$F0, d0
@@ -251,14 +251,14 @@ animateSprite	MODULE
 	moveq	#0, d2
 	move.b	(a5)+, d2	; d2 is animation speed
 
-@nextFrame
+.nextFrame
 	move.w	obAnim(a0), d0
 	move	d0, d1	; d1 is animation data
 
 	and.w	#$0FC0, d0
 	lsr.w	#6, d0	; d0 is animation index
 	move.b	(a5, d0.w), d0	; d0 is frame or opcode
-	bmi	@processOpcode
+	bmi	.processOpcode
 
 	add.b	d2, obFrameTime(a0)
 
@@ -269,10 +269,10 @@ animateSprite	MODULE
 
 	rts
 
-@processOpcode
+.processOpcode
 	and.w	#$F03F, d1
 	move.w	d1, obAnim(a0)
-	bra	@nextFrame
+	bra	.nextFrame
 	MODEND
 
 ; input:
@@ -300,7 +300,7 @@ findFreeObject	MODULE
 
 	lea.l	freeGameObjectsFirst, a0
 	tst.w	(a0)
-	bne.s	@useFreeNode
+	bne.s	.useFreeNode
 
 	; Free game objects is empty
 	; Allocate new node
@@ -319,18 +319,18 @@ findFreeObject	MODULE
 
 	move.l	a2, llPtr(a0)
 
-@insertToHi
+.insertToHi
 	moveq	#0, d0
 
 	lea.l	hiGameObjectsLast, a1
 	tst.w	(a1)
 	movea.w	(a1), a1	; a1 is node address
-	beq.s	@emptyHi	; if empty don't update last node
+	beq.s	.emptyHi	; if empty don't update last node
 
 	move.w	llNext(a1), d0
 	move.w	a0, llNext(a1)
 
-@insert
+.insert
 	move.w	a1, llPrev(a0)
 	move.w	d0, llNext(a0)
 	move.w	a0, hiGameObjectsLast
@@ -345,7 +345,7 @@ findFreeObject	MODULE
 	movem.l	(sp)+, d0/a0-a1
 	rts
 
-@useFreeNode
+.useFreeNode
 	movea.w	(a0), a0	; a0 is node address
 	movea.l	llPtr(a0), a2
 	move.b	#$FF, llStatus(a0)
@@ -353,12 +353,12 @@ findFreeObject	MODULE
 	; move next free to first
 	move.w	llNext(a0), freeGameObjectsFirst
 
-	bra.s	@insertToHi
+	bra.s	.insertToHi
 
-@emptyHi
+.emptyHi
 	move.w	a0, hiGameObjectsFirst
 
-	bra.s 	@insert
+	bra.s 	.insert
 
 	MODEND
 

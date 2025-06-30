@@ -114,7 +114,7 @@ queueDMATransfer MACRO sourceMem, destVRAM, lenWords
 _queueDMATransfer	MODULE
 	movea.w	(dma_queue_pointer).w, a6	; Move current pointer to a6
 	cmpa.w	#dma_queue_pointer, a6	; Compare dma_queue_pointer RAM address to current pointer
-	beq.s	@done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
+	beq.s	.done			; If they are the same, queue is full. (dma_queue_pointer is after dma_queue)
 
 	lsr.l	d5		; Source address >> 1 (even address)
 	swap	d5		; Swap high and low word (low word contains SA23-SA17)
@@ -135,7 +135,7 @@ _queueDMATransfer	MODULE
 
 	move.w	a6, (dma_queue_pointer).w
 
-@done
+.done
 	rts
 	MODEND
 
@@ -165,10 +165,10 @@ processDMAQueue	MODULE
 
 	setVDPAutoIncrement 2, (a5)
 
-	jmp	@jumpTable(a6)
+	jmp	.jumpTable(a6)
 
-@jumpTable
-	jmp	@done
+.jumpTable
+	jmp	.done
 	nop
 	nop
 	nop
@@ -179,7 +179,7 @@ lc = 1
 	lea	vdp_ctrl, a5
 	lea	dma_queue.w, a6
 	IF lc<>SlotCount
-		bra.w	@done-lc*8
+	bra.w	.done-lc*8
 	ENDIF
 lc = lc+1
 	ENDR
@@ -191,7 +191,7 @@ lc = lc+1
 	move.w	(a6)+, (a5)	; dma command second half
 	ENDR
 
-@done
+.done
 	dmaOff	(a5)
 	resumeZ80
 

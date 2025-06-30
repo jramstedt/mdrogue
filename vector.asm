@@ -116,12 +116,12 @@ varctan MACRO vec, angle
 
 	lea	octantLookup, a2
 	move.b	(a2, d5.w), d5
-	bpl.s	@angle		; skip sub
+	bpl.s	.angle		; skip sub
 	move	#$1000, d2	; 12 bit percision
 	sub.w	d3, d2
 	move.l	d2, d3
 
-@angle
+.angle
 	asl.l	d4, d5	; s.15
 	or.w	d5, d3
 
@@ -137,44 +137,44 @@ varctan MACRO vec, angle
 ;  0 parallel, zero length
 vcpsign MACRO vec1, vec2
 	move.w	0(\vec1), d2
-	beq	@v1zero
+	beq	.v1zero
 	move.w	2(\vec1), d3
-	beq	@v1zero
+	beq	.v1zero
 
 	move.w	d2, d0
 	eor.w	d3, d0
 	smi	d0
-	bra.s	@v1end
+	bra.s	.v1end
 
-@v1zero	moveq	#0, d0
-@v1end
+.v1zero	moveq	#0, d0
+.v1end
 
 	move.w	0(\vec2), d4
-	beq	@v2zero
+	beq	.v2zero
 	move.w	2(\vec2), d5
-	beq	@v2zero
+	beq	.v2zero
 
 	move.w	d2, d1
 	eor.w	d3, d1
 	smi	d1
-	bra.s	@v2end
+	bra.s	.v2end
 
-@v2zero	moveq	#0, d1
-@v2end
+.v2zero	moveq	#0, d1
+.v2end
 
 	cmp.b	d1, d0
-	beq	@abs
-	bmi	@posit
+	beq	.abs
+	bmi	.posit
 
-@negat	moveq	#-1, d0
-	bra.s	@end
+.negat	moveq	#-1, d0
+	bra.s	.end
 
-@posit	moveq	#1, d0
-	bra.s	@end
+.posit	moveq	#1, d0
+	bra.s	.end
 
-@abs
+.abs
 	tst.w	d0
-	bpl.s	@calc
+	bpl.s	.calc
 
 	tst.w	d2	; is positive
 	bpl.s	*+4	; skip neg
@@ -195,16 +195,16 @@ vcpsign MACRO vec1, vec2
 	exg	d2, d4
 	exg	d3, d5
 
-@calc
+.calc
 	muls.w	d2, d3
 	muls.w	d4, d5
 	
 	cmp.l	d5, d3
-	bmi.s	@negat
-	bpl.s	@posit
+	bmi.s	.negat
+	bpl.s	.posit
 
 	moveq	#0, d0	; parallel?
-@end
+.end
 	ENDM
 	
 	EVEN

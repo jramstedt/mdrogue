@@ -71,51 +71,51 @@ updateLevel	MODULE
 	moveq	#0, d0
 	moveq	#0, d1
 
-@checkX
+.checkX
 	move.w	camXprev(a0), d0
 	and.w	#$FFF8, d0
 	move.w	camX(a0), d2
 	and.w	#$FFF8, d2
 	cmp.w	d0, d2
-	beq	@checkY	; no cell boundaries crossed
-	bmi	@leftBorder
+	beq	.checkY	; no cell boundaries crossed
+	bmi	.leftBorder
 
-@rightBorder
+.rightBorder
 	copyColumnToVram a1, a0, 320, 0, 'a'
 	copyColumnToVram a1, a0, 320, 0, 'b'
 
-	bra	@checkY
+	bra	.checkY
 
-@leftBorder
+.leftBorder
 	copyColumnToVram a1, a0, 0, 0, 'a'
 	copyColumnToVram a1, a0, 0, 0, 'b'
 	
-	bra	@checkY
+	bra	.checkY
 
-@checkY
+.checkY
 	move.w	camYprev(a0), d1
 	and.w	#$FFF8, d1
 	move.w	camY(a0), d2
 	and.w	#$FFF8, d2
 	cmp.w	d1, d2
-	beq	@exit	; no cell boundaries crossed
-	bmi	@topBorder
+	beq	.exit	; no cell boundaries crossed
+	bmi	.topBorder
 
-@bottomBorder
+.bottomBorder
 	moveq	#0, d3
 	copyRowToVram a1, a0, 0, 224, 'a'
 	copyRowToVram a1, a0, 0, 224, 'b'
 
-	bra	@exit
+	bra	.exit
 
-@topBorder
+.topBorder
 	moveq	#0, d3
 	copyRowToVram a1, a0, 0, 0, 'a'
 	copyRowToVram a1, a0, 0, 0, 'b'
 
-	bra	@exit
+	bra	.exit
 
-@exit
+.exit
 	move.l	camX(a0), camXprev(a0)	; copies both x and y
 	movem.l	(sp)+, d0-d7/a0-a3
 	rts

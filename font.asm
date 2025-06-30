@@ -38,16 +38,16 @@ drawFont	MODULE
 	move.w	fontVRAMAddress, d4
 	lsr.l	#5, d4
 
-@charLoop
+.charLoop
 	clr.l	d0
 	move.b	(a6)+, d0
-	beq	@complete
+	beq	.complete
 
 	cmp.b	#$A, d0
-	beq	@newline
+	beq	.newline
 
 	cmp.b	#$D, d0
-	beq	@carriageReturn
+	beq	.carriageReturn
 
 	sub	#$20, d0
 	move.l	d0, d1
@@ -77,23 +77,23 @@ drawFont	MODULE
 
 	add.l	#(4<<16), d2
 	add.l	#(4<<16), d3
-	bra	@charLoop
+	bra	.charLoop
 
-@newline
+.newline
 	add.l	#((128*2)<<16), d2
 	add.l	#((128*2)<<16), d3
-	bra	@charLoop
+	bra	.charLoop
 
-@carriageReturn
+.carriageReturn
 	and.l	#$FF80FFFF, d2
 	add.l	d7, d2
 
 	and.l	#$FF80FFFF, d3
 	add.l	d7, d3
 
-	bra	@charLoop
+	bra	.charLoop
 
-@complete
+.complete
 	rts
 	MODEND
 
@@ -105,14 +105,14 @@ drawFont	MODULE
 itos	MODULE
 	adda	#4, a0
 	move.l	#4-1, d2
-@aloop
+.aloop
 	divu	#10, d0		; hi = modulo
 	move.l	d0, d1
 	and.l	#$FFFF, d0	; clear hi
 	swap	d1
 	add.b	#$30, d1	; add ascii start
 	move.b	d1, -(a0)
-	dbra	d2, @aloop
+	dbra	d2, .aloop
 
 	rts
 	MODEND

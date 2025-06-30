@@ -146,67 +146,67 @@ processPhysicObjects	MODULE
 
 	lea.l	hiGameObjectsFirst, a6
 	tst.w	(a6)			; is empty?
-	beq.s	@exit
+	beq.s	.exit
 
 	movea.w	llNext(a6), a6		; load first node, will be skipped
 
-@sourceLoop
+.sourceLoop
 	tst.w	llNext(a6)		; is last?
-	beq.s	@exit
+	beq.s	.exit
 
 	movea.w	llNext(a6), a6		; next node
 	movea.l	llPtr(a6), a0		; a0 is game object
 
 	tst.b	obClass(a0)
-	beq.s	@sourceLoop
+	beq.s	.sourceLoop
 
 	move.w	obPhysics(a0), d0	; obPhysics on upper byte, obCollision on lower
 	lsr.b	#4, d0			; object collision groups to masks
 
 	lea.l	hiGameObjectsFirst, a5
 
-@targetLoop
+.targetLoop
 	movea.w	llNext(a5), a5		; next node
 
 	cmpa.w	a6, a5			; reached source?
-	beq.s	@sourceLoop
+	beq.s	.sourceLoop
 
 	movea.l	llPtr(a5), a1		; a1 is game object
 
 	tst.b	obClass(a1)
-	beq.s	@targetLoop
+	beq.s	.targetLoop
 
 	move.w	obPhysics(a1), d3	; obPhysics on upper byte, obCollision on lower
 	and.b	d0, d3			; test group against mask, if not matched skip.
-	beq.s	@targetLoop
+	beq.s	.targetLoop
 
 	andi.w	#$0100, d3		; mask kinematic only
-	beq.s	@targetDynamic
+	beq.s	.targetDynamic
 	and.w	d0, d3			; test if both kinematic
-	bne.s	@targetLoop
+	bne.s	.targetLoop
 
-	bra	@targetKinematic
+	bra	.targetKinematic
 
-@exit
+.exit
 	movem	(sp)+, a5-a6
 	rts
 
-@targetDynamic
+.targetDynamic
 	btst	#8, d0
-	beq	@dtod	; both dynamic
+	beq	.dtod	; both dynamic
 
 	; if target dynamic bounce target
-	calculateCollision 'ktod', @targetLoop
-	bra	@targetLoop
+	calculateCollision 'ktod', .targetLoop
+	bra	.targetLoop
 	
 	; if both dynamic calculate bounce (radius ratio)
-@dtod	calculateCollision 'dtod', @targetLoop
-	bra	@targetLoop
+.dtod	calculateCollision 'dtod', .targetLoop
+	bra	.targetLoop
 
-@targetKinematic
+.targetKinematic
 	; if source dynamic bounce source
-	calculateCollision 'dtok', @targetLoop
-	bra	@targetLoop
+	calculateCollision 'dtok', .targetLoop
+	bra	.targetLoop
 
 	MODEND
 
@@ -300,7 +300,7 @@ collideWithLevel	MODULE
 	move.b	obRadius(a0), d1
 	add.w	d1, d1			; (*2) to diameter; Y pixels, will be decremented in loop
 
-@yLoop
+.yLoop
 	; X amount to loop
 	moveq	#0, d0
 	move.b	obRadius(a0), d0
@@ -336,7 +336,7 @@ collideWithLevel	MODULE
 	mulu	d6, d7
 	adda.w	d7, a2
 
-@xLoop
+.xLoop
 	movea.l	a2, a3
 
 	; X grid cell
@@ -369,27 +369,27 @@ collideWithLevel	MODULE
 	move.l	d5, d7			; save d5 to be restored
 
 	tst	d2
-	bne.s	@odd
+	bne.s	.odd
 
-@even	and.b	#$70, d6
+.even	and.b	#$70, d6
 	lsr.b	#3, d6
-	move.w	@tileHandleTable(pc, d6.w), d6
-	jmp	@tileHandleTable(pc, d6.w)
+	move.w	.tileHandleTable(pc, d6.w), d6
+	jmp	.tileHandleTable(pc, d6.w)
 
-@odd	and.b	#$07, d6
+.odd	and.b	#$07, d6
 	lsl.b	d6
-	move.w	@tileHandleTable(pc, d6.w), d6
-	jmp	@tileHandleTable(pc, d6.w)
+	move.w	.tileHandleTable(pc, d6.w), d6
+	jmp	.tileHandleTable(pc, d6.w)
 
-@tileHandleTable
-	dc.w	@continue-@tileHandleTable	; free tile, skip collision calculation
-	dc.w	@square-@tileHandleTable
-	dc.w	@nwSlope-@tileHandleTable
-	dc.w	@neSlope-@tileHandleTable
-	dc.w	@seSlope-@tileHandleTable
-	dc.w	@swSlope-@tileHandleTable
+.tileHandleTable
+	dc.w	.continue-.tileHandleTable	; free tile, skip collision calculation
+	dc.w	.square-.tileHandleTable
+	dc.w	.nwSlope-.tileHandleTable
+	dc.w	.neSlope-.tileHandleTable
+	dc.w	.seSlope-.tileHandleTable
+	dc.w	.swSlope-.tileHandleTable
 
-@nwSlope
+.nwSlope
 	move.w	obX(a0), d2
 	move.w	obY(a0), d3
 
@@ -402,13 +402,13 @@ collideWithLevel	MODULE
 	; p'
 	sub.w	d4, d2
 	cmp.w	#1<<6, d2
-	bgt	@square		; d3 is on right
+	bgt	.square		; d3 is on right
 
 	sub.w	d5, d3
 	cmp.w	#1<<6, d3
-	bgt	@square		; d3 is below
+	bgt	.square		; d3 is below
 
-	; d5 should actually be bottom of the pattern, but @square wants upper left. Adjust vectors here.
+	; d5 should actually be bottom of the pattern, but .square wants upper left. Adjust vectors here.
 	sub.w	#1<<6, d3
 	add.w	#1<<6, d5
 
@@ -422,9 +422,9 @@ collideWithLevel	MODULE
 
 	add.w	d4, d2
 	add.w	d5, d3
-	bra	@displace
+	bra	.displace
 
-@neSlope
+.neSlope
 	move.w	obX(a0), d2
 	move.w	obY(a0), d3
 
@@ -436,11 +436,11 @@ collideWithLevel	MODULE
 
 	; p'
 	sub.w	d4, d2
-	blt.s	@square		; d3 is on left
+	blt.s	.square		; d3 is on left
 
 	sub.w	d5, d3
 	cmp.w	#1<<6, d3
-	bgt.s	@square		; d3 is below
+	bgt.s	.square		; d3 is below
 
 	; t
 	add.w	d3, d2
@@ -451,9 +451,9 @@ collideWithLevel	MODULE
 
 	add.w	d4, d2
 	add.w	d5, d3
-	bra.s	@displace
+	bra.s	.displace
 
-@swSlope
+.swSlope
 	move.w	obX(a0), d2
 	move.w	obY(a0), d3
 
@@ -465,11 +465,11 @@ collideWithLevel	MODULE
 
 	; p'
 	sub.w	d5, d3
-	blt.s	@square		; d3 is above
+	blt.s	.square		; d3 is above
 
 	sub.w	d4, d2
 	cmp.w	#1<<6, d2
-	bgt.s	@square		; d3 is on right
+	bgt.s	.square		; d3 is on right
 
 	; t
 	add.w	d3, d2
@@ -480,9 +480,9 @@ collideWithLevel	MODULE
 
 	add.w	d4, d2
 	add.w	d5, d3
-	bra.s	@displace
+	bra.s	.displace
 
-@seSlope
+.seSlope
 	move.w	obX(a0), d2
 	move.w	obY(a0), d3
 
@@ -494,12 +494,12 @@ collideWithLevel	MODULE
 
 	; p'
 	sub.w	d4, d2
-	blt.s	@square		; d3 is on left
+	blt.s	.square		; d3 is on left
 
 	sub.w	d5, d3
-	blt.s	@square		; d3 is above
+	blt.s	.square		; d3 is above
 	
-	; d5 should actually be bottom of the pattern, but @square wants upper left. Adjust vectors here.
+	; d5 should actually be bottom of the pattern, but .square wants upper left. Adjust vectors here.
 	sub.w	#1<<6, d3
 	add.w	#1<<6, d5
 
@@ -514,16 +514,16 @@ collideWithLevel	MODULE
 	add.w	d4, d2
 	add.w	d5, d3
 
-	bra.s	@displace
+	bra.s	.displace
 
-@square						; clamp to pattern
+.square						; clamp to pattern
 	move.w	obY(a0), d3
 	clampToGrid.w d5, d3 	; d3 = closest point Y
 
 	move.w	obX(a0), d2
 	clampToGrid.w d4, d2	; d2 = closest point X
 
-@displace
+.displace
 	; Y diff
 	sub.w	obY(a0), d3
 	move.w	d3, d5		; d5 = Y diff
@@ -540,7 +540,7 @@ collideWithLevel	MODULE
 	; Calculate displacement
 
 	approxlen d2, d3	; d2 is length now
-	beq.s	@continue	; d2 is zero; avoid division by zero
+	beq.s	.continue	; d2 is zero; avoid division by zero
 
 				; free: d3, d6
 
@@ -548,7 +548,7 @@ collideWithLevel	MODULE
 	asl.w	#3, d6		; to 13.3
 
 	sub.w	d2, d6		; displacement
-	blt.s	@continue	; if d2 >= radius then continue
+	blt.s	.continue	; if d2 >= radius then continue
 
 	swap	d6		; 13.19
 	divu	d2, d6		; 0.16
@@ -564,16 +564,16 @@ collideWithLevel	MODULE
 	swap	d5		; 13.3
 	sub.w	d5, obY(a0)
 
-@continue
+.continue
 	move.l	d7, d5			; restore d5
 
 	; loop
 	subq.w	#1<<3, d0
-	bpl	@xLoop
+	bpl	.xLoop
 
 	subq.w	#1<<3, d1
-	bpl	@yLoop
+	bpl	.yLoop
 
-@end
+.end
 	rts
 	MODEND

@@ -1,19 +1,19 @@
 objBullet	MODULE
 	moveq	#0, d0
 	move.b	obState(a0), d0		; a0 is object address
-	move.w	@routineJmpTable(pc,d0.w), d1
-	jmp	@routineJmpTable(pc,d1.w)
+	move.w	.routineJmpTable(pc,d0.w), d1
+	jmp	.routineJmpTable(pc,d1.w)
 
-@routineJmpTable
-	dc.w	@main-@routineJmpTable
-	dc.w	@display-@routineJmpTable
+.routineJmpTable
+	dc.w	.main-.routineJmpTable
+	dc.w	.display-.routineJmpTable
 
 		rsset	obClassData
 lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 		classDataValidate
 
-@main ; inits the object
-	addq.b	#1<<1, obState(a0)	; set object state to @display
+.main ; inits the object
+	addq.b	#1<<1, obState(a0)	; set object state to .display
 	move.w	#$0000, obRender(a0)
 
 	move.w	#$1000, obAnim(a0)
@@ -28,9 +28,9 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 
 	rts
 
-@display
+.display
 	sub.b	#1, lifeTimer(a0)
-	beq	@delete
+	beq	.delete
 
 	move.w	obVelX(a0), d0
 	add.w	d0, obX(a0)
@@ -40,14 +40,14 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 
 	movem.w	obX(a0), d0/d1
 	jsr	levelCollision
-	bne	@delete
+	bne	.delete
 
 	move	#spritesCol, a5
 	jsr	displaySprite
 
 	rts
 
-@delete
+.delete
 	move.w	obVRAM(a0), d6
 	lsl.w	#5, d6			; pattern number to address
 	move.l	#4, d7

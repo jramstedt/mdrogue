@@ -13,38 +13,38 @@ allocVRAM	MODULE
 	lea.l	vrm_first, a2	; vrm_first is previous
 	moveq	#0, d6
 
-@loop
+.loop
 	tst.w	(a2)
-	beq	@notFound
+	beq	.notFound
 
 	move.w	vrmStart(a2), d6
 	add.w	d7, d6
 	cmp.w	vrmEnd(a2), d6
-	blo	@allocFromHoleStart
-	beq	@allocFullHole
+	blo	.allocFromHoleStart
+	beq	.allocFullHole
 	
 	cmp.l	#vrm_first, vrmNext(a2)
-	beq	@notFound
+	beq	.notFound
 
 	movea.l a2, a3	; set current as previous
 
 	movea.l	vrmNext(a2), a2
-	bra	@loop
+	bra	.loop
 
-@allocFromHoleStart
+.allocFromHoleStart
 	move.l	d6, d4
 	move.w	vrmStart(a2), d6
 	move.w	d4, vrmStart(a2)
 	rts
 
-@allocFullHole
+.allocFullHole
 	move.w	vrmStart(a2), d6
 	move.l	vrmNext(a2), vrmNext(a3)	; move link
 	clr.l	vrmNext(a2)
 	clr.l	vrmStart(a2)
 	rts
 
-@notFound	; No memory left in VRAM.
+.notFound	; No memory left in VRAM.
 	moveq	#0, d6
 	moveq	#0, d7
 	rts
@@ -64,24 +64,24 @@ _reserveVRAM	MODULE
 	lea.l	vrm_first, a2	; vrm_first is previous
 
 	add	d6, d7
-@loop
+.loop
 	tst.w	(a2)
-	beq	@notFound
+	beq	.notFound
 
 	cmp.w	vrmStart(a2), d6
-	blo	@notFound
+	blo	.notFound
 
 	cmp.w	vrmEnd(a2), d7
-	blo	@reserveHole
-	beq	@reserveFullHole
+	blo	.reserveHole
+	beq	.reserveFullHole
 
 	movea.l a2, a3	; set current as previous
 	movea.l	vrmNext(a2), a2
-	bra	@loop
+	bra	.loop
 
-@reserveHole
+.reserveHole
 	cmp.w	vrmStart(a2), d6
-	beq	@reserveFromHoleStart
+	beq	.reserveFromHoleStart
 
 	move.w	vrmEnd(a2), d5	; d5 is end for new hole
 	move.w	d6, vrmEnd(a2)
@@ -90,32 +90,32 @@ _reserveVRAM	MODULE
 
 	lea.l	vrm_list, a2
 	move.l	#9, d6	; see memorymap.asm, max 10 vrm holes
-@freeLoop	
+.freeLoop	
 	tst.l	vrmStart(a2)	; tests both start and end for null
-	beq	@makeHole
+	beq	.makeHole
 
 	lea	vrmDataSize(a2), a2
-	dbra	d6, @freeLoop
+	dbra	d6, .freeLoop
 	rts	; no free holes left!
 
-@makeHole
+.makeHole
 	move.w	d7, vrmStart(a2)
 	move.w	d5, vrmEnd(a2)
 	move.l	vrmNext(a3), vrmNext(a2)
 	move.l	a2, vrmNext(a3)
 	rts
 
-@reserveFromHoleStart
+.reserveFromHoleStart
 	move.w	d7, vrmStart(a2)
 	rts
 
-@reserveFullHole
+.reserveFullHole
 	move.l	vrmNext(a2), vrmNext(a3)	; move link
 	clr.l	vrmNext(a2)
 	clr.l	vrmStart(a2)
 	rts
 
-@notFound
+.notFound
 	rts
 	MODEND
 
@@ -131,44 +131,44 @@ freeVRAM	MODULE
 	lea.l	vrm_first, a2
 	lea.l	vrm_first, a3
 
-@loop
+.loop
 	tst.w	(a2)
-	beq	@notFound
+	beq	.notFound
 
 	cmp.w	vrmEnd(a2), d6
-	beq	@mergeEnd
+	beq	.mergeEnd
 
 	cmp.w	vrmStart(a2), d5
-	beq	@mergeStart
+	beq	.mergeStart
 
 	cmp.l	#vrm_first, vrmNext(a2)
-	beq	@notFound
+	beq	.notFound
 
 	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
 
 	movea.l	vrmNext(a2), a2
-	bra	@loop
+	bra	.loop
 
-@notFound
+.notFound
 	lea.l	vrm_list, a2
 	move.l	#9, d7	; see memorymap.asm, max 10 vrm holes
-@freeLoop	
+.freeLoop	
 	tst.l	vrmStart(a2)	; tests both start and end for null
-	beq	@makeHole
+	beq	.makeHole
 
 	lea	vrmDataSize(a2), a2
-	dbra	d7, @freeLoop
+	dbra	d7, .freeLoop
 	rts	; no free holes left!
 
-@mergeStart
+.mergeStart
 	move.w	d6, vrmStart(a2)
 	rts
 
-@mergeEnd
+.mergeEnd
 	move.w	d5, vrmEnd(a2)
 	rts
 
-@makeHole
+.makeHole
 	move.w	d6, vrmStart(a2)
 	move.w	d5, vrmEnd(a2)
 	move.l	vrmNext(a3), vrmNext(a2)

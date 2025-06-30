@@ -1,14 +1,14 @@
 objPlayer	MODULE
 	moveq	#0, d0
 	move.b	obState(a0), d0	; a0 is object address
-	move.w	@routineJmpTable(pc,d0.w), d1
-	jmp	@routineJmpTable(pc,d1.w)
+	move.w	.routineJmpTable(pc,d0.w), d1
+	jmp	.routineJmpTable(pc,d1.w)
 
-@routineJmpTable
-	dc.w	@main-@routineJmpTable
-	dc.w	@input-@routineJmpTable
-	dc.w	@display-@routineJmpTable
-	dc.w	@delete-@routineJmpTable
+.routineJmpTable
+	dc.w	.main-.routineJmpTable
+	dc.w	.input-.routineJmpTable
+	dc.w	.display-.routineJmpTable
+	dc.w	.delete-.routineJmpTable
 
 		rsset	obClassData
 shootTimer	rs.b	1		; in frames TODO PAL/NTSC
@@ -20,8 +20,8 @@ moveDirY	rs.w	1		; last move direction Y 8.8
 
 moveDir		equ	moveDirX
 
-@main ; inits the object
-	addq.b	#1<<1, obState(a0)	; set object state to @input
+.main ; inits the object
+	addq.b	#1<<1, obState(a0)	; set object state to .input
 	move.w	#$0800, obRender(a0)
 	move.b	#8, obRadius(a0)
 	move.b	#1, obPhysics(a0)
@@ -38,7 +38,7 @@ moveDir		equ	moveDirX
 	move.b	#0, shootTimer(a0)	; shoot timer
 	move.l	#0, moveDir(a0)		; last move direction
 
-@input
+.input
 	; read pad1State and lookup direction vector
 	lea	dirVector, a3
 
@@ -48,15 +48,15 @@ moveDir		equ	moveDirX
 	adda.w	d0, a3
 	
 	tst.l	(a3)			; check if vector is zero length
-	beq 	@noMovement		; if zero there is no movement.
+	beq 	.noMovement		; if zero there is no movement.
 	
 	move.b	pad1State, padState(a0)	; keep previous pad state for continued shooting
 
 	movem.w	(a3), d0/d1
 	movem.w	d0/d1, moveDir(a0)
-	bra	@setVelocity
+	bra	.setVelocity
 
-@noMovement
+.noMovement
 	; TODO NTSC vs. PAL?
 	; halve velocity each frame
 	clr.w	d3
@@ -66,7 +66,7 @@ moveDir		equ	moveDirX
 	asr.w	d1
 	addx.w	d3, d1
 
-@setVelocity
+.setVelocity
 	movem.w	d0/d1, obVelX(a0)
 
 	; TODO increase velocity over time
@@ -81,13 +81,13 @@ moveDir		equ	moveDirX
 
 	; can shoot?
 	tst	shootTimer(a0)
-	beq	@shoot
+	beq	.shoot
 
 	sub.b	#1, shootTimer(a0)
-	bne	@display
+	bne	.display
 
-@shoot	btst	#6, pad1State
-	bne	@display
+.shoot	btst	#6, pad1State
+	bne	.display
 
 	jsr	findTarget
 
@@ -106,7 +106,7 @@ moveDir		equ	moveDirX
 	move.b	#5, shootTimer(a0)
 
 	move.l	a1, d4
-	bne	@shootAtTarget		; we have target
+	bne	.shootAtTarget		; we have target
 
 	; no target, shoot straight
 	movem.w	moveDir(a0), d0/d1
@@ -114,9 +114,9 @@ moveDir		equ	moveDirX
 	asr.w	#2, d1
 	movem.w	d0/d1, obVelX(a2)
 
-	bra.s	@display
+	bra.s	.display
 
-@shootAtTarget
+.shootAtTarget
 	; calculate shoot vector
 	move.w	obX(a1), d0
 	move.w	obY(a1), d1
@@ -145,7 +145,7 @@ moveDir		equ	moveDirX
 
 	movem.w	d0/d1, obVelX(a2)
 
-@display
+.display
 	; update main camera to player coordinates!
 	
 	lea	obX(a0), a1
@@ -186,7 +186,7 @@ moveDir		equ	moveDirX
 
 	rts
 
-@delete
+.delete
 	move.w	obVRAM(a0), d6
 	lsl.w	#5, d6			; pattern number to address
 	move.l	#4*4, d7
@@ -239,64 +239,64 @@ findTarget MODULE
 	move.b	padState(a0), d7
 	andi.b	#%1111, d7
 	lsl.w	#1, d7				; 2 bytes per jump offset
-	move.w	@dirJmpTable(pc, d7.w), d7
+	move.w	.dirJmpTable(pc, d7.w), d7
 
 	movea	#0, a3				; last target
 	move.l	#(160+90)<<3, d4			; last target distance (320/2) ; TODO FIXME hardcoded
 
 	lea.l	hiGameObjectsFirst, a2
-@processNext
+.processNext
 	tst.w	llNext(a2)			; is last?
-	beq.s	@end	; todo closest found?
+	beq.s	.end	; todo closest found?
 
 	movea.w	llNext(a2), a2
 	; tst.b	llStatus(a2)
-	; beq.s	@processNext			; deleted, skip
+	; beq.s	.processNext			; deleted, skip
 
 	movea.l	llPtr(a2), a1			; a1 is game object
 	; todo check type (shootable?)
 
 	cmp.b	#(idCollider<<4)|0, obClass(a1)	; is collider
-	bne.s	@processNext
+	bne.s	.processNext
 
 	movem.w	obX(a0), d0/d1			; p
 	movem.w	obX(a1), d2/d3			; e
 
-	jsr	@dirJmpTable(pc, d7.w)
+	jsr	.dirJmpTable(pc, d7.w)
 
 	cmp.w	d4, d2
-	bgt	@processNext			; further away
+	bgt	.processNext			; further away
 
 	move	a1, a3
 	move.w	d2, d4
 
-	bra	@processNext
+	bra	.processNext
 
-@end
+.end
 	move	a3, a1				; set closest as target
 
 	rts
 
-@dirJmpTable	; gets distance to player to d2
-	dc.w	@none-@dirJmpTable
-	dc.w	@s-@dirJmpTable
-	dc.w	@n-@dirJmpTable
-	dc.w	@none-@dirJmpTable
+.dirJmpTable	; gets distance to player to d2
+	dc.w	.none-.dirJmpTable
+	dc.w	.s-.dirJmpTable
+	dc.w	.n-.dirJmpTable
+	dc.w	.none-.dirJmpTable
 
-	dc.w	@e-@dirJmpTable
-	dc.w	@se-@dirJmpTable
-	dc.w	@ne-@dirJmpTable
-	dc.w	@e-@dirJmpTable
+	dc.w	.e-.dirJmpTable
+	dc.w	.se-.dirJmpTable
+	dc.w	.ne-.dirJmpTable
+	dc.w	.e-.dirJmpTable
 
-	dc.w	@w-@dirJmpTable
-	dc.w	@sw-@dirJmpTable
-	dc.w	@nw-@dirJmpTable
-	dc.w	@w-@dirJmpTable
+	dc.w	.w-.dirJmpTable
+	dc.w	.sw-.dirJmpTable
+	dc.w	.nw-.dirJmpTable
+	dc.w	.w-.dirJmpTable
 
-	dc.w	@none-@dirJmpTable
-	dc.w	@s-@dirJmpTable
-	dc.w	@n-@dirJmpTable
-	dc.w	@none-@dirJmpTable
+	dc.w	.none-.dirJmpTable
+	dc.w	.s-.dirJmpTable
+	dc.w	.n-.dirJmpTable
+	dc.w	.none-.dirJmpTable
 
 	; p = player
 	; e = enemy
@@ -313,7 +313,7 @@ findTarget MODULE
 	; y is -1 relative to mathematical coordinates
 	; Distance is used only for comparison. It doesn't need to be in correct units or correct world scale.
 
-@none	; Distance from player.
+.none	; Distance from player.
 	; X diff
 	sub.w	d0, d2
 	bpl.s	*+4		; skip neg
@@ -326,7 +326,7 @@ findTarget MODULE
 	approxlen d2, d3	; d2 is length now
 	rts
 
-@n
+.n
 	; v = 0,-1
 	; t = -p'y
 
@@ -336,7 +336,7 @@ findTarget MODULE
 
 	; t
 	sub.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; sin(-90) = -1
 	; cos(-90) = 0
@@ -352,13 +352,13 @@ findTarget MODULE
 
 	asl.w	d0		; double scale to limit into 22.25' and prioritise projected distance from player
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2
 
 	rts
-@ne
+.ne
 	; v = 1,-1
 	; t = p'x - p'y >> 1
 
@@ -368,7 +368,7 @@ findTarget MODULE
 
 	; t
 	sub.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; t >> 1
 	asr.w	d2
@@ -389,13 +389,13 @@ findTarget MODULE
 
 	; Note: d0 is already doubled, since its not shifted right
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2
 	
 	rts
-@e
+.e
 	; v = 1,0
 	; t = p'x
 
@@ -403,7 +403,7 @@ findTarget MODULE
 	sub.w	d0, d2
 
 	; t
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; sin(0) = 0
 	; cos(0) = 1
@@ -419,13 +419,13 @@ findTarget MODULE
 
 	asl.w	d1		; double scale to limit into 22.25' and prioritise projected distance from player
 	cmp.w	d1, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d1, d2
 
 	rts
-@se
+.se
 	; v = 1,1
 	; t = p'x + p'y >> 1
 
@@ -435,7 +435,7 @@ findTarget MODULE
 
 	; t
 	add.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; t >> 1
 	asr.w	d2
@@ -456,22 +456,22 @@ findTarget MODULE
 
 	; Note: d0 is already doubled, since its not shifted right
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2
 	
 	rts
 
-@behind
+.behind
 	add.w	#$7FFF, d2
 	rts
 
-@outside
+.outside
 	move.w	#$7FFF, d2
 	rts
 
-@s
+.s
 	; v = 0,1
 	; t = p'y
 
@@ -481,7 +481,7 @@ findTarget MODULE
 
 	; t
 	add.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; sin(90) = 1
 	; cos(90) = 0
@@ -497,13 +497,13 @@ findTarget MODULE
 
 	asl.w	d0		; double scale to limit into 22.25' and prioritise projected distance from player
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2
 
 	rts
-@sw
+.sw
 	; v = -1,1
 	; t = -p'x + p'y >> 1
 
@@ -514,7 +514,7 @@ findTarget MODULE
 
 	; t
 	add.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; t >> 1
 	asr.w	d2
@@ -535,13 +535,13 @@ findTarget MODULE
 
 	; Note: d0 is already doubled, since its not shifted right
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2
 
 	rts
-@w
+.w
 	; v = -1,0
 	; t = -p'x
 
@@ -550,7 +550,7 @@ findTarget MODULE
 	neg.w	d2
 
 	; t
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; sin(180) = 0
 	; cos(180) = -1
@@ -566,13 +566,13 @@ findTarget MODULE
 
 	asl.w	d1		; double scale to limit into 22.25' and prioritise projected distance from player
 	cmp.w	d1, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d1, d2
 
 	rts
-@nw
+.nw
 	; v = -1,-1
 	; t = -p'x - p'y >> 1
 
@@ -583,7 +583,7 @@ findTarget MODULE
 
 	; t
 	sub.w	d3, d2
-	bmi.s	@behind
+	bmi.s	.behind
 
 	; t >> 1
 	asr.w	d2
@@ -604,7 +604,7 @@ findTarget MODULE
 
 	; Note: d0 is already doubled, since its not shifted right
 	cmp.w	d0, d2
-	bmi.s	@outside
+	bmi.s	.outside
 
 	; t + d
 	add.w	d0, d2

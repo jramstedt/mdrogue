@@ -1,15 +1,15 @@
 objCollider	MODULE
 	moveq	#0, d0
 	move.b	obState(a0), d0	; a0 is object address
-	move.w	@routineJmpTable(pc,d0.w), d1
-	jmp	@routineJmpTable(pc,d1.w)
+	move.w	.routineJmpTable(pc,d0.w), d1
+	jmp	.routineJmpTable(pc,d1.w)
 
-@routineJmpTable
-	dc.w	@main-@routineJmpTable
-	dc.w	@display-@routineJmpTable
+.routineJmpTable
+	dc.w	.main-.routineJmpTable
+	dc.w	.display-.routineJmpTable
 
-@main ; inits the object
-	addq.b	#1<<1, obState(a0)	; set object state to @display
+.main ; inits the object
+	addq.b	#1<<1, obState(a0)	; set object state to .display
 	move.w	#$0000, obRender(a0)
 
 	moveq.l	#0, d6
@@ -31,7 +31,7 @@ objCollider	MODULE
 
 	rts
 
-@input
+.input
 	; TODO set velocity
 	btst	#0, pad1State
 	seq	d0
@@ -53,7 +53,7 @@ objCollider	MODULE
 	andi	#1<<3|3, d0
 	add	d0, obX(a0)
 
-@display
+.display
 	;move	#aniOrc, a5
 	;jsr	animateSprite
 
@@ -62,7 +62,7 @@ objCollider	MODULE
 
 	rts
 
-@delete
+.delete
 	move.w	obVRAM(a0), d6
 	lsl.w	#5, d6		; pattern number to address
 	move.l	#4*4, d7

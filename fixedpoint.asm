@@ -77,30 +77,30 @@ cos MACRO table, angle, cos
 ; min
 min MACRO reg, min
 	cmp.\0	\min, \reg
-	bpl	@end
+	bpl	.end
 	move.\0	\min, \reg
-@end
+.end
 	ENDM
 
 ; max
 max MACRO reg, max
 	cmp.\0	\max, \reg
-	bmi	@end
+	bmi	.end
 	move.\0	\max, \reg
-@end
+.end
 	ENDM
 
 ; clamp
 clamp MACRO reg, min, max
 	cmp.\0	\min, \reg
-	bpl	@clampMax
+	bpl	.clampMax
 	move.\0	\min, \reg
-	bra	@end
+	bra	.end
 
-@clampMax
+.clampMax
 	cmp.\0	\max, \reg
-	bmi	@end
+	bmi	.end
 	move.\0	\max, \reg
 
-@end
+.end
 	ENDM
