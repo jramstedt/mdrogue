@@ -261,7 +261,7 @@ levelCollision	MODULE
 	adda.w	d0, a2
 	
 	; Check if collision
-	move.b	(a2, d2.w), d0
+	move.b	(a2,d2.w), d0
 	and.b	d1, d0
 	rts
 	MODEND
@@ -373,13 +373,13 @@ collideWithLevel	MODULE
 
 .even	and.b	#$70, d6
 	lsr.b	#3, d6
-	move.w	.tileHandleTable(pc, d6.w), d6
-	jmp	.tileHandleTable(pc, d6.w)
+	move.w	.tileHandleTable(pc,d6.w), d6
+	jmp	.tileHandleTable(pc,d6.w)
 
 .odd	and.b	#$07, d6
 	lsl.b	d6
-	move.w	.tileHandleTable(pc, d6.w), d6
-	jmp	.tileHandleTable(pc, d6.w)
+	move.w	.tileHandleTable(pc,d6.w), d6
+	jmp	.tileHandleTable(pc,d6.w)
 
 .tileHandleTable
 	dc.w	.continue-.tileHandleTable	; free tile, skip collision calculation

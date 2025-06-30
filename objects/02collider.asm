@@ -54,6 +54,25 @@ objCollider	MODULE
 	add	d0, obX(a0)
 
 .display
+	movem.w	obVelX(a0), d0/d1
+
+	; TODO increase velocity over time
+
+	asr.w	#4, d0
+	asr.w	#4, d1
+
+	add.w	d0, obX(a0)
+	add.w	d1, obY(a0)
+
+	; halve
+	movem.w	obVelX(a0), d0/d1
+	clr.w	d3
+	asr.w	d0
+	addx.w	d3, d0
+	asr.w	d1
+	addx.w	d3, d1
+	movem.w	d0/d1, obVelX(a0)
+
 	;move	#aniOrc, a5
 	;jsr	animateSprite
 

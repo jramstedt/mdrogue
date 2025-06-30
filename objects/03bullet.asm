@@ -32,13 +32,13 @@ lifeTimer	rs.b	1		; in frames TODO PAL/NTSC
 	sub.b	#1, lifeTimer(a0)
 	beq	.delete
 
-	move.w	obVelX(a0), d0
-	add.w	d0, obX(a0)
+	movem.w	obX(a0), d0/d1/d2/d3
+	asr.w	#5, d2			; 8.8 -> 13.3
+	addx.w	d2, d0
+	asr.w	#5, d3			; 8.8 -> 13.3
+	addx.w	d3, d1
+	movem.w	d0/d1, obX(a0)
 
-	move.w	obVelY(a0), d0
-	add.w	d0, obY(a0)
-
-	movem.w	obX(a0), d0/d1
 	jsr	levelCollision
 	bne	.delete
 

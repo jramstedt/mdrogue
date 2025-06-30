@@ -14,11 +14,11 @@ objPlayer	MODULE
 shootTimer	rs.b	1		; in frames TODO PAL/NTSC
 		rs.b	2		; free
 padState	rs.b	1
-moveDirX	rs.w	1		; last move direction X 8.8
-moveDirY	rs.w	1		; last move direction Y 8.8
+moveDirX	rs.w	1		; 8.8 last move direction X
+moveDirY	rs.w	1		; 8.8 last move direction Y
 		classDataValidate
 
-moveDir		equ	moveDirX
+moveDir		equ	moveDirX	; 8.8
 
 .main ; inits the object
 	addq.b	#1<<1, obState(a0)	; set object state to .input
@@ -52,31 +52,34 @@ moveDir		equ	moveDirX
 	
 	move.b	pad1State, padState(a0)	; keep previous pad state for continued shooting
 
-	movem.w	(a3), d0/d1
-	movem.w	d0/d1, moveDir(a0)
-	bra	.setVelocity
+	movem.w	(a3), d2/d3
+	movem.w	d2/d3, moveDir(a0)
+	; TODO increase velocity over time
+	; TODO player velocity is directly derived from moveDir
+	movem.w	d2/d3, obVelX(a0)
+	bra	.applyVelocity
 
 .noMovement
-	; TODO NTSC vs. PAL?
 	; halve velocity each frame
-	clr.w	d3
-	movem.w	obVelX(a0), d0/d1
-	asr.w	d0
-	addx.w	d3, d0
-	asr.w	d1
-	addx.w	d3, d1
+	; TODO NTSC vs. PAL?
+	clr.w	d0
+	movem.w	obVelX(a0), d2/d3
+	asr.w	d2
+	addx.w	d0, d2
+	asr.w	d3
+	addx.w	d0, d3
+	movem.w	d2/d3, obVelX(a0)
 
-.setVelocity
-	movem.w	d0/d1, obVelX(a0)
+.applyVelocity
+	; TODO NTSC vs. PAL?
+	movem.w	obX(a0), d0/d1
+	asr.w	#5, d2		; 8.8 -> 13.3
+	addx.w	d2, d0
+	asr.w	#5, d3		; 8.8 -> 13.3
+	add.w	d3, d1
+	movem.w	d0/d1, obX(a0)
 
-	; TODO increase velocity over time
-
-	asr.w	#4, d0
-	asr.w	#4, d1
-
-	add.w	d0, obX(a0)
-	add.w	d1, obY(a0)
-
+;
 	jsr	collideWithLevel
 
 	; can shoot?
@@ -99,19 +102,18 @@ moveDir		equ	moveDirX
 	move.b	#$42, obCollision(a2)
 
 	; set position to player position
-	move.l	obX(a0), d0		; X and Y
-	move.l	d0, obX(a2)
+	move.l	obX(a0), obX(a2)	; X and Y
 	
 	; update shoot timer
-	move.b	#5, shootTimer(a0)
+	move.b	#25, shootTimer(a0)
 
 	move.l	a1, d4
 	bne	.shootAtTarget		; we have target
 
 	; no target, shoot straight
 	movem.w	moveDir(a0), d0/d1
-	asr.w	#2, d0
-	asr.w	#2, d1
+	asl.w	#2, d0	; TODO Real speed
+	asl.w	#2, d1
 	movem.w	d0/d1, obVelX(a2)
 
 	bra.s	.display
@@ -133,16 +135,18 @@ moveDir		equ	moveDirX
 	bpl.s	*+4	; skip neg
 	neg.w	d3	; abs
 
-	approxlen d2, d3	; d2 length
+	approxlen d2, d3	; 13.3 d2 length
 	
 	ext.l	d0
-	asl.l	#3, d0
+	asl.l	#8, d0
 	divs.w	d2, d0
 
 	ext.l	d1
-	asl.l	#3, d1
+	asl.l	#8, d1
 	divs.w	d2, d1
 
+	asl.w	#2, d0	; TODO Real speed
+	asl.w	#2, d1
 	movem.w	d0/d1, obVelX(a2)
 
 .display
@@ -210,7 +214,8 @@ objCollisionPlayer MODULE
 
 	EVEN
 
-dirVector				; RLDU
+	; 8.8 signed unit vector
+dirVector				; RLDU, zero when pressed
 	dc.w	$0000, $0000		; 0000 all directions are pressed down
 	dc.w	$0000, $0100		; 0001
 	dc.w	$0000, $FF00		; 0010
@@ -233,21 +238,22 @@ dirVector				; RLDU
 
 	EVEN
 
+; a1 target
 findTarget MODULE
 	moveq	#0, d7
 
 	move.b	padState(a0), d7
 	andi.b	#%1111, d7
 	lsl.w	#1, d7				; 2 bytes per jump offset
-	move.w	.dirJmpTable(pc, d7.w), d7
+	move.w	.dirJmpTable(pc,d7.w), d7
 
 	movea	#0, a3				; last target
-	move.l	#(160+90)<<3, d4			; last target distance (320/2) ; TODO FIXME hardcoded
+	move.l	#(160+90)<<3, d4		; last target distance (320/2) ; TODO FIXME hardcoded
 
 	lea.l	hiGameObjectsFirst, a2
 .processNext
 	tst.w	llNext(a2)			; is last?
-	beq.s	.end	; todo closest found?
+	beq.s	.end				; todo closest found?
 
 	movea.w	llNext(a2), a2
 	; tst.b	llStatus(a2)
@@ -262,18 +268,18 @@ findTarget MODULE
 	movem.w	obX(a0), d0/d1			; p
 	movem.w	obX(a1), d2/d3			; e
 
-	jsr	.dirJmpTable(pc, d7.w)
+	jsr	.dirJmpTable(pc,d7.w)
 
 	cmp.w	d4, d2
 	bgt	.processNext			; further away
 
-	move	a1, a3
+	movea	a1, a3
 	move.w	d2, d4
 
 	bra	.processNext
 
 .end
-	move	a3, a1				; set closest as target
+	movea	a3, a1				; set closest as target
 
 	rts
 
