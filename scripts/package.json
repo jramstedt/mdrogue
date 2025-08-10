@@ -5,18 +5,23 @@
   "type": "module",
   "scripts": {
     "colgen": "pnpm --silent i && node --experimental-strip-types -- colgen.ts",
+    "spritegen": "pnpm --silent i && node --experimental-strip-types -- spritegen.ts",
+    "reduce": "pnpm --silent i && node --experimental-strip-types -- reduce.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@kayahr/aseprite": "^2.0.0",
     "canvas": "3.1.2",
     "execa": "9.6.0",
+    "fast-png": "^7.0.0",
+    "image-q": "^4.0.0",
     "rgbquant": "1.1.2",
-    "typescript": "5.8.3"
+    "typescript": "5.9.2"
   },
   "devDependencies": {
-    "@types/node": "24.0.7"
+    "@types/node": "24.1.0"
   },
   "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }

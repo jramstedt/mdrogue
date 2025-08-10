@@ -20,8 +20,6 @@ function getTileIndexInTileset(globalId: number): number {
   return tileId
 }
 
-const patternSize = 8 // Mega Drive uses 8x8 pixel patterns.
-
 const [,, mapFilename, targetDirectory] = process.argv
 
 if (mapFilename === undefined || mapFilename.length === 0) {
