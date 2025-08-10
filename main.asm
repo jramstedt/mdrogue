@@ -62,8 +62,8 @@ __main
 	move.w	#160<<3, obX(a2)
 	move.w	#120<<3, obY(a2)
 
-	; loadPalette testPalette, 0
-	loadPalette testPalette, 1
+	; loadPalette #testPalette, 0
+	loadPalette #testPalette, 1
 
 	lea	testText, a6
 	move.l	#$00160003, d7

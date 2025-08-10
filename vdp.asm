@@ -65,7 +65,7 @@ loadPalette MACRO source, index
 	setVDPAutoIncrement 2, vdp_ctrl
 	setVDPWriteAddressCRAM (\index*16*2), vdp_ctrl
 
-	lea.l	(source), a0
+	movea.l	\source, a0
 	copyPalette a0
 	ENDM
 

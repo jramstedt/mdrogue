@@ -17,12 +17,7 @@ loadLevel	MODULE
 	lea.l	(a3, d6.w), a1
 	move.l	a1, loadedLevelAddress
 
-; load palette
-	setVDPAutoIncrement 2, vdp_ctrl
-	setVDPWriteAddressCRAM 0, vdp_ctrl
-
-	move.l	lvlPalette(a1), a0
-	copyPalette a0
+	loadPalette lvlPalette(a1), 0
 
 ; load patterns
 	move.l	lvlPattern(a1), d5
