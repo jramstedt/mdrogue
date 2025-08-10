@@ -89,7 +89,7 @@ _reserveVRAM	MODULE
 	move.l	a2, a3
 
 	lea.l	vrm_list, a2
-	move.l	#9, d6	; see memorymap.asm, max 10 vrm holes
+	move.l	#10-1, d6	; see memorymap.asm, max 10 vrm holes
 .freeLoop	
 	tst.l	vrmStart(a2)	; tests both start and end for null
 	beq	.makeHole
@@ -151,7 +151,7 @@ freeVRAM	MODULE
 
 .notFound
 	lea.l	vrm_list, a2
-	move.l	#9, d7	; see memorymap.asm, max 10 vrm holes
+	move.l	#10-1, d7	; see memorymap.asm, max 10 vrm holes
 .freeLoop	
 	tst.l	vrmStart(a2)	; tests both start and end for null
 	beq	.makeHole

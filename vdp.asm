@@ -66,27 +66,34 @@ loadPalette MACRO source, index
 	setVDPWriteAddressCRAM (\index*16*2), vdp_ctrl
 
 	lea.l	(source), a0
-	bsr	copyPalette
+	copyPalette a0
 	ENDM
 
-; a0	palette 68k address
-copyPalette	MODULE
-	move.w	#sizePalette/sizeLong-1, d0
-.copyColorLoop
-	move.l	(a0)+, vdp_data
-	dbra	d0, .copyColorLoop
-	rts
-	MODEND
+; reg register of palette in 68k address
+copyPalette MACRO reg
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	move.l	(\reg)+, vdp_data
+	ENDM
 
 ; a0	pattern 68k address
 ; d0	number of patterns
-copyPatterns	MODULE
-	subq.b	#1, d0 ; decrease by one to make looping work
+	MODULE
 .copyPatternLoop
-	move.w	#sizePattern/sizeLong-1, d1
-.copyPatternDataLoop
 	move.l	(a0)+, vdp_data
-	dbra	d1, .copyPatternDataLoop
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+	move.l	(a0)+, vdp_data
+copyPatterns
 	dbra	d0, .copyPatternLoop
 	rts
 	MODEND

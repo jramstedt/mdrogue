@@ -22,7 +22,7 @@ loadLevel	MODULE
 	setVDPWriteAddressCRAM 0, vdp_ctrl
 
 	move.l	lvlPalette(a1), a0
-	bsr	copyPalette
+	copyPalette a0
 
 ; load patterns
 	move.l	lvlPattern(a1), d5
