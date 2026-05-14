@@ -1,2 +1,3 @@
-onlyBuiltDependencies:
-  - canvas
+dedupePeers: true
+allowBuilds:
+  canvas: true

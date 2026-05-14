@@ -1,3 +1,4 @@
+import { platform } from 'node:os'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { decode, encode } from 'fast-png'
@@ -6,7 +7,7 @@ import { execa } from 'execa'
 import { distance, image, palette, utils } from 'image-q'
 import type { SpriteSheet } from '@kayahr/aseprite'
 
-import { palette as megaDrivePalette, patternBytes, patternSize, writeMegaDriveSprites } from './megadrive.ts'
+import { imageQPalette as megaDrivePalette, patternBytes, patternSize, writeMegaDriveSprites } from './megadrive.ts'
 import { getIndexArray } from './utils.ts'
 import type { PaletteIndexMap } from './optimize.ts'
 
@@ -35,27 +36,26 @@ console.log(`Processing ${spritesheetPath} to ${targetDirectoryPath}`)
 
 const state = { patterns: new ArrayBuffer(64 * 1024) /* Max VDP RAM */, patternsWritten: 0, dplcPatternsNeeded: 0 }
 
-const asesprite = `${process.env['ProgramFiles(x86)']}\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe`
+function asesprite () {
+  if (platform() === 'win32') return `${process.env['ProgramFiles(x86)']}\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe`
+  else return 'libresprite'
+}
+
 const asespriteroptions = ['-b', '-v']
 
-var distanceCalculator = new distance.ManhattanNommyde()
+const distanceCalculator = new distance.ManhattanNommyde()
 const quant = new palette.WuQuant(distanceCalculator, 16)
 
-const newPalette = new utils.Palette()
-newPalette.add(utils.Point.createByRGBA(0, 0, 0, 0)) // First index is always transparent
-for (const color of megaDrivePalette)
-  newPalette.add(utils.Point.createByRGBA(...color, 255))
-
 console.log("Getting list of layers...")
-for await (const layerName of execa`${asesprite} ${asespriteroptions} --list-layers ${spritesheetPath}`) {
+for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-layers ${spritesheetPath}`) {
   const sheet = resolve(targetDirectory, `${layerName}.png`)
   const data = resolve(targetDirectory, `${layerName}.json`)
   console.log(`Writing ${spriteMode} of ${layerName} to ${sheet} and ${data}...`)
 
   if (spriteMode === undefined)
-    await execa({stdout: 'inherit', stderr: 'inherit'})`${asesprite} ${asespriteroptions} --layer=${layerName} ${spritesheetPath} --list-tags --split-tags --ignore-empty --merge-duplicates --filename-format={tag}/{tagframe0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
+    await execa({stdout: 'inherit', stderr: 'inherit'})`${asesprite()} ${asespriteroptions} --layer=${layerName} ${spritesheetPath} --list-tags --split-tags --ignore-empty --merge-duplicates --filename-format={tag}/{tagframe0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
   else if (spriteMode === 'grid')
-    await execa({stdout: process.stdout, stderr: 'inherit'})`${asesprite} ${asespriteroptions} --format=json-array --layer=${layerName} --split-grid ${spritesheetPath} --sheet-columns=5 --ignore-empty --merge-duplicates --filename-format={frame0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
+    await execa({stdout: process.stdout, stderr: 'inherit'})`${asesprite()} ${asespriteroptions} --format=json-array --layer=${layerName} --split-grid ${spritesheetPath} --sheet-columns=5 --ignore-empty --merge-duplicates --filename-format={frame0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
 
   const spritesheetImage = decode(await readFile(sheet), { checkCrc: true })
   const { width: imageWidth, height: imageHeight, channels: imageChannels, depth: imageDepth, data: imagePixels, palette: imagePalette } = spritesheetImage
@@ -97,15 +97,17 @@ for await (const layerName of execa`${asesprite} ${asespriteroptions} --list-lay
 
   let palettedPixels: PaletteIndexMap
 
+  // TODO should sample all layers first. Then nearestColor.quantizeSync with reducedPalette, see tilemap.ts
+
   //#region Quantize
   {
     const nearestColor = new image.NearestColor(distanceCalculator)
-    quant.sample(nearestColor.quantizeSync(imagePointContainer, newPalette)) // Sample image as converted to mega drive palette.
+    quant.sample(nearestColor.quantizeSync(imagePointContainer, megaDrivePalette)) // Sample image as converted to mega drive palette.
 
     const reducedPalette = quant.quantizeSync() // Final palette
     const reducedImage = nearestColor.quantizeSync(imagePointContainer, reducedPalette) // Image converted to reduced final palette
 
-    palettedPixels = { width: imageWidth, height: imageHeight, data: new Uint8Array(getIndexArray(reducedImage, reducedPalette, distanceCalculator).buffer)}
+    palettedPixels = { width: imageWidth, height: imageHeight, data: getIndexArray(reducedImage, reducedPalette, distanceCalculator)}
 
     const reducedImagePath = resolve(targetDirectory, `${layerName}-reduced.png`)
     console.log(`Reduced palette to ${reducedPalette.getPointContainer().toUint32Array().length} colors.`)
@@ -119,7 +121,6 @@ for await (const layerName of execa`${asesprite} ${asespriteroptions} --list-lay
       data: palettedPixels.data
     }))
   }
-  
   //#endregion
   
   const sheetWidthInCells = Math.ceil(imageWidth / patternSize)

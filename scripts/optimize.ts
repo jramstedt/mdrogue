@@ -1,30 +1,30 @@
 import type { DecodedPng } from "fast-png"
-import { patternSize, spriteMaxPatternsPerDimension, type Sprite } from "./megadrive.ts"
+import { patternSize, spriteMaxPatternsPerDimension, type Rect } from "./megadrive.ts"
 
 type IndexGrid = (number | undefined)[][]
-export type PaletteIndexMap = { width: number; height: number; data: Uint8Array; }
+export type PaletteIndexMap = { width: number; height: number; data: Uint8ClampedArray; }
 
 /**
  * Tries to get best one pattern (8x8) sprites that match the whole frame.
  * Tries 7*7 times with different offsets (-7 -> 0).
  * @returns All sprites and grid with indices to sprites
  */
-export function getBestSpritesGrid (fullFrame: Sprite, image: PaletteIndexMap) {
+export function getBestSpritesGrid (fullFrame: Rect, image: PaletteIndexMap) {
   const gridWidthInCells = Math.ceil(fullFrame[2] / patternSize) + 1
   const gridHeightInCells = Math.ceil(fullFrame[3] / patternSize) + 1
   const patternMask = patternSize - 1
 
-  let bestResult: Sprite[] | undefined = undefined
+  let bestResult: Rect[] | undefined = undefined
   let bestGrid: IndexGrid | undefined = undefined
 
   for (let xOffset = -patternMask; xOffset <= 0; ++xOffset) {
     for (let yOffset = -patternMask; yOffset <= 0; ++yOffset) {
-      const sprites: Sprite[] = []
+      const sprites: Rect[] = []
       const spriteGrid = Array.from({ length: gridHeightInCells }, () => Array.from({ length: gridWidthInCells }) as (number | undefined)[] )
 
       for (let cellX = 0; cellX < gridWidthInCells + 1; ++cellX) {
         for (let cellY = 0; cellY < gridHeightInCells + 1; ++cellY) {
-          const sprite: Sprite = [fullFrame[0] + xOffset + cellX * patternSize, fullFrame[1] + yOffset + cellY * patternSize, patternSize, patternSize]
+          const sprite: Rect = [fullFrame[0] + xOffset + cellX * patternSize, fullFrame[1] + yOffset + cellY * patternSize, patternSize, patternSize]
 
           if (isSpriteEmpty(fullFrame, sprite, image)) continue
           // @ts-expect-error Should be defined.
@@ -46,7 +46,7 @@ export function getBestSpritesGrid (fullFrame: Sprite, image: PaletteIndexMap) {
 /**
  * Checks if sprite has any non transparent colors (not palette index 0)
  */
-export function isSpriteEmpty (fullFrame: Sprite, sprite: Sprite, image: PaletteIndexMap) {
+export function isSpriteEmpty (fullFrame: Rect, sprite: Rect, image: PaletteIndexMap) {
   const { data: spritesheetPixels, width, height } = image
 
   const minX = Math.max(fullFrame[0], 0)
@@ -70,7 +70,7 @@ export function isSpriteEmpty (fullFrame: Sprite, sprite: Sprite, image: Palette
   return true
 }
 
-export function mergeSprites (sprites: Sprite[], grid: IndexGrid) {
+export function mergeSprites (sprites: Rect[], grid: IndexGrid) {
   for (let cellY = 0; cellY < grid.length; ++cellY) {
     const cellRow = grid[cellY]
     if (cellRow === undefined) break
@@ -113,11 +113,11 @@ export function mergeSprites (sprites: Sprite[], grid: IndexGrid) {
   }
 }
 
-function isSinglePattern (sprite: Sprite | undefined) {
+function isSinglePattern (sprite: Rect | undefined) {
   return sprite !== undefined && sprite[2] === patternSize && sprite[3] === patternSize
 }
 
-function isValidCell (sprites: readonly Sprite[], grid: IndexGrid, x: number, y: number) {
+function isValidCell (sprites: readonly Rect[], grid: IndexGrid, x: number, y: number) {
   if (x < 0 || y < 0) return false
   if (y >= grid.length || x >= (grid[y]?.length ?? 0)) return false
 

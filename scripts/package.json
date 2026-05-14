@@ -4,24 +4,25 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "colgen": "pnpm --silent i && node --experimental-strip-types -- colgen.ts",
-    "spritegen": "pnpm --silent i && node --experimental-strip-types -- spritegen.ts",
-    "reduce": "pnpm --silent i && node --experimental-strip-types -- reduce.ts",
+    "tilemap": "pnpm --silent i && node -- tilemap.ts",
+    "colgen": "pnpm --silent i && node -- colgen.ts",
+    "spritegen": "pnpm --silent i && node -- spritegen.ts",
+    "reduce": "pnpm --silent i && node -- reduce.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@kayahr/aseprite": "^2.0.0",
-    "canvas": "3.1.2",
-    "execa": "9.6.0",
-    "fast-png": "^7.0.0",
+    "@kayahr/aseprite": "^2.1.0",
+    "canvas": "3.2.3",
+    "execa": "9.6.1",
+    "fast-png": "^8.0.0",
     "image-q": "^4.0.0",
     "rgbquant": "1.1.2",
-    "typescript": "5.9.2"
+    "typescript": "6.0.3"
   },
   "devDependencies": {
-    "@types/node": "24.1.0"
+    "@types/node": "^24.12.0"
   },
-  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
+  "packageManager": "pnpm@11.1.1+sha512.d1fdf5f73c617b64fa1a56a81c3c8dfe0e966e33a6010aa256b517ae77be21d93e05affc0de1a83b0e4f29d569f68b446ae8f068cd7247c0bb3df0fb4d7bdf9a"
 }

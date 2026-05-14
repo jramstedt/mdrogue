@@ -1,6 +1,8 @@
+import { platform } from "node:os"
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { inflateSync, gunzipSync } from 'node:zlib'
+import assert from 'node:assert/strict'
 import { execa } from 'execa'
 
 import { type Group, ID_MASK, isGroup, isTileLayer, type Layer, type TiledMap, type TileLayer } from './tiled.ts'
@@ -10,10 +12,8 @@ function getTileIndexInTileset(globalId: number): number {
   globalId = globalId & ID_MASK
   let tileId = globalId
 
-  for(let i = 0; i < mapData.tilesets.length; ++i) {
-    const firstgid = mapData.tilesets[i].firstgid
+  for (const { firstgid } of mapData.tilesets) {
     if (firstgid > globalId) break
-
     tileId = globalId - firstgid
   }
 
@@ -116,12 +116,13 @@ for (const layer of collisionLayers) {
 
     for (let x = 0; x < layer.width; ++x) {
       const globalTileId = dataView[y * layer.width + x]
-      if (globalTileId === 0) continue  // free tile
+      if (globalTileId === undefined || globalTileId === 0) continue  // free tile
 
       const realX = layer.x + x
       const chunkX = Math.trunc(realX / chunkSize[0])
 
-      const typeChunk = collisionType[chunkY][chunkX]
+      const typeChunk = collisionType[chunkY]?.[chunkX]
+      assert.ok(typeChunk !== undefined)
 
       const tileIndex = getTileIndexInTileset(globalTileId)
       const tileType = (tileIndex + 1) << 4 // Zero is free tile
@@ -181,18 +182,22 @@ const planeBHighLayers = filterLayers(mapData, 'plane b', 'high')
 
 writeFile(resolve(targetDirectory, 'col.data.bin'), new DataView(rawType))
 
-const tmxrasterizer = `${process.env['ProgramFiles']}\\Tiled\\tmxrasterizer.exe`
+function tmxrasterizer () {
+  if (platform() === 'win32') return `${process.env['ProgramFiles']}\\Tiled\\tmxrasterizer.exe`
+  else return 'tmxrasterizer'
+}
+
 const tmxrasterizeroptions = ['--no-smoothing']
 
-execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...paramCollisionLayers)} ${mapFilename} ${resolve(targetDirectory, 'collision.png')}`
+execa`${tmxrasterizer()} ${tmxrasterizeroptions} ${showParams(...paramCollisionLayers)} ${mapFilename} ${resolve(targetDirectory, 'collision.png')}`
 
 const planeAImage = resolve(targetDirectory, 'planeA.png')
 const planeBLowImage = resolve(targetDirectory, 'planeB-low.png')
 const planeBHighImage = resolve(targetDirectory, 'planeB-high.png')
 
-await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeBLowLayers)} ${mapFilename} ${planeBLowImage}`,
+await execa`${tmxrasterizer()} ${tmxrasterizeroptions} ${showParams(...planeBLowLayers)} ${mapFilename} ${planeBLowImage}`,
 // await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeBHighLayers)} ${mapFilename} ${planeBHighImage}`,
-await execa`${tmxrasterizer} ${tmxrasterizeroptions} ${showParams(...planeALayers)} ${mapFilename} ${planeAImage}`
+await execa`${tmxrasterizer()} ${tmxrasterizeroptions} ${showParams(...planeALayers)} ${mapFilename} ${planeAImage}`
 
 const planeBPatterns = writeMegaDrivePatterns('planeB', [{ filePath: planeBLowImage, highPriority: false }, /*{ filePath: planeBHighImage, highPriority: true }*/], targetDirectory)
 await writeMegaDrivePatterns('planeA', [ { filePath: planeAImage, highPriority: true } ], targetDirectory, await planeBPatterns)

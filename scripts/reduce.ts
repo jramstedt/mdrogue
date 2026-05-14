@@ -1,9 +1,9 @@
-import { readFile, writeFile } from 'node:fs/promises'
-import { basename, dirname, extname, resolve } from 'node:path'
-import { decode, encode } from 'fast-png'
-import { utils, palette, distance, image } from 'image-q'
-import { palette as megaDrivePalette } from './megadrive.ts'
-import { getIndexArray } from './utils.ts'
+import {readFile, writeFile} from 'node:fs/promises'
+import {basename, dirname, extname, resolve} from 'node:path'
+import {decode, encode} from 'fast-png'
+import {distance, image, palette, utils} from 'image-q'
+import {imageQPalette, imageQPalette as megaDrivePalette} from './megadrive.ts'
+import {getIndexArray} from './utils.ts'
 
 const [,, imageFilename, colorCountArg] = process.argv
 
@@ -33,14 +33,6 @@ if (imageChannels !== 4 && imageChannels !== 1) {
   process.exit(1)
 }
 
-var distanceCalculator = new distance.ManhattanNommyde()
-const quant = new palette.WuQuant(distanceCalculator, colorCount)
-
-const newPalette = new utils.Palette()
-newPalette.add(utils.Point.createByRGBA(0, 0, 0, 0))
-for (const color of megaDrivePalette)
-  newPalette.add(utils.Point.createByRGBA(...color, 255))
-
 let imagePointContainer: utils.PointContainer
 if (imageChannels === 4) {
   imagePointContainer = utils.PointContainer.fromUint8Array(
@@ -64,12 +56,21 @@ if (imageChannels === 4) {
   }
 }
 
+const distanceCalculator = new distance.EuclideanBT709()
+//const distanceCalculator = new distance.Manhattan()
+
 const nearestColor = new image.NearestColor(distanceCalculator)
+//const paletteQuantizer = new palette.WuQuant(distanceCalculator, colorCount)
+const paletteQuantizer = new palette.RGBQuant(distanceCalculator, colorCount)
+//paletteQuantizer.sample(imageQuantizer.quantizeSync(imagePointContainer, megaDrivePalette)) // Sample image as converted to mega drive palette.
+paletteQuantizer.sample(nearestColor.quantizeSync(imagePointContainer.clone(), imageQPalette)) // Sample image as converted to mega drive palette.
 
-quant.sample(nearestColor.quantizeSync(imagePointContainer, newPalette)) // Sample image as converted to mega drive palette.
+const reducedPalette = paletteQuantizer.quantizeSync() // Final palette
+console.log(reducedPalette)
 
-const reducedPalette = quant.quantizeSync() // Final palette
-const reducedImage = nearestColor.quantizeSync(imagePointContainer, reducedPalette) // Image converted to reduced final palette
+//const imageQuantizer = new image.ErrorDiffusionArray(distanceCalculator, image.ErrorDiffusionArrayKernel.FloydSteinberg)
+const imageQuantizer = new image.ErrorDiffusionArray(distanceCalculator, image.ErrorDiffusionArrayKernel.Atkinson, false, 2.0 / 16.0)
+const reducedImage = imageQuantizer.quantizeSync(imagePointContainer.clone(), reducedPalette) // Image converted to reduced final palette
 
 const reducedImagePath = resolve(dirname(imagePath), `${basename(imagePath, extname(imagePath))}-reduced.png`)
 console.log(`Reduced palette to ${reducedPalette.getPointContainer().toUint32Array().length} colors.`)
