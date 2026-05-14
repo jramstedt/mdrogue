@@ -2,5 +2,7 @@
 /*.lst
 /*.bin
 
-scripts/test
-plan
+/assets
+
+/scripts/test
+/plan
