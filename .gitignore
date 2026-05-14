@@ -1,6 +1,6 @@
-*.lst
-*.sym
-.zedstate
+/.deps
+/*.lst
+/*.bin
 
 scripts/test
 plan
