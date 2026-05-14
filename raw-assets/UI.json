@@ -1,0 +1,432 @@
+[
+  {
+    "name": "Items",
+    "frames": [
+      {
+        "pngFile": "Items.png",
+        "copyright": " https://opengameart.org/content/16x16-rpg-items-db32",
+
+        "name": "potion_health",
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16,
+        "highPriority": false,
+        "palette": 3
+      },
+      {
+        "name": "potion_mana",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc1",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc2",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc3",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc4",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc5",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc6",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc7",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc8",
+        "x": "+"
+      },
+      {
+        "name": "potion_misc9",
+        "x": "+"
+      },
+
+      {
+        "name": "ring_silver",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "ring_gold",
+        "x": "+"
+      },
+      {
+        "name": "ring_bronze",
+        "x": "+"
+      },
+      {
+        "name": "ring_silver_green",
+        "x": "+"
+      },
+      {
+        "name": "ring_gold_green",
+        "x": "+"
+      },
+      {
+        "name": "ring_silver_red",
+        "x": "+"
+      },
+      {
+        "name": "ring_gold_red",
+        "x": "+"
+      },
+      {
+        "name": "ring_silver_blue",
+        "x": "+"
+      },
+      {
+        "name": "ring_gold_blue",
+        "x": "+"
+      },
+
+      {
+        "name": "necklace_silver",
+        "x": 0,
+        "y": "+"
+      },
+
+      {
+        "name": "helmet_rusty",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "helmet_iron",
+        "x": "+"
+      },
+      {
+        "name": "helmet_steel",
+        "x": "+"
+      },
+      {
+        "name": "helmet_platinum",
+        "x": "+"
+      },
+      {
+        "name": "helmet_silver",
+        "x": "+"
+      },
+      {
+        "name": "helmet_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "chest_rusty",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "chest_iron",
+        "x": "+"
+      },
+      {
+        "name": "chest_steel",
+        "x": "+"
+      },
+      {
+        "name": "chest_platinum",
+        "x": "+"
+      },
+      {
+        "name": "chest_silver",
+        "x": "+"
+      },
+      {
+        "name": "chest_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "legs_rusty",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "legs_iron",
+        "x": "+"
+      },
+      {
+        "name": "legs_steel",
+        "x": "+"
+      },
+      {
+        "name": "legs_platinum",
+        "x": "+"
+      },
+      {
+        "name": "legs_silver",
+        "x": "+"
+      },
+      {
+        "name": "legs_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "sword_rusty",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "sword_iron",
+        "x": "+"
+      },
+      {
+        "name": "sword_steel",
+        "x": "+"
+      },
+      {
+        "name": "sword_platinum",
+        "x": "+"
+      },
+      {
+        "name": "sword_silver",
+        "x": "+"
+      },
+      {
+        "name": "sword_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "lance_rusty",
+        "x": "+"
+      },
+      {
+        "name": "lance_iron",
+        "x": "+"
+      },
+      {
+        "name": "lance_steel",
+        "x": "+"
+      },
+      {
+        "name": "lance_platinum",
+        "x": "+"
+      },
+      {
+        "name": "lance_silver",
+        "x": "+"
+      },
+      {
+        "name": "lance_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "scythe_rusty",
+        "x": "+"
+      },
+      {
+        "name": "scythe_iron",
+        "x": "+"
+      },
+      {
+        "name": "scythe_steel",
+        "x": "+"
+      },
+      {
+        "name": "scythe_platinum",
+        "x": "+"
+      },
+      {
+        "name": "scythe_silver",
+        "x": "+"
+      },
+      {
+        "name": "scythe_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "book_black_plain",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "book_black_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_black_square",
+        "x": "+"
+      },
+
+      {
+        "name": "book_brown_plain",
+        "x": "+"
+      },
+      {
+        "name": "book_brown_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_brown_square",
+        "x": "+"
+      },
+
+      {
+        "name": "book_red_plain",
+        "x": "+"
+      },
+      {
+        "name": "book_red_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_red_square",
+        "x": "+"
+      },
+
+      {
+        "name": "book_purple_plain",
+        "x": "+"
+      },
+      {
+        "name": "book_purple_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_purple_square",
+        "x": "+"
+      },
+
+      {
+        "name": "book_teal_plain",
+        "x": "+"
+      },
+      {
+        "name": "book_teal_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_teal_square",
+        "x": "+"
+      },
+
+      {
+        "name": "book_blue_plain",
+        "x": "+"
+      },
+      {
+        "name": "book_blue_lines",
+        "x": "+"
+      },
+      {
+        "name": "book_blue_square",
+        "x": "+"
+      },
+
+      {
+        "name": "food_drumstick",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "food_cheese",
+        "x": "+"
+      },
+      {
+        "name": "food_bread",
+        "x": "+"
+      },
+      {
+        "name": "food_apple",
+        "x": "+"
+      },
+      {
+        "name": "food_fish",
+        "x": "+"
+      },
+
+      {
+        "name": "key_small_silver",
+        "x": 0,
+        "y": "+"
+      },
+      {
+        "name": "key_big_silver",
+        "x": "+"
+      },
+      {
+        "name": "key_small_gold",
+        "x": "+"
+      },
+      {
+        "name": "key_big_gold",
+        "x": "+"
+      },
+
+      {
+        "name": "wand_blue",
+        "x": "+"
+      },
+      {
+        "name": "wand_green",
+        "x": "+"
+      },
+
+      {
+        "name": "sword_magic_gold",
+        "x": "+"
+      },
+      {
+        "name": "sword_magic_gold_gem",
+        "x": "+"
+      },
+      {
+        "name": "sword_magic_teal_gem",
+        "x": "+"
+      }
+    ]
+  },
+  {
+    "name": "Inventory",
+    "frames": [
+      {
+        "pngFile": "ui/border1.png",
+
+        "name": "border1",
+        "x": 0,
+        "y": 0,
+        "width": 24,
+        "height": 24,
+        "highPriority": true,
+        "palette": 2
+      },
+      {
+        "pngFile": "ui/border2.png",
+
+        "name": "border2",
+        "highPriority": false
+      }
+    ]
+  },
+  {
+    "name": "Parchment",
+    "frames": [
+      {
+        "pngFile": "Parchment.png",
+        "copyright": "Parchment font by DamienG https://damieng.com/zx-origins",
+
+        "highPriority": false,
+        "palette": 3
+      }
+    ]
+  }
+]
