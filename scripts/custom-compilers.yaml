@@ -1,0 +1,9 @@
+compilers:
+  - description: vasm M68k motorola syntax
+    match-sources: ".*\\.asm"
+    match-compiler-exe: "(.*/)?vasmm68k_mot"
+    code-insight-target-name: m68k
+  - description: vasm Z80 old style syntax
+    match-sources: ".*\\.z80"
+    match-compiler-exe: "(.*/)?vasmz80_oldstyle"
+    code-insight-target-name: z80
