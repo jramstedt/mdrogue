@@ -1,6 +1,0 @@
-input Font.png
-
-output FontPatterns.bin
-output2 FontTilemap.bin
-
-map 0 0 64 6
