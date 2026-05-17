@@ -1,0 +1,153 @@
+[
+  {
+    "name": "orcIdle",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "orc/orc.png",
+        "x": 0,
+        "y": 0,
+        "width": 32,
+        "height": 32,
+        "anchor": [16,32],
+        "palette": 2
+      },
+      {
+        "x": "+"
+      }
+    ]
+  },
+  {
+    "name": "orcAngryIdle",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "orc/orc.png",
+        "x": 0,
+        "y": 32,
+        "width": 32,
+        "height": 32,
+        "anchor": [16,32],
+        "palette": 2
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      }
+    ]
+  },
+  {
+    "name": "orcThinking",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "orc/orc.png",
+        "x": 0,
+        "y": 64,
+        "width": 32,
+        "height": 32,
+        "anchor": [16,32],
+        "palette": 2
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      },
+      {
+        "x": "+"
+      }
+    ]
+  },
+  {
+    "name": "orcSurprised",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "orc/orc.png",
+        "x": 0,
+        "y": 96,
+        "width": 32,
+        "height": 32,
+        "anchor": [16,32],
+        "palette": 2
+      },
+      {
+        "x": "+"
+      }
+    ]
+  },
+
+  {
+    "name": "col8x8",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "col/8x8.png",
+        "x": 0,
+        "y": 0,
+        "width": 8,
+        "height": 8,
+        "anchor": [4,4],
+        "palette": 2
+      }
+    ]
+  },
+  {
+    "name": "col16x16",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "col/16x16.png",
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16,
+        "anchor": [8,8],
+        "palette": 2
+      }
+    ]
+  },
+  {
+    "name": "col24x24",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "col/24x24.png",
+        "x": 0,
+        "y": 0,
+        "width": 24,
+        "height": 24,
+        "anchor": [12,12],
+        "palette": 2
+      }
+    ]
+  },
+  {
+    "name": "col32x32",
+    "type": "sprite:vdp",
+    "frames": [
+      {
+        "pngFile": "col/32x32.png",
+        "x": 0,
+        "y": 0,
+        "width": 32,
+        "height": 32,
+        "anchor": [16,16],
+        "palette": 2
+      }
+    ]
+  }
+]
