@@ -3,10 +3,9 @@ import { resolve } from 'node:path'
 import { Image, Canvas, createImageData, CanvasRenderingContext2D } from 'canvas'
 import RgbQuant, { type Triplet } from 'rgbquant'
 import { utils } from 'image-q'
-import type { Frame } from '@kayahr/aseprite'
 
-import { getBestSpritesGrid, isSpriteEmpty, mergeSprites, type PaletteIndexMap } from './optimize.ts'
-import { concatenate, type SubRect } from './utils.ts'
+import { getBestSpritesGrid, mergeSprites } from './optimize.ts'
+import {concatenate, subRect, type SubRect} from './utils.ts'
 
 export const megaDriveLadder = [0x00, 0x34, 0x57, 0x74, 0x90, 0xAC, 0xCE, 0xFF]
 
@@ -22,78 +21,113 @@ for (let r = 0; r <= 0b111; ++r)
 
 export type Pattern = { normal: Uint32Array, flipped: Uint32Array }
 export type Rect = [x: number, y: number, width: number, height: number]
-export type Section = SubRect & { highPriority: boolean, palette: 0 | 1 | 2 | 3,  name: string }
+export type Section = SubRect & { highPriority: boolean, palette: 0 | 1 | 2 | 3,  name: string, origin?: { x: number, y: number } }
 
 export const patternSize = 8 // Mega Drive uses 8x8 pixel patterns.
-export const patternBytes = 4 * 8
+export const patternBytes = 4 * 8 // 8 * 32bits
 export const spriteMaxPatternsPerDimension = 4
+
+function buildPattern ({ width, height, data, offset, widthStride }: SubRect, x = 0, y = 0) {
+  const pattern: Pattern = { normal: new Uint32Array(patternSize), flipped: new Uint32Array(patternSize) }
+
+  const minX = Math.max(x, 0)
+  const minY = Math.max(y, 0)
+  const maxX = Math.min(x + patternSize, width) - 1
+  const maxY = Math.min(y + patternSize, height) - 1
+
+  for (let dstY = 0, srcY = y; dstY < patternSize; ++dstY, ++srcY) {
+    if (srcY < minY || srcY > maxY) continue
+
+    let normal = 0
+    let flipped = 0
+
+    const srcOffset = offset + srcY * widthStride
+
+    for (let dstX = 0, srcX = x; dstX < patternSize; ++dstX, ++srcX) {
+      normal <<= 4
+      flipped >>>= 4
+
+      if (srcX < minX || srcX > maxX) continue
+
+      const colorIndex = (data[srcOffset + srcX] ?? 0) & 0x0F
+      normal |= colorIndex
+      flipped |= colorIndex << 28
+    }
+
+    pattern.normal[dstY] = normal
+    pattern.flipped[dstY] = flipped
+  }
+
+  return pattern
+}
+
+function findPatternIndex (patterns: Pattern[], pattern: Pattern) {
+  const { normal } = pattern
+
+  for (let patternIndex = 0; patternIndex < patterns.length; ++patternIndex) {
+    const target = patterns[patternIndex]
+
+    if (target === undefined) continue
+
+    if (normal[0] === target.normal[0] &&
+      normal[1] === target.normal[1] &&
+      normal[2] === target.normal[2] &&
+      normal[3] === target.normal[3] &&
+      normal[4] === target.normal[4] &&
+      normal[5] === target.normal[5] &&
+      normal[6] === target.normal[6] &&
+      normal[7] === target.normal[7])
+      return (patternIndex & 0x07FF) | 0x0000
+
+    if (normal[0] === target.flipped[0] &&
+      normal[1] === target.flipped[1] &&
+      normal[2] === target.flipped[2] &&
+      normal[3] === target.flipped[3] &&
+      normal[4] === target.flipped[4] &&
+      normal[5] === target.flipped[5] &&
+      normal[6] === target.flipped[6] &&
+      normal[7] === target.flipped[7])
+      return (patternIndex & 0x07FF) | 0x0800
+
+    if (normal[0] === target.normal[7] &&
+      normal[1] === target.normal[6] &&
+      normal[2] === target.normal[5] &&
+      normal[3] === target.normal[4] &&
+      normal[4] === target.normal[3] &&
+      normal[5] === target.normal[2] &&
+      normal[6] === target.normal[1] &&
+      normal[7] === target.normal[0])
+      return (patternIndex & 0x07FF) | 0x1000
+
+    if (normal[0] === target.flipped[7] &&
+      normal[1] === target.flipped[6] &&
+      normal[2] === target.flipped[5] &&
+      normal[3] === target.flipped[4] &&
+      normal[4] === target.flipped[3] &&
+      normal[5] === target.flipped[2] &&
+      normal[6] === target.flipped[1] &&
+      normal[7] === target.flipped[0])
+      return (patternIndex & 0x07FF) | 0x1800
+  }
+
+  const nextIndex = patterns.length
+  if (nextIndex > 0x07FF)
+    throw new Error('Too many patterns.')
+
+  patterns[nextIndex] = pattern
+
+  return (nextIndex & 0x07FF)
+}
 
 export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pattern[]) {
   const patternStartOffset = patterns.length
-
-  const findPattern = (pattern: Pattern): number => {
-    const { normal } = pattern
-
-    for (let patternIndex = 0; patternIndex < patterns.length; ++patternIndex) {
-      const target = patterns[patternIndex]
-
-      if (target === undefined) continue
-
-      if (normal[0] === target.normal[0] &&
-          normal[1] === target.normal[1] &&
-          normal[2] === target.normal[2] &&
-          normal[3] === target.normal[3] &&
-          normal[4] === target.normal[4] &&
-          normal[5] === target.normal[5] &&
-          normal[6] === target.normal[6] &&
-          normal[7] === target.normal[7])
-        return (patternIndex & 0x07FF) | 0x0000
-
-      if (normal[0] === target.flipped[0] &&
-          normal[1] === target.flipped[1] &&
-          normal[2] === target.flipped[2] &&
-          normal[3] === target.flipped[3] &&
-          normal[4] === target.flipped[4] &&
-          normal[5] === target.flipped[5] &&
-          normal[6] === target.flipped[6] &&
-          normal[7] === target.flipped[7])
-        return (patternIndex & 0x07FF) | 0x0800
-
-      if (normal[0] === target.normal[7] &&
-          normal[1] === target.normal[6] &&
-          normal[2] === target.normal[5] &&
-          normal[3] === target.normal[4] &&
-          normal[4] === target.normal[3] &&
-          normal[5] === target.normal[2] &&
-          normal[6] === target.normal[1] &&
-          normal[7] === target.normal[0])
-        return (patternIndex & 0x07FF) | 0x1000
-
-      if (normal[0] === target.flipped[7] &&
-          normal[1] === target.flipped[6] &&
-          normal[2] === target.flipped[5] &&
-          normal[3] === target.flipped[4] &&
-          normal[4] === target.flipped[3] &&
-          normal[5] === target.flipped[2] &&
-          normal[6] === target.flipped[1] &&
-          normal[7] === target.flipped[0])
-        return (patternIndex & 0x07FF) | 0x1800
-    }
-
-    const nextIndex = patterns.length
-    if (nextIndex > 0x07FF)
-      throw new Error('Too many patterns.')
-
-    patterns[nextIndex] = pattern
-
-    return (nextIndex & 0x07FF)
-  }
 
   const patternNameBuffer = new ArrayBuffer(64 * 1024) // Mega Drive 64k VRAM
   const sectionOffset: { name: string, offset: number }[] = []
 
   let dataOffset = 0
-  for (const { width, height, offset, data, widthStride, highPriority, palette, name } of inputSections) {
+  for (const section of inputSections) {
+    const { width, height, highPriority, palette, name } = section
     const widthPatterns = width >>> 3
     const heighPatterns = height >>> 3
 
@@ -104,26 +138,9 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
 
     for (let y = 0; y < height; y += patternSize) {
       for (let x = 0; x < width; x += patternSize) {
-        const pattern: Pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
+        const pattern = buildPattern(section, x, y)
 
-        for (let r = 0; r < patternSize; ++r) {
-          let normal = 0
-          let flipped = 0
-
-          const rowOffset = offset + ((y + r) * widthStride) + x
-
-          for (let p = 0; p < patternSize; ++p) {
-            const colorIndex = (data[rowOffset + p] ?? 0) & 0x0F
-
-            normal = (normal << 4) | colorIndex
-            flipped = (flipped >>> 4) | (colorIndex << 28)
-          }
-
-          pattern.normal[r] = normal
-          pattern.flipped[r] = flipped
-        }
-
-        let tilePattern = findPattern(pattern)
+        let tilePattern = findPatternIndex(patterns, pattern)
         if (highPriority) tilePattern |= 0x8000
         tilePattern |= (palette & 0b11) << 13
 
@@ -181,7 +198,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   const patterns: Pattern[] = previousPatterns ?? []
   const patternStartOffset = patterns.length
   if (patterns.length === 0)  // No patterns, init with one empty pattern.
-    patterns.push({ normal: new Uint32Array(8), flipped: new Uint32Array(8) })
+    patterns.push({ normal: new Uint32Array(patternSize), flipped: new Uint32Array(patternSize) })
   
   const chunkSizePatterns = 32 * 32
   const patternmap = new ArrayBuffer(mapWidthChunks * mapHeightChunks * chunkSizePatterns * 2)
@@ -197,63 +214,6 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   }
   
   // PCCV HAAA AAAA AAAA
-  const findPattern = (pattern: Pattern): number => {
-    const { normal } = pattern
-
-    for (let patternIndex = 0; patternIndex < patterns.length; ++patternIndex) {
-      const target = patterns[patternIndex]
-
-      if (target === undefined) continue
-
-      if (normal[0] === target.normal[0] &&
-          normal[1] === target.normal[1] &&
-          normal[2] === target.normal[2] &&
-          normal[3] === target.normal[3] &&
-          normal[4] === target.normal[4] &&
-          normal[5] === target.normal[5] &&
-          normal[6] === target.normal[6] &&
-          normal[7] === target.normal[7])
-        return (patternIndex & 0x07FF) | 0x0000
-
-      if (normal[0] === target.flipped[0] &&
-          normal[1] === target.flipped[1] &&
-          normal[2] === target.flipped[2] &&
-          normal[3] === target.flipped[3] &&
-          normal[4] === target.flipped[4] &&
-          normal[5] === target.flipped[5] &&
-          normal[6] === target.flipped[6] &&
-          normal[7] === target.flipped[7])
-        return (patternIndex & 0x07FF) | 0x0800
-
-      if (normal[0] === target.normal[7] &&
-          normal[1] === target.normal[6] &&
-          normal[2] === target.normal[5] &&
-          normal[3] === target.normal[4] &&
-          normal[4] === target.normal[3] &&
-          normal[5] === target.normal[2] &&
-          normal[6] === target.normal[1] &&
-          normal[7] === target.normal[0])
-        return (patternIndex & 0x07FF) | 0x1000
-
-      if (normal[0] === target.flipped[7] &&
-          normal[1] === target.flipped[6] &&
-          normal[2] === target.flipped[5] &&
-          normal[3] === target.flipped[4] &&
-          normal[4] === target.flipped[3] &&
-          normal[5] === target.flipped[2] &&
-          normal[6] === target.flipped[1] &&
-          normal[7] === target.flipped[0])
-        return (patternIndex & 0x07FF) | 0x1800
-    }
-
-    const nextIndex = patterns.length
-    if (nextIndex > 0x07FF)
-      throw new Error('Too many patterns.')
-
-    patterns[nextIndex] = pattern
-
-    return (nextIndex & 0x07FF)
-  }
 
   //const reducedPalette = quant.palette()
 
@@ -273,8 +233,8 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   for (const { canvas, pixelArray, highPriority } of inputDatas) {
     const indexedImage = quant.reduce(pixelArray, 2)
 
-    for (let y = 0; y < canvas.height; y += 8) {
-      for (let x = 0; x < canvas.width; x += 8) {
+    for (let y = 0; y < canvas.height; y += patternSize) {
+      for (let x = 0; x < canvas.width; x += patternSize) {
         // 32x32 pattern per tile
         // 8x8 pixels per patterns
         const chunkIndex = (y >>> 8) * mapWidthChunks + (x >>> 8)
@@ -284,11 +244,11 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
           throw new Error(`No chunk found at ${chunkIndex}`)
 
         let pattern: Pattern = { normal: new Uint32Array(8), flipped: new Uint32Array(8) }  // 8 * 32bits = 32 bytes per pattern
-        for (let s = 0; s < 8; ++s) {
+        for (let s = 0; s < patternSize; ++s) {
           let normal = 0
           let flipped = 0
 
-          for (let p = 0; p < 8; ++p) {
+          for (let p = 0; p < patternSize; ++p) {
             const pixelIndex = (y + s) * canvas.width + (x + p)
             const colorIndex = (indexedImage[pixelIndex] ?? 0) & 0x0F
 
@@ -301,7 +261,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
         }
 
         // TODO palette index
-        let tilePattern = findPattern(pattern)
+        let tilePattern = findPatternIndex(patterns, pattern)
         if (highPriority) tilePattern |= 0x8000
 
         const patternIndex = (((y >>> 3) & 0x1F) * 32) + ((x >>> 3) & 0x1F)
@@ -336,7 +296,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
 }
 
 // TODO tile vs sprite priority for slice
-export async function writeMegaDriveSprites (slice: boolean, image: PaletteIndexMap, animation: { name: string, frames: readonly Frame[] }, targetDirectory: string, state: { patterns: ArrayBuffer, patternsWritten: number, dplcPatternsNeeded: number }, ctx?:CanvasRenderingContext2D) {
+export function generateMegaDriveSprites (slice: boolean, sections: readonly Section[], state: { patterns: Pattern[], dplcPatternsNeeded: number }) {
   const frames: Rect[][] = []
   
   let frameOffset = 0
@@ -347,36 +307,30 @@ export async function writeMegaDriveSprites (slice: boolean, image: PaletteIndex
 
   const animationBuffer = new ArrayBuffer(4 * 1024 * 1024) // Max Mega Drive ROM size
   let dataOffset = 0
-  
-  //#region Header with offsets
-  // TODO We could have just one HEADER dataview and constant offsets to it
-  const animationOffset = new DataView(animationBuffer, dataOffset, 2)
-  dataOffset += animationOffset.byteLength
 
-  const frameOffsetsOffset = new DataView(animationBuffer, dataOffset, 2)
-  dataOffset += frameOffsetsOffset.byteLength
+  const HEADER_FRAME_OFFSETS = 0
+  const HEADER_DPLC_OFFSET = 2
+  const HEADER_FRAMES = 4
 
-  const dplcOffset = new DataView(animationBuffer, dataOffset, 2)
-  dataOffset += dplcOffset.byteLength
-  //#endregion
+  const header = new DataView(animationBuffer, dataOffset, 6)
+  dataOffset += header.byteLength
 
   //#region Animation data
-  animationOffset.setUint16(0, dataOffset)  // Animation data starts here.
-  const frameCount = new DataView(animationBuffer, dataOffset, 2)
-  dataOffset += frameCount.byteLength
+  for (const section of sections) {
+    const { width, height, palette, highPriority, origin } = section
+    const priority = highPriority ? 1 : 0;
 
-  for (const { frame } of animation.frames) {
+    const fullFrame: Rect = [0, 0, width, height]
+
     // TODO handle empty frames in middle of animation. Handle forced empty frames to animation data.
-    const fullFrame: Rect = [frame.x, frame.y, frame.w, frame.h]
-
-    if (isSpriteEmpty(fullFrame, fullFrame, image)) continue
+    //if (isRectEmpty(section, fullFrame)) continue
 
     frameOffsets.push(frameOffset)
-    
-    let patternsWritten = 0
 
+    let patternsWritten = 0
+    
     if (slice) {
-      const [sprites, grid] = getBestSpritesGrid(fullFrame, image)
+      const [sprites, grid] = getBestSpritesGrid(subRect(section, fullFrame))
       if (sprites === undefined || grid === undefined) continue
 
       mergeSprites(sprites, grid)
@@ -391,21 +345,25 @@ export async function writeMegaDriveSprites (slice: boolean, image: PaletteIndex
         if (sprite === undefined)
           throw new Error(`Missing sprite data for index ${spriteIndex}.`)
 
-        const priority = 0;
-        const palette = 0; // TODO parameter
         const verticalFlip = 0;
         const horizontalFlip = 0;
 
         const spriteData = new DataView(animationBuffer, dataOffset, 8)
         dataOffset += spriteData.byteLength
 
-        spriteData.setUint16(0, sprite[0] & 0x3FF)
-        spriteData.setUint16(2, ((sprite[2] & 0b11) << 10) | ((sprite[3] & 0b11) << 8))
-        spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternsWritten & 0x7FF )
-        spriteData.setUint16(6, sprite[1] & 0x1FF)
+        const spriteX = sprite[0] - (origin?.x ?? 0)
+        const spriteY = sprite[1] - (origin?.y ?? 0)
+        const spriteWidth = (sprite[2] >>> 3) - 1
+        const spriteHeight = (sprite[3] >>> 3) - 1
 
-        patternsWritten += writePatterns(fullFrame, sprite, image, state)
-        ctx?.strokeRect(sprite[0], sprite[1], sprite[2] - 1, sprite[3] - 1)
+        // TODO reuse sprite patterns. Find matching pattern sequence instead of always building new patterns
+
+        spriteData.setInt16(0, spriteX)
+        spriteData.setUint16(2, ((spriteWidth & 0b11) << 10) | ((spriteHeight & 0b11) << 8))
+        spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternOffset & 0x7FF )
+        spriteData.setInt16(6, spriteY)
+
+        patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns)
       }
 
       frameOffset += usedSprites.length
@@ -413,21 +371,23 @@ export async function writeMegaDriveSprites (slice: boolean, image: PaletteIndex
       const sprite = fullFrame
       frames.push([sprite])
 
-      const priority = 0;
-      const palette = 0; // TODO parameter
       const verticalFlip = 0;
       const horizontalFlip = 0;
 
       const spriteData = new DataView(animationBuffer, dataOffset, 8)
       dataOffset += spriteData.byteLength
 
-      spriteData.setUint16(0, sprite[0] & 0x3FF)
-      spriteData.setUint16(2, ((sprite[2] & 0b11) << 10) | ((sprite[3] & 0b11) << 8))
-      spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternsWritten & 0x7FF )
-      spriteData.setUint16(6, sprite[1] & 0x1FF)
+      const spriteX = sprite[0] - (origin?.x ?? 0)
+      const spriteY = sprite[1] - (origin?.y ?? 0)
+      const spriteWidth = (sprite[2] >>> 3) - 1
+      const spriteHeight = (sprite[3] >>> 3) - 1
 
-      patternsWritten += writePatterns(fullFrame, sprite, image, state)
-      ctx?.strokeRect(sprite[0], sprite[1], sprite[2] - 1, sprite[3] - 1)
+      spriteData.setInt16(0, spriteX)
+      spriteData.setUint16(2, ((spriteWidth & 0b11) << 10) | ((spriteHeight & 0b11) << 8))
+      spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternOffset & 0x7FF )
+      spriteData.setInt16(6, spriteY)
+
+      patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns)
 
       frameOffset++
     }
@@ -437,73 +397,31 @@ export async function writeMegaDriveSprites (slice: boolean, image: PaletteIndex
     dplc.push(patternOffset)
     patternOffset += patternsWritten
   }
+
   frameOffsets.push(frameOffset)
   dplc.push(patternOffset)
-
-  frameCount.setUint16(0, frames.length)
   //#endregion
 
-  frameOffsetsOffset.setUint16(0, dataOffset)
+  /*
+  if (frames.length === 0) {
+    console.warn(`Skipped because of ${frames.length} frames.`)
+    return
+  }
+  */
+
+  header.setUint16(HEADER_FRAME_OFFSETS, dataOffset)
   const frameOffsetsData = new Uint8Array(animationBuffer, dataOffset, frameOffsets.length)
   dataOffset += frameOffsetsData.byteLength
   frameOffsetsData.set(frameOffsets.map(offset => offset * 8))
 
-  dplcOffset.setUint16(0, dataOffset)
+  header.setUint16(HEADER_DPLC_OFFSET, dataOffset)
   const dplcData = new Uint8Array(animationBuffer, dataOffset, dplc.length)
   dataOffset += dplcData.byteLength
   dplcData.set(dplc)
 
-  if (frames.length === 0) {
-    console.warn(`${animation.name} skipped because of ${frames.length} frames.`)
-    return
-  }
+  header.setUint16(HEADER_FRAMES, frames.length)
 
-  // Write animationBuffer
-  console.log(`Writing animation ${animation.name} with ${frames.length} frames, sprites/frame ${frames.map(sprites => sprites.length)}, frame offsets ${frameOffsets} and DPLC offsets ${dplc}...`)
-  await writeFile(resolve(targetDirectory, `anim${animation.name}.bin`), new DataView(animationBuffer, 0, dataOffset))
-}
-
-function writePattern (fullFrame: Rect, patOriginX: number, patOriginY: number, image: PaletteIndexMap, output: { patterns: ArrayBuffer, patternsWritten: number }) {
-  const { data: spritesheetPixels } = image
-
-  const pattern = new Uint32Array(output.patterns, output.patternsWritten++ * patternBytes, patternSize)
-
-  const minX = Math.max(fullFrame[0], 0)
-  const minY = Math.max(fullFrame[1], 0)
-  const maxX = Math.min(fullFrame[0] + fullFrame[2], image.width) - 1
-  const maxY = Math.min(fullFrame[1] + fullFrame[3], image.height) - 1
-  const stripe = image.width
-
-  for (let y = 0; y < patternSize; ++y) {
-    const row = patOriginY + y
-    if (row < minY || row > maxY) continue
-
-    const rowOffset = row * stripe
-    let rowData = 0
-
-    for (let x = 0; x < patternSize; ++x) {
-      const column = patOriginX + x
-      rowData <<= 4
-      if (column < minX || column > maxX) continue
-      rowData |= (spritesheetPixels[rowOffset + column] ?? 0) & 0x0F
-    }
-
-    pattern[y] = rowData
-  }
-}
-
-function writePatterns (fullFrame: Rect, cropFrame: Rect, image: PaletteIndexMap, output: { patterns: ArrayBuffer, patternsWritten: number }) {
-  const widthInPatterns = Math.ceil(cropFrame[2] / patternSize)
-  const heightInPatterns = Math.ceil(cropFrame[3] / patternSize)
-
-  // MegaDrive: Top to bottom then left to right
-  for (let patX = 0; patX < widthInPatterns; ++patX) {
-    for (let patY = 0; patY < heightInPatterns; ++patY) {
-      writePattern(fullFrame, cropFrame[0] + patX * patternSize, cropFrame[1] + patY * patternSize, image, output)
-    }
-  }
-
-  return heightInPatterns * widthInPatterns
+  return { animationBuffer: new DataView(animationBuffer, 0, dataOffset), frames, frameOffsets, dplc }
 }
 
 /**
@@ -524,3 +442,63 @@ export function writePalette (reducedPalette: Uint32Array) {
 
   return megaDrivePalette
 }
+
+function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
+  const patternStartOffset = patterns.length
+
+  const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
+  const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
+
+  // MegaDrive: Top to bottom then left to right
+  for (let patX = 0; patX < widthInPatterns; patX += patternSize) {
+    for (let patY = 0; patY < heightInPatterns; patY += patternSize) {
+      const nextIndex = patterns.length
+      if (nextIndex > 0x07FF)
+        throw new Error('Too many patterns.')
+
+      patterns[nextIndex] = buildPattern(src, patX, patY)
+    }
+  }
+
+  return patterns.length - patternStartOffset
+}
+
+/*
+function writePattern (src: SubRect, output: { patterns: ArrayBuffer, patternsWritten: number }) {
+  const pattern = new Uint32Array(output.patterns, output.patternsWritten++ * patternBytes, patternSize)
+
+  const minX = 0
+  const minY = 0
+  const maxX = Math.min(src.width, src.widthStride) - 1
+  const maxY = Math.min(src.height, src.data.length / src.widthStride) - 1
+
+  for (let srcY = 0; srcY < patternSize; ++srcY) {
+    if (srcY < minY || srcY > maxY) continue
+    const srcOffset = (src.offset ?? 0) + srcY * src.widthStride
+
+    let rowData = 0
+    for (let srcX = 0; srcX < patternSize; ++srcX) {
+      rowData <<= 4
+      if (srcX < minX || srcX > maxX) continue
+
+      rowData |= src.data[srcOffset+srcX]! & 0x0F
+    }
+
+    pattern[srcY] = rowData
+  }
+}
+
+export function writePatterns (src: SubRect, output: { patterns: ArrayBuffer, patternsWritten: number }) {
+  const widthInPatterns = Math.ceil(src.width / patternSize)
+  const heightInPatterns = Math.ceil(src.height / patternSize)
+
+  // MegaDrive: Top to bottom then left to right
+  for (let patX = 0; patX < widthInPatterns; ++patX) {
+    for (let patY = 0; patY < heightInPatterns; ++patY) {
+      writePattern(subRect(src, [patX * patternSize, patY * patternSize, patternSize, patternSize]), output)
+    }
+  }
+
+  return heightInPatterns * widthInPatterns
+}
+*/

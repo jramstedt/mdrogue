@@ -7,9 +7,8 @@ import { execa } from 'execa'
 import { distance, image, palette, utils } from 'image-q'
 import type { SpriteSheet } from '@kayahr/aseprite'
 
-import { imageQPalette as megaDrivePalette, patternBytes, patternSize, writeMegaDriveSprites } from './megadrive.ts'
-import { getIndexArray } from './utils.ts'
-import type { PaletteIndexMap } from './optimize.ts'
+import {generateMegaDriveSprites, imageQPalette as megaDrivePalette, patternBytes, patternSize, type Section} from './megadrive.ts'
+import {getIndexArray, type StrideArray, subRect, type SubRect} from './utils.ts'
 
 const [,, spritesheetFilename, targetDirectory, spriteMode = 'tags'] = process.argv
 
@@ -95,7 +94,7 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
     }
   }
 
-  let palettedPixels: PaletteIndexMap
+  let strideArray: StrideArray
 
   // TODO should sample all layers first. Then nearestColor.quantizeSync with reducedPalette, see tilemap.ts
 
@@ -107,7 +106,9 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
     const reducedPalette = quant.quantizeSync() // Final palette
     const reducedImage = nearestColor.quantizeSync(imagePointContainer, reducedPalette) // Image converted to reduced final palette
 
-    palettedPixels = { width: imageWidth, height: imageHeight, data: getIndexArray(reducedImage, reducedPalette, distanceCalculator)}
+    // palettedPixels = { width: imageWidth, height: imageHeight, data: getIndexArray(reducedImage, reducedPalette, distanceCalculator)}
+
+    strideArray = { data: getIndexArray(reducedImage, reducedPalette, distanceCalculator), widthStride: reducedImage.getWidth() }
 
     const reducedImagePath = resolve(targetDirectory, `${layerName}-reduced.png`)
     console.log(`Reduced palette to ${reducedPalette.getPointContainer().toUint32Array().length} colors.`)
@@ -115,10 +116,10 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
     await writeFile(reducedImagePath, encode({
       channels: 1,
       depth: 8, 
-      width: palettedPixels.width, 
-      height: palettedPixels.height, 
+      width: strideArray.widthStride,
+      height: strideArray.data.length / strideArray.widthStride,
       palette: reducedPalette.getPointContainer().getPointArray().map(point => point.rgba),
-      data: palettedPixels.data
+      data: strideArray.data
     }))
   }
   //#endregion
@@ -146,7 +147,7 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
       const frame = sheetData.frames[frameIndex]
       if (frame === undefined) continue
 
-      await writeMegaDriveSprites(false, palettedPixels, { name: `${layerName}.${frameIndex}`, frames: [frame] }, targetDirectory, state, ctx)
+      generateMegaDriveSprites(false, [{ ...subRect(strideArray, [frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h]), highPriority: false, palette: 2, name: `${layerName}.${frameIndex}` }], state )
     }
   } else {
     const sheetFrames = Map.groupBy(Object.entries(sheetData.frames), ([name]) => name.split('/')[0])
@@ -156,7 +157,12 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
 
       const frames = animationFrames.sort((a, b) => parseInt(a[0]?.split('/')[1] ?? '0') - parseInt(b[0]?.split('/')[1] ?? '0')).map(([, frame]) => frame)
 
-      await writeMegaDriveSprites(true, palettedPixels, { name: `${layerName}.${name}`, frames }, targetDirectory, state, ctx)
+      const sections = frames.map(
+        (frame, index) => ({ ...subRect(strideArray, [frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h]), highPriority: false, palette: 2, name: `${layerName}.${name}.${index}` } satisfies Section)
+      )
+
+      //await writeMegaDriveSprites(true, palettedPixels, { name: `${layerName}.${name}`, frames }, targetDirectory, state, ctx)
+      generateMegaDriveSprites(true, sections, state )
     }
   }
 

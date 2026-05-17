@@ -1,11 +1,18 @@
-import console from 'node:console'
 import {readFile, writeFile} from 'node:fs/promises'
 import {basename, dirname, join, resolve, sep} from 'node:path'
 import {distance, image, palette, utils} from 'image-q'
 import {encode} from 'fast-png'
 
-import {generateMegaDriveTilemap, imageQPalette, type Section, megaDriveLadder, type Pattern, writePalette} from './megadrive.ts'
+import {
+  generateMegaDriveTilemap,
+  imageQPalette,
+  type Section,
+  type Pattern,
+  writePalette,
+  generateMegaDriveSprites, patternSize
+} from './megadrive.ts'
 import {concatenate, decodePngForImageQ, extractRect, extractRectQ, getIndexArray, type StrideArray, subRect} from './utils.ts'
+import {Canvas, createImageData, ImageData, loadImage} from 'canvas'
 
 const [, , jsonFilename, targetDirectory, preview = 'false'] = process.argv
 
@@ -28,6 +35,8 @@ type Frame = {
   readonly y?: number | "+" | "-"
   readonly width?: number
   readonly height?:number
+  readonly anchor?: readonly [x: number, y: number] // Sprite anchor
+
   readonly highPriority?: boolean
   readonly palette?: 0 | 1 | 2 | 3
   readonly preview?: boolean
@@ -35,6 +44,7 @@ type Frame = {
 
 type Descriptor = {
   readonly name: string
+  readonly type?: 'tilemap' | 'sprite:vdp',
   readonly frames: readonly Frame[]
   // readonly palettes: readonly [string, string, string, string] // TODO Load palette from file. Don't create new one.
 }
@@ -51,12 +61,12 @@ const distanceCalculator = new distance.EuclideanBT709()
 // Quantize palettes using nearest color
 const nearestColor = new image.NearestColor(distanceCalculator)
 
-for (const { frames, name } of descriptors) {
+for (const { frames: descriptorFrames, name: descriptorName } of descriptors) {
   let pngFile: string | undefined = undefined
   const origin = { x: 0, y: 0 }
   const size = { width: -1, height: -1 }
   let paletteIndex: 0 | 1 | 2 | 3 = 0
-  for (const { x, y, width, height, palette: framePalette, name: frameName, pngFile: framePngFile } of frames) {
+  for (const { x, y, width, height, palette: framePalette, name: frameName, pngFile: framePngFile } of descriptorFrames) {
     if (framePngFile !== undefined) pngFile = framePngFile
     if (framePalette !== undefined) paletteIndex = framePalette
 
@@ -66,7 +76,7 @@ for (const { frames, name } of descriptors) {
     if (typeof y === 'number') origin.y = y
     else if (y === '+') origin.y += size.height
 
-    if (pngFile === undefined) throw new Error(`No pngFile set to ${name} / ${frameName}.`)
+    if (pngFile === undefined) throw new Error(`No pngFile set to ${descriptorName} / ${frameName}.`)
 
     //const pngLoader = pngFiles.getOrInsertComputed(pngFile, pngFile => decodePngForImageQ(pngFile))
     let pngLoader = pngFiles.get(pngFile)
@@ -108,7 +118,9 @@ for (const { frames, name } of descriptors) {
 const imageQuantizer = new image.ErrorDiffusionArray(distanceCalculator, image.ErrorDiffusionArrayKernel.Atkinson, false, 2.0 / 16.0)
 const allPatterns: Pattern[] = []
 
-for (const { name, frames  } of descriptors) {
+const state = { patterns: allPatterns, dplcPatternsNeeded: 0 }
+
+for (const { frames: descriptorFrames, name: descriptorName, type: outputType = 'tilemap' } of descriptors) {
   const sections: Section[] = []
 
   let pngFile: string | undefined = undefined
@@ -116,7 +128,8 @@ for (const { name, frames  } of descriptors) {
   const size = { width: -1, height: -1 }
   let paletteIndex: 0 | 1 | 2 | 3 = 0
   let highPriority = false
-  for (const { x, y, width, height, highPriority: frameHighPriority, palette: framePalette, name: frameName, pngFile: framePngFile, preview } of frames) {
+  let anchor = { x: 0, y: 0 }
+  for (const { x, y, width, height, highPriority: frameHighPriority, palette: framePalette, name: frameName, pngFile: framePngFile, preview, anchor: frameAnchor } of descriptorFrames) {
     if (framePngFile !== undefined) pngFile = framePngFile
     if (framePalette !== undefined) paletteIndex = framePalette
     if (frameHighPriority !== undefined) highPriority = frameHighPriority
@@ -127,7 +140,7 @@ for (const { name, frames  } of descriptors) {
     if (typeof y === 'number') origin.y = y
     else if (y === '+') origin.y += size.height
 
-    if (pngFile === undefined) throw new Error(`No pngFile set to ${name} / ${frameName ?? sections.length}.`)
+    if (pngFile === undefined) throw new Error(`No pngFile set to ${descriptorName} / ${frameName ?? sections.length}.`)
     const pixelData= await pngFiles.get(pngFile)
     if (pixelData === undefined) throw new Error(`Missing ${pngFile} loader.`)
 
@@ -139,6 +152,8 @@ for (const { name, frames  } of descriptors) {
 
     if (x === '-') origin.x -= size.width
     if (y === '-') origin.y -= size.height
+
+    if (frameAnchor !== undefined) anchor = { x: frameAnchor[0], y: frameAnchor[1] }
 
     /*
     const reducedPalette = reducedPalettes.getOrInsertComputed(paletteIndex, () => {
@@ -176,7 +191,8 @@ for (const { name, frames  } of descriptors) {
       ...subRect(reducedIndexedImage, [origin.x, origin.y, size.width, size.height]),
       highPriority,
       palette: paletteIndex,
-      name: frameName ?? `${name}_res_${origin.x}_${origin.y}`
+      name: frameName ?? `${descriptorName}_res_${origin.x}_${origin.y}`,
+      origin: anchor
     } satisfies Section
 
     sections.push(section)
@@ -199,22 +215,79 @@ for (const { name, frames  } of descriptors) {
     }
   }
 
-  const { tileMap, sectionOffset } = generateMegaDriveTilemap(sections, allPatterns)
-  sectionOffset.push({ name: `${name}_res_size`, offset: tileMap.byteLength })
+  if (outputType === 'tilemap') {
+    const { tileMap, sectionOffset } = generateMegaDriveTilemap(sections, allPatterns)
+    sectionOffset.push({ name: `${descriptorName}_res_size`, offset: tileMap.byteLength })
 
-  const tilemapPath = resolve(targetDirectory, `${name}-tilemap.bin`)
-  console.log(`Writing ${tilemapPath}...`)
-  await writeFile(tilemapPath, new Uint16Array(tileMap))
+    const tilemapPath = resolve(targetDirectory, `${descriptorName}-tilemap.bin`)
+    console.log(`Writing ${tilemapPath}...`)
+    await writeFile(tilemapPath, new Uint16Array(tileMap))
+
+    const resPath = resolve(targetDirectory, `${descriptorName}-res.asm`)
+    console.log(`Writing ${resPath}...`)
+    await writeFile(resPath, sectionOffset.map(({ name, offset }) => `${name}\t\tequ ${offset}`).join('\n'))
+  } else if (outputType === 'sprite:vdp') {
+    const { animationBuffer, frames, frameOffsets, dplc } = generateMegaDriveSprites(true, sections, state)
+
+    // Write animationBuffer
+    console.log(`Writing animation ${descriptorName} with ${frames.length} frames, ${frames.map(sprites => sprites.length)} sprites/frame, frame offsets ${frameOffsets} and DPLC offsets ${dplc}...`)
+    await writeFile(resolve(targetDirectory, `${descriptorName}-anim.bin`), animationBuffer)
+
+    if (drawPreview) {
+      const canvas = new Canvas(256, 256)
+      const ctx = canvas.getContext('2d')
+      ctx.imageSmoothingEnabled = false
+      ctx.translate(.5, .5)
+      ctx.globalAlpha = .25
+      ctx.lineJoin = 'round'
+      ctx.lineWidth = 1
+      ctx.strokeStyle = 'green'
+
+      let pngFile: string | undefined = undefined
+      const origin = { x: 0, y: 0 }
+      const size = { width: -1, height: -1 }
+      for (let i = 0; i < descriptorFrames.length; ++i) {
+        const descriptorFrame = descriptorFrames[i]!
+        const { x, y, width, height, pngFile: framePngFile, preview } = descriptorFrame
+
+        if (framePngFile !== undefined) pngFile = framePngFile
+
+        if (typeof x === 'number') origin.x = x
+        else if (x === '+') origin.x += size.width
+
+        if (typeof y === 'number') origin.y = y
+        else if (y === '+') origin.y += size.height
+
+        const image = await loadImage(await readFile(resolve(basePath, pngFile!)))
+
+        if (width !== undefined) size.width = width
+        else if (size.width < 0) size.width = image.width
+
+        if (height !== undefined) size.height = height
+        else if (size.height < 0) size.height = image.height
+
+        if (x === '-') origin.x -= size.width
+        if (y === '-') origin.y -= size.height
+
+        ctx.drawImage(image, origin.x, origin.y, size.width, size.height, origin.x - 0.5, origin.y - 0.5, size.width, size.height)
+
+        const frame = frames[i]!
+
+        for (const sprite of frame) {
+          ctx.strokeRect(origin.x + sprite[0], origin.y + sprite[1], sprite[2] - 1, sprite[3] - 1)
+        }
+      }
+
+      console.log(`Writing preview...`)
+      await writeFile(resolve(targetDirectory, `${descriptorName} preview.png`), canvas.toBuffer('image/png'))
+    }
+  }
 
   /*
   const patternsPath = resolve(targetDirectory, `${name}-patterns.bin`)
   console.log(`Writing ${patternsPath}...`)
   await writeFile(patternsPath, newPatterns, { encoding: 'binary' })
    */
-
-  const resPath = resolve(targetDirectory, `${name}-res.asm`)
-  console.log(`Writing ${resPath}...`)
-  await writeFile(resPath, sectionOffset.map(({ name, offset }) => `${name}\t\tequ ${offset}`).join('\n'))
 }
 
 // Save palette
@@ -224,6 +297,18 @@ for (const [index, reducedPalette] of reducedPalettes) {
   console.log(`Writing ${palettePath}...`)
   await writeFile(palettePath, writePalette(reducedPalette.getPointContainer().toUint32Array()))
 }
+
+/*
+TODO For sprites. dplc should be asm file?
+
+// Write amount of dplc space needed in VRAM (maximum from all animations)
+console.log(`Writing ${state.dplcPatternsNeeded} patterns needed for DPLC in VRAM...`)
+await writeFile(resolve(targetDirectory, `dplc.bin`), new Uint8Array([state.dplcPatternsNeeded]))
+
+console.log(`Writing ${state.patternsWritten} patterns...`)
+await writeFile(resolve(targetDirectory, `patterns.bin`), new Uint8Array(state.patterns, 0, state.patternsWritten * patternBytes))
+*/
+
 
 // Save all patterns
 const allPatternsToWrite = concatenate(...allPatterns.map(pattern => pattern.normal.map(pattern => ((pattern & 0xFF000000) >>> 24) | ((pattern & 0xFF0000) >>> 8) | ((pattern & 0xFF00) << 8) | ((pattern & 0xFF) << 24) )))

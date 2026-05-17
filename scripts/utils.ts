@@ -99,9 +99,13 @@ export async function decodePngForImageQ (filePath: string) {
         }
       }
     } else {
+      // const transparentPaletteIndex = imageData[0]!
+      const transparentPaletteIndex = 0
+
       for (let idx = 0, l = imageData.length; idx < l; ++idx) {
-        const paletteIndex = imageData[idx]
-        pointArray[idx] = utils.Point.createByQuadruplet(imagePalette[paletteIndex ?? 0] ?? [0, 0, 0, 0])
+        const pixelPaletteIndex = imageData[idx]!
+        const [r,g,b,a] = imagePalette[pixelPaletteIndex] ?? [0, 0, 0, 0]
+        pointArray[idx] = utils.Point.createByRGBA(r ?? 0, g ?? 0, b ?? 0, a ?? (pixelPaletteIndex === transparentPaletteIndex ? 0 : 255))
       }
     }
   }
@@ -131,14 +135,20 @@ export function extractRectQ (src: utils.PointContainer, [x, y, width, height]: 
 
 export type StrideArray<T = Uint8ClampedArray | Uint8Array | Uint16Array> = { data: T, widthStride: number }
 export type SubRect = StrideArray & { width: number, height: number, offset: number }
-type StrideSource = StrideArray & Partial<Pick<SubRect, 'offset'>>
+export type StrideSource = StrideArray & Partial<Pick<SubRect, 'offset'>>
+
 export function subRect(src: StrideSource, [x, y, width, height]: Rect): SubRect {
+  x = Math.max(x, 0)
+  y = Math.max(y, 0)
+  width = Math.min(width, src.widthStride)
+  height = Math.min(height, src.data.length / src.widthStride)
+
   return {
     data: src.data,
     widthStride: src.widthStride,
     width,
     height,
-    offset: (src.offset ?? 0) + y* src.widthStride + x
+    offset: (src.offset ?? 0) + y * src.widthStride + x
   }
 }
 
@@ -176,4 +186,25 @@ export function extractRect (src: StrideSource, [x, y, width, height]: Rect) {
   }
 
   return dst
+}
+
+/**
+ * Checks if rect has any non transparent colors (not palette index 0)
+ */
+export function isRectEmpty (src: SubRect, [x, y, width, height]: Rect) {
+  const minX = Math.max(x, 0)
+  const minY = Math.max(y, 0)
+  const maxX = Math.min(x + width, src.width) - 1
+  const maxY = Math.min(y + height, src.height) - 1
+
+  for (let dstY = 0, srcY = y; dstY < height; ++dstY, ++srcY) {
+    if (srcY < minY || srcY > maxY) continue
+    const srcOffset = src.offset + srcY * src.widthStride
+    for (let dstX = 0, srcX = x; dstX < width; ++dstX, ++srcX) {
+      if (srcX < minX || srcX > maxX) continue
+      if (src.data[srcOffset+srcX] !== 0) return false
+    }
+  }
+
+  return true
 }
