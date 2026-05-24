@@ -2,200 +2,197 @@
 ; keeps track of free memory
 
 ; input:
-; d7	number of patterns (32 = $20 bytes per pattern)
+; d0.w	Words to allocate
 ; output:
-; d6	VRAM address for patterns
-; d7	Allocated amount in bytes
-; trash:
-; a2, a3, d4
-allocVRAM	MODULE
-	lsl.w	#5, d7	; pattern amount to bytes
-	lea.l	vrm_first, a2	; vrm_first is previous
-	moveq	#0, d6
+; d0.w	0 = No VRAM space available
+; d1.l	VRAM address
+allocVRAM
+	lsl.w	d0			; word to bytes
+	lea.l	vrm_first,a0		; vrm_first is current
+	moveq	#0,d1
 
 .loop
-	tst.w	(a2)
+	tst.w	vrmNext(a0)
 	beq	.notFound
 
-	move.w	vrmStart(a2), d6
-	add.w	d7, d6
-	cmp.w	vrmEnd(a2), d6
+	move.w	vrmStart(a0),d1
+	add.w	d0,d1
+	cmp.w	vrmEnd(a0),d1
 	blo	.allocFromHoleStart
 	beq	.allocFullHole
 	
-	cmp.l	#vrm_first, vrmNext(a2)
+	cmp.l	#vrm_first,vrmNext(a0)
 	beq	.notFound
 
-	movea.l a2, a3	; set current as previous
-
-	movea.l	vrmNext(a2), a2
+	movea.l	vrmNext(a0),a0
 	bra	.loop
 
 .allocFromHoleStart
-	move.l	d6, d4
-	move.w	vrmStart(a2), d6
-	move.w	d4, vrmStart(a2)
+	move.l	d1,d0
+	move.w	vrmStart(a0),d1
+	move.w	d0,vrmStart(a0)
 	rts
 
 .allocFullHole
-	move.w	vrmStart(a2), d6
-	move.l	vrmNext(a2), vrmNext(a3)	; move link
-	clr.l	vrmNext(a2)
-	clr.l	vrmStart(a2)
+	move.w	vrmStart(a0),d1
+	; copy next hole to this hole and clear next
+	movea.l	vrmNext(a0),a1
+	move.l	vrmNext(a1),vrmNext(a0)
+	move.l	vrmStart(a1),vrmStart(a0)	; copy both start and end
+	clr.l	vrmNext(a1)
+	clr.l	vrmStart(a1)		; clears both start and end
 	rts
 
-.notFound	; No memory left in VRAM.
-	moveq	#0, d6
-	moveq	#0, d7
+.notFound				; No memory left in VRAM.
+	moveq	#0,d0
 	rts
-	MODEND
 
-reserveVRAM MACRO sourceMem, lenPatterns
-	move.l	\sourceMem, d6
-	move.l	\lenPatterns, d7
-	jsr	_reserveVRAM
+; \1 	Word aligned VRAM address
+; \2 	Size in words
+	MACRO	reserveVRAM
+	move.l	\1,d0
+	move.l	\2,d1
+	jsr	reserveVRAM
 	ENDM
 
 ; input:
-; d6 VRAM address
-; d7 number of patterns
-_reserveVRAM	MODULE
-	lsl.l	#5, d7	; pattern amount to bytes
-	lea.l	vrm_first, a2	; vrm_first is previous
+; d0 	Word aligned VRAM address
+; d1 	Size in words
+reserveVRAM
+	lsl.w	d1			; word to bytes
+	lea.l	vrm_first,a0		; vrm_first is current
+	add	d0,d1			; End address
 
-	add	d6, d7
 .loop
-	tst.w	(a2)
+	tst.w	vrmNext(a0)
 	beq	.notFound
 
-	cmp.w	vrmStart(a2), d6
+	cmp.w	vrmStart(a0),d0
 	blo	.notFound
 
-	cmp.w	vrmEnd(a2), d7
+	cmp.w	vrmEnd(a0),d1
 	blo	.reserveHole
 	beq	.reserveFullHole
 
-	movea.l a2, a3	; set current as previous
-	movea.l	vrmNext(a2), a2
+	movea.l	vrmNext(a0),a0
 	bra	.loop
 
 .reserveHole
-	cmp.w	vrmStart(a2), d6
+	cmp.w	vrmStart(a0),d0
 	beq	.reserveFromHoleStart
 
-	move.w	vrmEnd(a2), d5	; d5 is end for new hole
-	move.w	d6, vrmEnd(a2)
+	movea.l	a0,a1			; set current as previous
 
-	move.l	a2, a3
-
-	lea.l	vrm_list, a2
-	move.l	#10-1, d6	; see memorymap.asm, max 10 vrm holes
-.freeLoop	
-	tst.l	vrmStart(a2)	; tests both start and end for null
+	lea.l	vrm_list,a0		; find free hole
+.freeLoop
+	tst.l	vrmStart(a0)		; tests both start and end for null
 	beq	.makeHole
 
-	lea	vrmDataSize(a2), a2
-	dbra	d6, .freeLoop
+	lea	vrmDataSize(a0),a0
+	cmpa.l	#vrm_list_end,a0
+	blo.s	.freeLoop
 	rts	; no free holes left!
 
 .makeHole
-	move.w	d7, vrmStart(a2)
-	move.w	d5, vrmEnd(a2)
-	move.l	vrmNext(a3), vrmNext(a2)
-	move.l	a2, vrmNext(a3)
+	move.w	vrmEnd(a1),vrmEnd(a0)
+	move.w	d0,vrmEnd(a1)		; shorten the current hole
+	move.w	d1,vrmStart(a0)
+	move.l	vrmNext(a1),vrmNext(a0)
+	move.l	a0,vrmNext(a1)
 	rts
 
 .reserveFromHoleStart
-	move.w	d7, vrmStart(a2)
+	move.w	d1,vrmStart(a0)
 	rts
 
 .reserveFullHole
-	move.l	vrmNext(a2), vrmNext(a3)	; move link
-	clr.l	vrmNext(a2)
-	clr.l	vrmStart(a2)
+	; copy next hole to this hole and clear next
+	movea.l	vrmNext(a0),a1
+	move.l	vrmNext(a1),vrmNext(a0)
+	move.l	vrmStart(a1),vrmStart(a0)	; copy both start and end
+	clr.l	vrmNext(a1)
+	clr.l	vrmStart(a1)		; clears both start and end
 	rts
 
 .notFound
 	rts
-	MODEND
 
 ; input:
-; d6 VRAM address
-; d7 number of patterns
-; trash:
-; a3, d5, d6, d7
-freeVRAM	MODULE
-	move.w	d6, d5
-	lsl.w	#5, d7
-	add.w	d7, d5	; d5 is the VRAM end address
-	lea.l	vrm_first, a2
-	lea.l	vrm_first, a3
+; d0 	Word aligned VRAM address
+; d1 	Size in words
+freeVRAM
+	lsl.w	d1			; word to bytes
+	lea.l	vrm_first,a0		; vrm_first is current
+	add	d0,d1			; End address
 
 .loop
-	tst.w	(a2)
+	tst.w	vrmNext(a0)
 	beq	.notFound
 
-	cmp.w	vrmEnd(a2), d6
-	beq	.mergeEnd
-
-	cmp.w	vrmStart(a2), d5
+	cmp.w	vrmStart(a0),d1
 	beq	.mergeStart
 
-	cmp.l	#vrm_first, vrmNext(a2)
+	cmp.w	vrmEnd(a0),d0
+	beq	.mergeEnd
+
+	cmp.l	#vrm_first,vrmNext(a0)
 	beq	.notFound
 
-	movea.l a2, a3	; set a3 as last link in list (this is to keep linked list in order)
-
-	movea.l	vrmNext(a2), a2
+	movea.l	vrmNext(a0),a0
 	bra	.loop
 
 .notFound
-	lea.l	vrm_list, a2
-	move.l	#10-1, d7	; see memorymap.asm, max 10 vrm holes
-.freeLoop	
-	tst.l	vrmStart(a2)	; tests both start and end for null
+	lea.l	vrm_list,a1		; find free hole
+.freeLoop
+	tst.l	vrmStart(a1)		; tests both start and end for null
 	beq	.makeHole
 
-	lea	vrmDataSize(a2), a2
-	dbra	d7, .freeLoop
+	lea	vrmDataSize(a1),a1
+	cmpa.l	#vrm_list_end,a1
+	blo.s	.freeLoop
 	rts	; no free holes left!
 
 .mergeStart
-	move.w	d6, vrmStart(a2)
+	move.w	d0,vrmStart(a0)
 	rts
 
 .mergeEnd
-	move.w	d5, vrmEnd(a2)
+	move.w	d1,vrmEnd(a0)
 	rts
 
 .makeHole
-	move.w	d6, vrmStart(a2)
-	move.w	d5, vrmEnd(a2)
-	move.l	vrmNext(a3), vrmNext(a2)
-	move.l	a2, vrmNext(a3)
+	move.l	vrmNext(a0),vrmNext(a1)
+	move.w	d0,vrmStart(a1)
+	move.w	d1,vrmEnd(a1)
+	move.l	a1,vrmNext(a0)
 	rts
-	MODEND
 
-initVRAM	MODULE
-	lea.l	vrm_list, a2
-	move.l	#vrm_first, vrmNext(a2)	; first hole points to itself
-	move.w	#$0000, vrmStart(a2)
-	move.w	#$FFFF, vrmEnd(a2)
+; Initialize vram holes list
+initVRAM
+	lea.l	vrm_list,a0
+	move.l	#vrm_first,vrmNext(a0)	; first hole points to itself
+	move.w	#$0000,vrmStart(a0)
+	move.w	#$FFFF,vrmEnd(a0)
 	rts
-	MODEND
 
-allocAndQueueDMA MACRO sourceStart, sourceEnd, outVramAddress
-	LOCAL dataLen
-dataLen equ sourceEnd-sourceStart
-
-	move.l	#dataLen/sizePattern, d7
+; /1	Source address start
+; /2	Source address end
+; /3	Optional out VRAM address
+ 	MACRO allocAndQueueDMA
+ 	INLINE
+	move.l	#(\2-\1)/sizeWord,d0
 	jsr	allocVRAM
+	tst	d0
+	; d0.w	0 = No VRAM space available
+        ; d1.l	VRAM address
+        beq.s	.outOfMemory
 
-	IF narg=3
-		move.w	d6, \outVramAddress
+	move.l	#\1,d0
+	IF NARG=3
+		move.w	d1,\3
 	ENDIF
-
-	move.l	#sourceStart, d5
-	lsr.w	d7	; bytes to words
-	jsr	_queueDMATransfer
+	move.l	#(\2-\1)/sizeWord,d2
+	jsr	queueDMATransfer
+.outOfMemory
+	EINLINE
 	ENDM

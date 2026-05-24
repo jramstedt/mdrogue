@@ -1,4 +1,4 @@
-objPlayer	MODULE
+objPlayer	INLINE
 	moveq	#0, d0
 	move.b	obState(a0), d0	; a0 is object address
 	move.w	.routineJmpTable(pc,d0.w), d1
@@ -200,9 +200,9 @@ moveDir		equ	moveDirX	; 8.8
 
 	rts
 
-	MODEND
+	EINLINE
 
-objCollisionPlayer MODULE
+objCollisionPlayer INLINE
 	movem.w	moveDir(a0), d0/d1
 	asl.w	#3, d0
 	asl.w	#3, d1
@@ -210,7 +210,7 @@ objCollisionPlayer MODULE
 
 	rts
 
-	MODEND
+	EINLINE
 
 	EVEN
 
@@ -239,7 +239,7 @@ dirVector				; RLDU, zero when pressed
 	EVEN
 
 ; a1 target
-findTarget MODULE
+findTarget INLINE
 	moveq	#0, d7
 
 	move.b	padState(a0), d7
@@ -617,4 +617,4 @@ findTarget MODULE
 	
 	rts
 
-	MODEND
+	EINLINE

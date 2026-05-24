@@ -2,158 +2,133 @@
 	include 'timing.asm'
 	include 'vram.asm'
 
-	include 'font.asm'
-	
-	include 'scroll.asm'
-
-	include 'fixedpoint.asm'
-	include 'vector.asm'
-	include 'collision.asm'
-
-	include 'objects/objects.asm'
-	include 'objects/objecttable.asm'
+	include 'string.asm'
+	include 'planeutils.asm'
 
 __main
 	; Enable controllers
-	fastHaltZ80
-	move.b	#$40, io_ctrl1  ; enable output
-	move.b	#$40, io_data1  ; Select 00CBRLDU
-	move.b	#$40, io_ctrl2  ; enable output
-	move.b	#$40, io_data2  ; Select 00CBRLDU
+	haltZ80
+	move.b	#$40,io_ctrl1  ; enable output
+	move.b	#$40,io_data1  ; Select 00CBRLDU
+	move.b	#$40,io_ctrl2  ; enable output
+	move.b	#$40,io_data2  ; Select 00CBRLDU
 	resumeZ80
 
-	jsr	initVRAM
-	jsr	initGameObjects
+	jmp	openInventory
 
-	; reserveVRAM #0, #1	; keep first block empty
-	reserveVRAM #vdp_map_ant, #(64*32*sizeWord/sizePattern)
-	reserveVRAM #vdp_map_sat, #(80*sizeSpriteDesc/sizePattern)
-	reserveVRAM #vdp_map_wnt+(64*20*sizeWord), #(64*8*sizeWord/sizePattern)
-	reserveVRAM #vdp_map_bnt, #(64*32*sizeWord/sizePattern)
-	;reserveVRAM #vdp_map_hst, #(32*8*sizeWord*2/sizePattern)
-	reserveVRAM #vdp_map_hst, #1
+	jsr	initVRAM
+	; reserveVRAM #0,#1	; keep first block empty
+	reserveVRAM #vdp_map_ant,#(64*32)
+	reserveVRAM #vdp_map_sat,#(80*sizeSpriteDesc/sizeWord)
+	reserveVRAM #vdp_map_wnt+(64*20*sizeWord),#(64*8)
+	reserveVRAM #vdp_map_bnt,#(64*32)
+	;reserveVRAM #vdp_map_hst,#(32*8*2)
+	reserveVRAM #vdp_map_hst,#1
 
 	jsr	initDMAQueue
 
-	; TODO should be loaded later, after menus etc.
-	move.l	#0, d6
-	jsr	loadLevel
+	; Do init stuff
+	loadPalette #testPalette,0
+	allocAndQueueDMA uiPatterns,uiPatternsEnd,uiVRAMAddress
 
-	allocAndQueueDMA fontPatterns, fontTilemap, fontVRAMAddress
+	calc32x64pos 0,0,vdp_map_ant,uiVRAMAddress,d2
+	lea	testText,a0
+	lea	(parchmentTilemap+Parchment_res_0_0),a1
+	jsr	draw8x8Text
 
-	jsr	findFreeObject
-	move.b	#(idPlayer<<4)|0, obClass(a2)
-	move.w	#160<<3, obX(a2)
-	move.w	#120<<3, obY(a2)
-
-	jsr	findFreeObject
-	move.b	#(idCollider<<4)|0, obClass(a2)
-	move.b	#16, obRadius(a2)
-	move.b	#0, obPhysics(a2)
-	move.b	#$2F, obCollision(a2)
-	move.w	#80<<3, obX(a2)
-	move.w	#120<<3, obY(a2)
-
-	jsr	findFreeObject
-	move.b	#(idCollider<<4)|0, obClass(a2)
-	move.b	#8, obRadius(a2)
-	move.b	#0, obPhysics(a2)
-	move.b	#$2F, obCollision(a2)
-	move.w	#160<<3, obX(a2)
-	move.w	#120<<3, obY(a2)
-
-	; loadPalette #testPalette, 0
-	loadPalette #testPalette, 1
-
-	lea	testText, a6
-	move.l	#$00160003, d7
-	jsr	drawFont
-
-	; process initial DMA queue
-	move.w	#vdp_w_reg+%100010100, vdp1rState
-	jsr	processDMAQueue
+	calc32x64pos 0,3,vdp_map_ant,uiVRAMAddress,d2
+	lea	(inventoryTilemap+border2),a1
+	move.l	#(5<<16)|5,d3
+	jsr	draw9Slice
 
 	; start game
-	move.w	#vdp_w_reg, d0
-	move.b	vdp1r, d0
-	or.w	#%101000000, d0	; #1 reg, display on
-	move.w	d0, vdp1rState
-	move.w	d0, vdp_ctrl
-
-	jsr	initScrolling
+	displayOn vdp_ctrl
 
 	; wait this frame to finish before gameLoop start.
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 	jsr	waitVBlankOn	; Wait for blanking to stop.
 
-gameLoop
+.gameLoop
 	; do input processing
-	clr.l	d0
-	clr.l	d1
+	readGamePads pad1State,pad2State
 
-	fastHaltZ80
-	move.b	#$40, io_data1  ; Select 00CBRLDU
-	move.b	#$40, io_data2  ; Select 00CBRLDU
-	move.b	io_data1, d0    ; Read 00CBRLDU
-	swap	d0
-	move.b	io_data2, d0    ; Read 00CBRLDU
-	move.b	#$00, io_data1  ; select 00SA00DU
-	move.b	#$00, io_data2  ; select 00SA00DU
-	move.b	io_data1, d1    ; Read 00SA00DU
-	swap	d1
-	move.b	io_data2, d1    ; Read 00SA00DU
-	resumeZ80
-	andi.l	#$003F003F, d0	; 00CBRLDU
-	andi.l	#$00300030, d1	; 00SA0000
-	lsl.l	#2, d1
-	or.l	d1, d0
-	move.b	d0, pad2State
-	swap	d0
-	move.b	d0, pad1State
-
-	; step rnd
+	; step rng
 	lcg	d0
 
-	; do game processing
-	jsr	processObjects
-	jsr	cleanupObjectList
-	jsr	processPhysicObjects
-	
-	; print vertical line of 224/240
-	clr.l	d0
-	move.w	vdp_hvcnt, d0	; hi = vert, lo = hori
-	lsr.w	#8, d0
-	lea	textScrap, a0
-	jsr	itos
+	; do game pocessing
+	;
 
-	lea	textScrap, a6
-	move.b	#0, 4(a6)
-	move.l	#$00140000, d7
-	jsr	drawFont
+	; print vertical line of 224/240
+	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
+	lsr.w	#8,d0
+	lea	textScrap,a0
+	jsr	btos
+
+	calc32x64pos 4,20,vdp_map_wnt,uiVRAMAddress,d2
+	lea	parchmentTilemap,a1
+	jsr	draw8x8Text
+
 
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 
 	; do graphics commands
-	jsr	updatePlaneScrollToCamera
-	jsr	updateLevel
+	;
 	jsr	processDMAQueue
-	
+
 	jsr	waitVBlankOn	; Wait for blanking to stop.
 
-	bra	gameLoop
+	bra	.gameLoop
 
-	include 'assets/orc.asm'
-	include 'assets/col.asm'
+	include 'inventory.asm'
+	include 'player.asm'
 
-	include 'assets/palettes.asm'
-	include 'assets/patterns.asm'
-
-	include 'levels/levels.asm'
-
-testText	dc.b	'Aa Bb', $A,'Cc', $D, 'Dd', $A, $D, '!!!!!!!!!!!!', 0
+	; include data here
 
 ; sin cos table in s.15 fp format. MSB is optional sign bit.
 sinCosTableLen	equ	256
 sinCosTable	incbin	'assets/sincos.bin'
+
+testPalette
+	dc.w	$0000	; Colour 0 - Transparent
+	dc.w	$000E	; Colour 1 - Red
+	dc.w	$00E0	; Colour 2 - Green
+	dc.w	$0E00	; Colour 3 - Blue
+	dc.w	$0000	; Colour 4 - Black
+	dc.w	$0EEE	; Colour 5 - White
+	dc.w	$00EE	; Colour 6 - Yellow
+	dc.w	$008E	; Colour 7 - Orange
+	dc.w	$0E0E	; Colour 8 - Pink
+	dc.w	$0808	; Colour 9 - Purple
+	dc.w	$0444	; Colour A - Dark grey
+	dc.w	$0888	; Colour B - Light grey
+	dc.w	$0EE0	; Colour C - Turquoise
+	dc.w	$000A	; Colour D - Maroon
+	dc.w	$0600	; Colour E - Navy blue
+	dc.w	$0060	; Colour F - Dark green
+
+; Font
+			include	'assets/Parchment-res.asm'
+parchmentTilemap	incbin	'assets/Parchment-tilemap.bin'
+
+			include	'assets/Inventory-res.asm'
+inventoryTilemap	incbin	'assets/Inventory-tilemap.bin'
+
+			include	'assets/Items-res.asm'
+itemsTilemap		incbin	'assets/Items-tilemap.bin'
+
+; UI
+uiPal2			incbin	'assets/UI-2.pal'
+uiPal3			incbin	'assets/UI-3.pal'
+uiPatterns		incbin	'assets/UI-patterns.bin'
+uiPatternsEnd
+
+;border1Patterns		incbin 'assets/ui/border1-patterns.bin'
+;border1Tilemap		incbin	'assets/ui/border1-tilemap.bin'
+;border2Patterns		incbin 'assets/ui/border2-patterns.bin'
+;border2Tilemap		incbin	'assets/ui/border2-tilemap.bin'
+
+testText	dc.b	'Aa(Bb)', $A,'Cc', $D, 'Dd', $A, $D, '!!!!!!!!!!!!!!', 0
+
+	include	'itemdata.asm'
 
 __end

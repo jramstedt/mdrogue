@@ -8,7 +8,7 @@
 ; d7	position. YYYYXXXX
 ; trash:
 ; d0, d1, d2, d3, d4, a3, a4, a5
-drawFont	MODULE
+drawFont	INLINE
 	lea	vdp_ctrl, a3
 	lea	vdp_data, a4
 	lea.l	fontTilemap, a5
@@ -95,14 +95,14 @@ drawFont	MODULE
 
 .complete
 	rts
-	MODEND
+	EINLINE
 
 ; int to four characters
 ; max value shown is 9999
 ; input:
 ; a0	address for string
 ; d0	int to write
-itos	MODULE
+itos	INLINE
 	adda	#4, a0
 	move.l	#4-1, d2
 .aloop
@@ -115,4 +115,4 @@ itos	MODULE
 	dbra	d2, .aloop
 
 	rts
-	MODEND
+	EINLINE

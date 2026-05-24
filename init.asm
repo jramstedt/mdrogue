@@ -1,6 +1,7 @@
+	org	$00000000		; ROM header
 
 	dc.l	stackStartAddress	; Initial stack pointer value
-	dc.l	EntryPoint		; Start of program
+	dc.l	_start			; Start of program
 	dc.l	Exception		; Bus error
 	dc.l	Exception		; Address error
 	dc.l	Exception		; Illegal instruction
@@ -65,12 +66,13 @@
 	dc.l	Exception		; Unused (reserved)
 
 ; 100H - 1FFH cartridge data
+	;org	$00000100
 
 	dc.b	"SEGA MEGA DRIVE "					; 100H Console name
-	dc.b	"(C)  JR 2017.JAN"					; 110H Copyright holder and release date
+	dc.b	"(C)T-JR 2017.JAN"					; 110H Copyright holder and release date
 	dc.b	"ROGUE GAME                                      "	; 120H Domestic name
 	dc.b	"ROGUE GAME                                      "	; 150H International name
-	dc.b	"GM T-XXXXXX-00"					; 180H Version number
+	dc.b	"GM T-XXXXX -00"					; 180H Version number
 	dc.w	$0000							; 18EH Checksum
 	dc.b	"J               "					; 190H I/O support
 	dc.l	$00000000						; 1A0H Start address of ROM
@@ -84,74 +86,8 @@
 	dc.b	"                                        "		; 1C8H Notes (unused)
 	dc.b	"F               "					; 1F0H Hardware enable code
 
-	include 'memorymap.asm'
-	include 'megadrive.asm'
-	include 'interrupts.asm'
-	include 'random.asm'
-
-EntryPoint
-	tst.w	io_expRst	; Test expansion port reset
-	bne	HotStart	; Branch if Not Equal (to zero) - to HotStart
-	tst.w	io_reset	; Test reset button
-	bne	HotStart	; Branch if Not Equal (to zero) - to HotStart
-
-; Cold start
-
-; TMSS
-	move.b	io_ver, d0
-	andi.b	#$0F, d0
-	beq	skipTMSS
-	move.l	#'SEGA', $00A14000
-skipTMSS
-
-; VDP
-	move.l	#vdp_w_reg, d0
-	lea	VDPRegisters, a0
-	lea	vdp_ctrl, a1
-
-initVDPLoop
-	move.b	(a0)+, d0
-	move.w	d0, (a1)
-	add.w	#$0100, d0
-	cmpa.w	#VDPRegistersEnd, a0
-	blo.s	initVDPLoop
-
-	dmaClearVRAM	; Start filling VRAM using DMA. Does not block CPU.
-
-; IO controls
-	move.b	#$00, io_ctrl1
-	move.b	#$00, io_ctrl2
-	move.b	#$00, io_ctrl3
-
-; Clear RAM FF0000 - FFFFFF
-	moveq	#0, d0
-	lea	ramStartAddress, a0
-	move.l	#$00003FFF, d1
-clearRamLoop
-	move.l	d0, (a0)+
-	dbra	d1, clearRamLoop
-
-; clean init registers
-	movem.l	ramStartAddress, d0-d7/a0-a6
-	lea	stackStartAddress, sp
-	move.w	#$2700, sr	; supervisor, interrupt level 7
-
-	move.w	#$100, Z80_reset
-	move.w	#$100, Z80_busreq
-	; upload program here
-	move.w	#$000, Z80_reset
-	move.w	#$000, Z80_busreq
-	move.w	#$100, Z80_reset
-
-	move.l	#1, lcgSeed
-
-HotStart
-	jsr	waitDMAOn	; wait all background DMAs to finish, DMA can be running if hot started with reset.
-
-	bra	__main ; Begin external main
-
 VDPRegisters
-	dc.b	%00000100 ; 0: Horiz. interrupt off, 
+	dc.b	%00000100 ; 0: Horiz. interrupt off,
 vdp1r	dc.b	%00000100 ; 1: display off, Vert. interrupt off, screen blank off, DMA off, V28 mode, Mega Drive mode on
 	dc.b	(vdp_map_ant>>10) ; 2: Pattern table for Scroll Plane A (bits 3-5)
 	dc.b	(vdp_map_wnt>>10) ; 3: Pattern table for Window Plane (bits 1-5)
@@ -168,11 +104,97 @@ vdp1r	dc.b	%00000100 ; 1: display off, Vert. interrupt off, screen blank off, DM
 	dc.b	%00000000 ; 14: Unused
 	dc.b	%00000000 ; 15: Autoincrement off
 	dc.b	%00000001 ; 16: Vert. scroll 32, Horiz. scroll 64
-vdp17r	dc.b	%00000000 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
-vdp18r	dc.b	%10010100 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
+	dc.b	%00000000 ; 17: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
+	dc.b	%10010100 ; 18: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
 	dc.b	%00000000 ; 19: DMA length lo byte
 	dc.b	%00000000 ; 20: DMA length hi byte
 	dc.b	%00000000 ; 21: DMA source address lo byte
 	dc.b	%00000000 ; 22: DMA source address mid byte
 	dc.b	%00000000 ; 23: DMA source address hi byte, memory-to-VRAM mode (bits 6-7)
 VDPRegistersEnd
+
+sndDriver
+	incbin	'snddriver.bin'
+sndDriverEnd
+	even
+
+	include 'memorymap.asm'
+	include 'megadrive.asm'
+	include 'interrupts.asm'
+
+_start
+	tst.w	io_expRst	; Test expansion port reset
+	bne	.hotStart	; Branch if Not Equal (to zero) - to HotStart
+	tst.w	io_reset	; Test reset button
+	bne	.hotStart	; Branch if Not Equal (to zero) - to HotStart
+
+; Cold start
+
+; TMSS
+	move.b	io_ver,d0
+	andi.b	#$0F,d0
+	beq	.skipTMSS
+	move.l	#'SEGA',TMSS
+.skipTMSS
+
+; VDP
+	move.l	#vdp_w_reg,d0
+	lea	VDPRegisters,a0
+	lea	vdp_ctrl,a1
+
+.initVDPLoop
+	move.b	(a0)+,d0
+	move.w	d0,(a1)
+	add.w	#$0100,d0		; increase register number
+	cmpa.w	#VDPRegistersEnd,a0
+	blo.s	.initVDPLoop
+
+	setVDPRegister	1,%00000100,vdp1rState	; Setup temporary vdp1rState
+	dmaClearVRAM				; Start filling VRAM using DMA. Does not block CPU.
+
+; IO controls
+	move.b	#$00,io_ctrl1
+	move.b	#$00,io_sctrl1
+	move.b	#$00,io_ctrl2
+	move.b	#$00,io_sctrl2
+	move.b	#$00,io_ctrl3
+	move.b	#$00,io_sctrl3
+
+; Clear RAM FF0000 - FFFFFF
+	moveq	#0,d0
+	lea	ramStartAddress,a0
+	move.l	#$00003FFF,d1
+.clearRamLoop
+	move.l	d0,(a0)+
+	dbra	d1,.clearRamLoop
+
+; clean init registers
+	movem.l	ramStartAddress,d0-d7/a0-a6
+	lea	stackStartAddress,sp
+	move.w	#$2700,sr	; supervisor, interrupt level 7
+
+	fastHaltZ80
+	resetZ80release
+	lea	sndDriver,a0
+	lea	Z80_ram,a1
+.sndDriverCopy
+	move.b	(a0)+,(a1)+
+	cmpa.w	#sndDriverEnd,a0
+	blo.s	.sndDriverCopy
+	resetZ80assert
+	resumeZ80
+	resetZ80release
+
+.hotStart
+	; random number generator
+	include 'random.asm'
+
+	; Setup vdp1rState
+	setVDPRegister	1,0,d0
+	move.b	vdp1r,d0	; initial register value
+	move.w	d0,vdp1rState
+
+	jsr	waitDMAOn	; wait all background DMAs to finish, DMA can be running if hot started with reset.
+	dmaOff	vdp_ctrl
+
+	bra	__main ; Begin external main

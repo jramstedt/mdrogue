@@ -2,57 +2,57 @@
 ; $1BF,$15F
 ; width $13F = 319
 ; height $DF = 223
-processObjects	MODULE
-	move.b	#0, spriteCount
+processObjects	INLINE
+	move.b	#0,spriteCount
 
-	lea.l	hiGameObjectsFirst, a6
+	lea.l	hiGameObjectsFirst,a6
 
 .processNext
 	tst.w	llNext(a6)			; is last?
 	beq.s	.dmaSprites
 
-	movea.w	llNext(a6), a6
+	movea.w	llNext(a6),a6
 	tst.b	llStatus(a6)
 	beq.s	.processNext			; deleted, skip
 
-	movea.l	llPtr(a6), a0			; a0 is game object
-	move.b	obClass(a0), d0
+	movea.l	llPtr(a6),a0			; a0 is game object
+	move.b	obClass(a0),d0
 	beq.s	.processNext
 
-	andi.w	#$00F0, d0			; mask class
-	lsr.b	#3, d0				; class to word pointer
-	lea.l	objectRoutines-sizeWord.w, a1	; class start at 1, decrement address by one word
-	move.w	(a1, d0.w), a1			; load object code address
+	andi.w	#$00F0,d0			; mask class
+	lsr.b	#3,d0				; class to word pointer
+	lea.l	(objectRoutines-sizeWord).w,a1	; class start at 1, decrement address by one word
+	move.w	(a1,d0.w),a1			; load object code address
 
-	movem	d0-d7/a0-a6, -(sp)
+	movem	d0-d7/a0-a6,-(sp)
 	jsr	(a1)				; jump to object code
-	movem	(sp)+, d0-d7/a0-a6
+	movem	(sp)+,d0-d7/a0-a6
 
 	bra	.processNext
 
 .dmaSprites
 	; DMA sprite table
-	moveq	#0, d0
-	move.b	spriteCount, d0
+	moveq	#0,d0
+	move.b	spriteCount,d0
 	beq	.exit
 
-	lea	spriteAttrTable, a0
+	lea	spriteAttrTable,a0
 
-	add.w	d0, d0				; lsl.w	#2, d0
-	add.w	d0, d0				; 4 words per sprite
+	add.w	d0,d0				; lsl.w	#2, d0
+	add.w	d0,d0				; 4 words per sprite
 	queueDMATransfer a0, #vdp_map_sat, d0
 
-	add.w	d0, d0				; 8 bytes per sprite
+	add.w	d0,d0				; 8 bytes per sprite
 
 .exit
 	; TODO spriteAttrTable is linked list. Handle adding sprites better (metasprite links?, sorting?)
-	move.b	#0, sNext-sDataSize(a0, d0.w)	; pointer to next must be zero on last sprite.
+	move.b	#0,sNext-sDataSize(a0,d0.w)	; pointer to next must be zero on last sprite.
 
 	rts
-	MODEND
+	EINLINE
 
 ;
-cleanupObjectList	MODULE
+cleanupObjectList	INLINE
 	lea.l	hiGameObjectsFirst, a0
 
 .processNext
@@ -109,18 +109,18 @@ cleanupObjectList	MODULE
 
 .exit
 	rts
-	MODEND
+	EINLINE
 
 ; input:
 ;	a0 object
 ;	a5 rom address
-displaySprite	MODULE
-	move.w	#$00F0, d0
-	and.b	obAnim(a0), d0		; get animation number
-	lsr.b	#4-1, d0		; convert number to offset (word per pointer)
+displaySprite	INLINE
+	move.w	#$00F0,d0
+	and.b	obAnim(a0),d0		; get animation number
+	lsr.b	#4-1,d0			; convert number to offset (word per pointer)
 
-	move.w	sizeLong(a5, d0.w), d0	; d0 is offset to metasprite data from rom address
-	lea	(a5, d0.w), a3		; a3 is metasprite data address
+	move.w	sizeLong(a5,d0.w),d0	; d0 is offset to metasprite data from rom address
+	lea	(a5,d0.w),a3		; a3 is metasprite data address
 
 	moveq	#$3F, d3
 	and.b	obAnim+1(a0), d3	; get frame number
@@ -228,14 +228,14 @@ displaySprite	MODULE
 	dbra	d0, .drawSprite
 
 	rts
-	MODEND
+	EINLINE
 
 ; input:
 ;	a0 object
 ;	a5 animation table
 ; trash:
 ;	d0, d1, d2, a5
-animateSprite	MODULE
+animateSprite	INLINE
 	subq.b	#1, obFrameTime(a0)
 	bmi	.processAnim
 	rts
@@ -273,13 +273,13 @@ animateSprite	MODULE
 	and.w	#$F03F, d1
 	move.w	d1, obAnim(a0)
 	bra	.nextFrame
-	MODEND
+	EINLINE
 
 ; input:
 ;	a0 object
 ; trashes
 ;	a0, a1, a2
-freeObject	MODULE
+freeObject	INLINE
 	; calculate node address
 	move.l	a0, d0
 	subi.l	#allGameObjects, d0
@@ -289,13 +289,13 @@ freeObject	MODULE
 	move.b	#$00, llStatus(a0, d0.w)	; Mark for removal
 	rts
 
-	MODEND
+	EINLINE
 
 ; output:
 ;	a2 object
 ; trashes:
 ;	d0, a0, a1, a2
-findFreeObject	MODULE
+findFreeObject	INLINE
 	movem.l	d0/a0-a1, -(sp)
 
 	lea.l	freeGameObjectsFirst, a0
@@ -360,9 +360,9 @@ findFreeObject	MODULE
 
 	bra.s 	.insert
 
-	MODEND
+	EINLINE
 
-initGameObjects	MODULE
+initGameObjects	INLINE
 	clr.w	gameObjectsMaximum
 	rts
-	MODEND
+	EINLINE
