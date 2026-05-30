@@ -10,7 +10,15 @@
 	lsr.w	#5,\5
 	ENDM
 
-; a0	String address
+; Add X and Y to position
+; \1 X
+; \2 Y
+; \3 destination
+	MACRO add32x64pos
+	add.l	#((\2<<7)+(\1<<1))<<16,\3
+	ENDM
+
+; a0	String address, will be at string end on return
 ; a1	Font tilemap source address
 ; d2.l	Hi = Plane VRAM address, Lo = Pattern VRAM index. HHHHLLLL
 ; TODO vdp16r determines scroll plane size. Currently hardcoded.
@@ -55,7 +63,7 @@ draw8x8Text
 	move.l	d2,d0
 	and.l	#$007F0000,d0	; Original X
 	and.l	#$FF80FFFF,d1	; Clear current X
-	add	d0,d1		; Add original X
+	add.l	d0,d1		; Add original X
 	bra	.setVRAMAddress
 
 .complete

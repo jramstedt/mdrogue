@@ -28,8 +28,8 @@ normal		equ	0
 ; item structure
 		rsreset
 slot		rs.b	1	; EEEEESSS	E=Effect S=Slot
-priB		rs.b	1	; IIIBBBBB	I=Stat B=Value
-secB		rs.b	1	; IIIBBBBB	I=Stat B=Value
+priB		rs.b	1	; BBBBBIII	B=Value  I=Stat
+secB		rs.b	1	; BBBBBIII	B=Value  I=Stat
 		rs.b	1	; padding
 gfx		rs.w	1	; Tilemap offset
 itemDescSize	equ	__RS

@@ -38,3 +38,10 @@ cloop
 	move.b	#'0',-(a0)
 .pads	dbra	d1,.pad
 	rts
+
+; a0	String buffer, will be at the end of string on return.
+skipToStringEnd
+.char
+	move.b	(a0)+,d0	; Read character
+	bne	.char		; Until null
+	rts

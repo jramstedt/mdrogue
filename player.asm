@@ -33,7 +33,7 @@ plrInventorySize	equ	__SO
 
 	MACRO addEffect
 	move.b	\1,d0
-	asr.b	#3,d0
+	lsr.b	#3,d0
 	or.b	d0,plrEffects(\2)
 .end
 	ENDM
@@ -46,6 +46,7 @@ plrInventorySize	equ	__SO
 	add.b	d1,(\2,d0.w)
 	ENDM
 
+; TODO Check calling convention and registers
 ; Goes trough inventory and calculates stats. Adds bonus stats on top.
 calculateStats
 	lea	playerStats,a0		; TODO require caller to set for player1 or player2
