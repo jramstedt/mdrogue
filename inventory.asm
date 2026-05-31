@@ -19,6 +19,27 @@ openInventory
 
 	jsr	processDMAQueue
 
+	; Test data TODO remove
+	move.b	#1,(playerInventory+itemA)
+	move.b	#8,(playerInventory+itemB)
+	move.b	#9,(playerInventory+itemC)
+	move.b	#3,(playerInventory+slotHead)
+	move.b	#4,(playerInventory+slotNeck)
+	move.b	#5,(playerInventory+slotTorso)
+	move.b	#7,(playerInventory+slotFingerRight)
+	move.b	#7,(playerInventory+slotFingerLeft)
+	move.b	#6,(playerInventory+slotLegs)
+
+	move.b	#2,(playerInventory+backpack)
+	move.b	#10,(playerInventory+backpack+1)
+	move.b	#1,(playerInventory+backpack+2)
+	move.b	#4,(playerInventory+backpack+3)
+
+	move.b	#5,(playerInventory+backpack+4)
+	move.b	#6,(playerInventory+backpack+5)
+	move.b	#8,(playerInventory+backpack+6)
+	move.b	#9,(playerInventory+backpack+7)
+
 	displayOn vdp_ctrl
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 	jsr	waitVBlankOn	; Wait for blanking to stop.
@@ -39,11 +60,18 @@ openInventory
 
 	; Slot items
 
-	; \1 slot
+	; ?\1 slot
+	; ?\2 item index
 	MACRO drawIcon
 	INLINE
-	move.b	\1(a4),d0
-	beq	.skip			; Item at 0 is null
+	iF NARG>0
+	    IF NARG>1
+	    move.b	\1(a4,\2),d0
+	    ELSE
+	    move.b	\1(a4),d0
+	    ENDIF
+	    beq	.skip			; Item at 0 is null
+	ENDIF
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.w	(gfx,a5,d0.w),d0
 	lea	(a6,d0.w),a1
@@ -181,6 +209,40 @@ openInventory
 	bra	.fxEnd
 
 .fxEnd
+
+	; Backpack
+	; Loops trough each inventory item.
+	; TODO If inventory doesn't have holes, this can be optimized.
+	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
+	calc32x64pos 31,9,vdp_map_bnt,uiVRAMAddress,d1			; d1 is inventory origin
+	move.l	d1,d2
+	move.l	#0,d3							; d3 is drawn item counter (4 bytes per item)
+	move.w	#backpackSize,d4
+.nextItem
+	dbra	d4,.backpackLoop
+
+.backpackLoop
+	move.b	backpack(a4,d4.w),d0
+	beq	.nextItem		; Item at 0 is null?
+	drawIcon
+	; Calculate plane address for next icon
+	add.b	#2<<1,d3		; 2 name table entries
+	cmp	#24*2<<1,d3		; Draw max 24 items
+	beq	.endBackpack
+	; Y
+	move.l	d3,d0
+	and.b	#$F0,d0			; mask X off	(2<<1 * 3 = 0x10, so +1 Y)
+	lsl.w	#6-2,d0			; Y coord (for 64 width plane, 4 bytes per item)
+	; X
+	move.l	d3,d2
+	and.b	#$0F,d2			; mask Y off
+	add.b	d2,d0
+	; New write address
+	move.l	d1,d2			; Restore d2 to origin
+	swap	d0
+	add.l	d0,d2
+	dbra	d4,.backpackLoop
+.endBackpack
 
 	; Borders
 
