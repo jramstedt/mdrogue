@@ -6,6 +6,7 @@ neck		equ	3
 torso		equ	4
 finger		equ	5
 legs		equ	6
+quest		equ	7	; Items that can't be equipped, such as quest items
 
 ; Bonus stats
 health		equ	0
@@ -25,6 +26,9 @@ fireball	equ	0
 ; damage type
 normal		equ	0
 
+; quest flag
+junk		equ	0
+
 ; item structure
 		rsreset
 slot		rs.b	1	; EEEEESSS	E=Effect S=Slot
@@ -32,12 +36,13 @@ priB		rs.b	1	; BBBBBIII	B=Value  I=Stat
 secB		rs.b	1	; BBBBBIII	B=Value  I=Stat
 		rs.b	1	; padding
 gfx		rs.w	1	; Tilemap offset
+		rs.w	1	; padding
 itemDescSize	equ	__RS
 
 ; item name = gfx of priB ?
 
 ; \1	Slot
-; \2	Effect, Spells, Damage type
+; \2	Effect, Spells, Damage type, quest flags
 ; \3	Primary bonus stat
 ; \4	Primary bonus value
 ; \5	Secondary bonus stat
@@ -49,10 +54,12 @@ itemDescSize	equ	__RS
 	dc.b	(\6<<3)|(\5)
 	dc.b	0
 	dc.w	\7
+	dc.w	0
 	ENDM
 
 	even
 items
+	buildItemDescriptor	quest,junk,0,0,0,0,0				; Null item
 	buildItemDescriptor	item,none,health,1,0,0,potion_health		; health potion
 	buildItemDescriptor	item,none,mana,1,0,0,potion_mana		; mana potion
 

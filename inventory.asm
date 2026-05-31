@@ -41,11 +41,15 @@ openInventory
 
 	; \1 slot
 	MACRO drawIcon
+	INLINE
 	move.b	\1(a4),d0
+	beq	.skip			; Item at 0 is null
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.w	(gfx,a5,d0.w),d0
 	lea	(a6,d0.w),a1
 	jsr	draw2x2
+.skip
+	EINLINE
 	ENDM
 
 	calc32x64pos 1,2,vdp_map_bnt,uiVRAMAddress,d2
@@ -112,10 +116,12 @@ openInventory
 	; \2 value X offset
 	; \3 slot
 	MACRO writeLabelAndSlotProtection
+	INLINE
 	lea	\1,a0
 	jsr	draw8x8Text
 
 	move.b	\3(a4),d0
+	beq	.skip			; Item at 0 is null
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.b	(priB,a5,d0.w),d0	; TODO what if this is not protect?
 	asr.b	#3,d0
@@ -123,6 +129,8 @@ openInventory
 
 	lea	textScrap,a0
 	writeValue \2
+.skip
+	EINLINE
 	ENDM
 
 	; Head Armor Rating
