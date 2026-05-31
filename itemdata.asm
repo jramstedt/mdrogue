@@ -51,6 +51,7 @@ itemDescSize	equ	__RS
 	dc.w	\7
 	ENDM
 
+	even
 items
 	buildItemDescriptor	item,none,health,1,0,0,potion_health		; health potion
 	buildItemDescriptor	item,none,mana,1,0,0,potion_mana		; mana potion

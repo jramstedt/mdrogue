@@ -157,3 +157,40 @@ draw9Slice
 	move.w	d0,vdp_data
 
 	rts
+
+; a1	Tilemap source address
+; d2.l	Hi = Plane VRAM address, Lo = Pattern VRAM index. HHHHLLLL
+draw2x2
+	setVDPAutoIncrement 2,vdp_ctrl
+
+; Build VRAM write command
+	move.l	d2,d7
+	clr.w	d7
+	swap	d7		; d7.w Plane VRAM address
+	arrangeWriteVRAMcmd d7
+	move.l	d7,vdp_ctrl
+
+	; 1,1
+	move.w	0(a1),d0	; d0 is "pattern name"
+	add.w	d2,d0		; Add pattern VRAM index
+	move.w	d0,vdp_data
+
+	; 2,1
+	move.w	2(a1),d0	; d0 is "pattern name"
+	add.w	d2,d0		; Add pattern VRAM index
+	move.w	d0,vdp_data
+
+	add.l	#(1<<7)<<16,d7	; 64 pattern names per row, 2 bytes per pattern name
+	move.l	d7,vdp_ctrl
+
+	; 1,2
+	move.w	4(a1),d0	; d0 is "pattern name"
+	add.w	d2,d0		; Add pattern VRAM index
+	move.w	d0,vdp_data
+
+	; 2,2
+	move.w	6(a1),d0	; d0 is "pattern name"
+	add.w	d2,d0		; Add pattern VRAM index
+	move.w	d0,vdp_data
+
+	rts

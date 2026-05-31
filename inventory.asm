@@ -26,155 +26,133 @@ openInventory
 .gameLoop
 	readGamePads pad1State,pad2State
 
+	; Stats
 	jsr	calculateStats
 
 	lea	playerStatus,a2
 	lea	playerStats,a3
 	lea	playerInventory,a4
 	lea	items,a5
+	lea	itemsTilemap,a6
+
+	clr.l	d0
+
+	; Slot items
+
+	; \1 slot
+	MACRO drawIcon
+	move.b	\1(a4),d0
+	lsl.w	#3,d0			; Slot descriptor is 8 bytes
+	move.w	(gfx,a5,d0.w),d0
+	lea	(a6,d0.w),a1
+	jsr	draw2x2
+	ENDM
+
+	calc32x64pos 1,2,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotNeck
+
+	calc32x64pos 14,2,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotHead
+
+	calc32x64pos 14,10,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotTorso
+
+	calc32x64pos 1,14,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotFingerRight
+
+	calc32x64pos 14,14,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotFingerLeft
+
+	calc32x64pos 14,18,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon slotLegs
+
+	; TODO Build full string and draw it? btos can't add null chars!
+
 	lea	parchmentTilemap,a1
 
-	; Build full string and draw it? btos can't add null chars!
+	; \1 X offset
+	; \2 value source, if not set defaults to d0
+	MACRO writeValue
+	add32x64pos \1,0,d2
+	IF NARG>1
+	move.b	\2,d0
+	ENDIF
+	jsr	btos
+	jsr	draw8x8Text
+	ENDM
 
-	clr	d0
+	; \1 label address
+	; repeat:
+	; \+ first value X offset
+	; \+ value source
+	MACRO writeLabelAndValues
+	lea	\+,a0
+	jsr	draw8x8Text
+	lea	textScrap,a0
+	REPT (NARG-1)/2
+	writeValue \+,\+
+	ENDR
+	ENDM
 
 	; Health
 	; Label
 	calc32x64pos 18,9,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strHealth,a0
-	jsr	draw8x8Text
-	; current
-	add32x64pos 5,0,d2
-	move.b	plrHealth(a2),d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-	; Max
-	add32x64pos 4,0,d2
-	move.b	plrMaxHealth(a3),d0
-	jsr	btos
-	jsr	draw8x8Text
+	writeLabelAndValues strHealth,5,plrHealth(a2),4,plrMaxHealth(a3)
 
 	; Mana
 	; Label
 	calc32x64pos 18,10,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strMana,a0
-	jsr	draw8x8Text
-	; current
-	add32x64pos 5,0,d2
-	move.b	plrMana(a2),d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-	; Max
-	add32x64pos 4,0,d2
-	move.b	plrMaxMana(a3),d0
-	jsr	btos
-	jsr	draw8x8Text
+	writeLabelAndValues strMana,5,plrMana(a2),4,plrMaxMana(a3)
 
 	; Load protection and then decrement slot protections
 	clr.l	d3
 	move.b	plrProtection(a3),d3
 
-	; Armor
-	; Head
-	; Label
-	calc32x64pos 18,11,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strHead,a0
+	; \1 label address
+	; \2 value X offset
+	; \3 slot
+	MACRO writeLabelAndSlotProtection
+	lea	\1,a0
 	jsr	draw8x8Text
-	; Value
-	add32x64pos 9,0,d2
-	move.b	slotHead(a4),d0
-	lsl.w	#3,d0
+
+	move.b	\3(a4),d0
+	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.b	(priB,a5,d0.w),d0	; TODO what if this is not protect?
 	asr.b	#3,d0
 	sub.b	d0,d3			; Subs from total protection
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
 
-	; Chest
-	; Label
+	lea	textScrap,a0
+	writeValue \2
+	ENDM
+
+	; Head Armor Rating
+	calc32x64pos 18,11,vdp_map_bnt,uiVRAMAddress,d2
+	writeLabelAndSlotProtection strHead,9,slotHead
+	; Chest Armor Rating
 	calc32x64pos 18,12,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strChest,a0
-	jsr	draw8x8Text
-	; Value
-	add32x64pos 9,0,d2
-	move.b	slotTorso(a4),d0
-	lsl.w	#3,d0
-	move.b	(priB,a5,d0.w),d0
-	asr.b	#3,d0
-	sub.b	d0,d3
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-
-	; Legs
-	; Label
+	writeLabelAndSlotProtection strChest,9,slotTorso
+	; Legs Armor Rating
 	calc32x64pos 18,13,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strLegs,a0
-	jsr	draw8x8Text
-	; Value
-	add32x64pos 9,0,d2
-	move.b	slotLegs(a4),d0
-	lsl.w	#3,d0
-	move.b	(priB,a5,d0.w),d0
-	asr.b	#3,d0
-	sub.b	d0,d3
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
+	writeLabelAndSlotProtection strLegs,9,slotLegs
 
 	; Protection
-	; Label
 	calc32x64pos 18,14,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strProtection,a0
-	jsr	draw8x8Text
-	add32x64pos 9,0,d2
-	move.b  d3,d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-
+	writeLabelAndValues strProtection,9,d3
 	; Restore
-	; Label
 	calc32x64pos 18,15,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strRestore,a0
-	jsr	draw8x8Text
-	add32x64pos 9,0,d2
-	move.b	plrRestore(a3),d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-
-	; Damage
-	; Melee
-	; Label
+	writeLabelAndValues strRestore,9,plrRestore(a3)
+	; Melee Damage Rating
 	calc32x64pos 18,16,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strDmgMelee,a0
-	jsr	draw8x8Text
-	add32x64pos 9,0,d2
-	move.b	plrDmgMelee(a3),d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
-
-	; Melee
-	; Label
+	writeLabelAndValues strDmgMelee,9,plrDmgMelee(a3)
+	; Magic Damage Rating
 	calc32x64pos 18,17,vdp_map_bnt,uiVRAMAddress,d2
-	lea	strDmgMagic,a0
-	jsr	draw8x8Text
-	add32x64pos 9,0,d2
-	move.b	plrDmgMagic(a3),d0
-	lea	textScrap,a0
-	jsr	btos
-	jsr	draw8x8Text
+	writeLabelAndValues strDmgMagic,9,plrDmgMagic(a3)
 
 	; Effect
 	calc32x64pos 18,18,vdp_map_bnt,uiVRAMAddress,d2
 	move.b	plrEffects(a3),d3
 	beq	.fxEnd
-
+	; Loop trough each bit. Draw text if set.
 	lea	strFx,a0
 	move	#5,d4
 	dbra	d4,.fxLoop
@@ -187,10 +165,10 @@ openInventory
 	bra	.fxEnd
 
 .fxLoop
-	lsr.b	d3
+	lsr.b	d3		; Gets bit into C
 	bcc	.nextStr
-	jsr	draw8x8Text
-	add32x64pos 0,1,d2
+	jsr	draw8x8Text	; a0 will be at the start of next strFx string
+	add32x64pos 0,1,d2	; Move down for next
 	dbra	d4,.fxLoop
 	bra	.fxEnd
 
