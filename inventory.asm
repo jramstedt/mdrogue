@@ -1,3 +1,24 @@
+		clrso
+uiHot		so.w	1
+uiActive	so.w	1
+uiListIndex	so.b	1
+uiStateSize	equ	__SO
+
+; Pad navigation
+;			up,right,down,left
+uiA		dc.w	uiFingerRight,uiB,uiNeck,uiBackpack
+uiB		dc.w	uiFingerRight,uiC,uiNeck,uiA
+uiC		dc.w	uiLegs,uiActions,uiHead,uiB
+uiHead		dc.w	uiActions,uiGround,uiTorso,uiNeck
+uiNeck		dc.w	uiA,uiHead,uiFingerRight,uiGround
+uiTorso		dc.w	uiHead,uiBackpack,uiFingerLeft,uiFingerRight
+uiFingerRight	dc.w	uiNeck,uiFingerLeft,uiA,uiBackpack
+uiFingerLeft	dc.w	uiTorso,uiBackpack,uiLegs,uiFingerRight
+uiLegs		dc.w	uiFingerLeft,uiBackpack,uiActions,uiBackpack
+uiGround	dc.w	uiBackpack,uiNeck,uiBackpack,uiHead
+uiBackpack	dc.w	uiGround,uiFingerRight,uiGround,uiActions
+uiActions	dc.w	uiLegs,uiBackpack,uiHead,uiBackpack
+
 openInventory
 	; Disable window plane
 	setVDPRegister 17,%00000000,vdp_ctrl
@@ -97,6 +118,15 @@ openInventory
 
 	calc32x64pos 14,18,vdp_map_bnt,uiVRAMAddress,d2
 	drawIcon slotLegs
+
+	calc32x64pos 1,24,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon itemA
+
+	calc32x64pos 5,24,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon itemB
+
+	calc32x64pos 9,24,vdp_map_bnt,uiVRAMAddress,d2
+	drawIcon itemC
 
 	; TODO Build full string and draw it? btos can't add null chars!
 

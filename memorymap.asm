@@ -109,7 +109,7 @@ vrm_list		rs.b	vrmDataSize*12
 vrm_first		equ	vrm_list
 vrm_list_end		equ	__RS
 
-pad1State		rs.b	1	;  SACBRLDU8
+pad1State		rs.b	1	;  SACBRLDU
 pad2State		rs.b	1	;  SACBRLDU
 
 lcgSeed			rs.l	1
@@ -133,6 +133,8 @@ playerStats		rs.b	plrStatsSize
 playerStatsBonus	rs.b	plrStatsSize
 playerStatus		rs.b	plrStatusSize
 playerInventory		rs.b	plrInventorySize
+
+inventoryUIState	rs.b	uiStateSize
 
 			rsset	ramStartAddress+$FF00FDE0	; Special position for DMA queue to allow 16-bit jump offset calculation
 SlotCount		equ	20
