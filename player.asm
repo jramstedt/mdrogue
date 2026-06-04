@@ -29,6 +29,7 @@ slotFingerLeft		so.b	1
 slotLegs		so.b	1
 backpackSize		equ	48
 backpack		so.b	backpackSize
+			so.b	1
 plrInventorySize	equ	__SO
 
 	MACRO addEffect

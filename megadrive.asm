@@ -33,9 +33,13 @@ TMSS		equ	$00A14000
 ; Read game pads
 ; \1	pad1State
 ; \2	pad2State
+; \3	pad1Change
+; \4	pad2Change
 	MACRO readGamePads
 	clr.l	d0
 	clr.l	d1
+	move.b	\1,\3
+	move.b	\2,\4
 
 	haltZ80
 	move.b	#$40,io_data1  ; Select 00CBRLDU
@@ -53,8 +57,9 @@ TMSS		equ	$00A14000
 	andi.l	#$00300030,d1	; 00SA0000
 	lsl.l	#2,d1
 	or.l	d1,d0
+	eor.b	d0,\4
 	move.b	d0,\2
 	swap	d0
+	eor.b	d0,\3
 	move.b	d0,\1
-	; TODO detect new buttons, hold buttons and released buttons
 	ENDM

@@ -111,6 +111,8 @@ vrm_list_end		equ	__RS
 
 pad1State		rs.b	1	;  SACBRLDU
 pad2State		rs.b	1	;  SACBRLDU
+pad1Change		rs.b	1
+pad2Change		rs.b	1
 
 lcgSeed			rs.l	1
 

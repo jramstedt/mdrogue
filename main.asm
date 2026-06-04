@@ -50,7 +50,7 @@ __main
 
 .gameLoop
 	; do input processing
-	readGamePads pad1State,pad2State
+	readGamePads pad1State,pad2State,pad1Change,pad2Change
 
 	; step rng
 	lcg	d0

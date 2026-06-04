@@ -17,7 +17,7 @@ uiFingerLeft	dc.w	uiTorso,uiBackpack,uiLegs,uiFingerRight
 uiLegs		dc.w	uiFingerLeft,uiBackpack,uiActions,uiBackpack
 uiGround	dc.w	uiBackpack,uiNeck,uiBackpack,uiHead
 uiBackpack	dc.w	uiGround,uiFingerRight,uiGround,uiActions
-uiActions	dc.w	uiLegs,uiBackpack,uiHead,uiBackpack
+uiActions	dc.w	uiLegs,uiBackpack,uiHead,uiC
 
 openInventory
 	; Disable window plane
@@ -34,8 +34,8 @@ openInventory
 	jsr	initDMAQueue
 
 	loadPalette #testPalette,0
-	;loadPalette #uiPal2,2
-	;loadPalette #uiPal3,3
+	loadPalette #uiPal2,2
+	loadPalette #uiPal3,3
 	allocAndQueueDMA uiPatterns,uiPatternsEnd,uiVRAMAddress
 
 	jsr	processDMAQueue
@@ -61,12 +61,34 @@ openInventory
 	move.b	#8,(playerInventory+backpack+6)
 	move.b	#9,(playerInventory+backpack+7)
 
+	move.w	#uiBackpack,(inventoryUIState+uiHot)
+
 	displayOn vdp_ctrl
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 	jsr	waitVBlankOn	; Wait for blanking to stop.
 
 .gameLoop
-	readGamePads pad1State,pad2State
+	readGamePads pad1State,pad2State,pad1Change,pad2Change
+
+	lea	inventoryUIState+uiHot,a0
+	move.w	(a0),a1
+
+	; Navigation
+	move.b	pad1State,d0
+	not	d0
+	and.b	pad1Change,d0
+	btst	#0,d0
+	beq	*+4
+	move.w	(0,a1),(a0)
+	btst	#1,d0
+	beq	*+6
+	move.w	(4,a1),(a0)
+	btst	#2,d0
+	beq	*+6
+	move.w	(6,a1),(a0)
+	btst	#3,d0
+	beq	*+6
+	move.w	(2,a1),(a0)
 
 	; Stats
 	jsr	calculateStats
@@ -274,36 +296,41 @@ openInventory
 	dbra	d4,.backpackLoop
 .endBackpack
 
-	; Borders
+	lea	inventoryUIState,a6
 
+	MACRO drawSelectableSlot
 	lea	(inventoryTilemap+border2),a1
+	cmp.w	#\3,uiHot(a6)
+	bne	*+6
+	lea	(inventoryTilemap+border1),a1
+
+	calc32x64pos \1,\2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+	ENDM
+
+	; Borders
 	move.l	#(2<<16)|2,d3
 
 	; Neck
-	calc32x64pos 1,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 1,2,uiNeck
 
 	; Head
-	calc32x64pos 14,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 14,2,uiHead
 
 	; Torso
-	calc32x64pos 14,10,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 14,10,uiTorso
 
 	; Finger Right hand
-	calc32x64pos 1,14,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 1,14,uiFingerRight
 
 	; Finger Left hand
-	calc32x64pos 14,14,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 14,14,uiFingerLeft
 
 	; Legs
-	calc32x64pos 14,18,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
+	drawSelectableSlot 14,18,uiLegs
 
 	; Info
+	lea	(inventoryTilemap+border2),a1
 	move.l	#(6<<16)|12,d3
 	calc32x64pos 18,2,vdp_map_ant,uiVRAMAddress,d2
 	jsr	draw9Slice
@@ -320,18 +347,19 @@ openInventory
 
 	; A
 	move.l	#(3<<16)|3,d3
-	calc32x64pos 1,24,vdp_map_ant,uiVRAMAddress,d2
+	drawSelectableSlot 1,24,uiA
 	jsr	draw9Slice
 
 	; B
-	calc32x64pos 5,24,vdp_map_ant,uiVRAMAddress,d2
+	drawSelectableSlot 5,24,uiB
 	jsr	draw9Slice
 
 	; C
-	calc32x64pos 9,24,vdp_map_ant,uiVRAMAddress,d2
+	drawSelectableSlot 9,24,uiC
 	jsr	draw9Slice
 
 	; Actions
+	lea	(inventoryTilemap+border2),a1
 	move.l	#(3<<16)|9,d3
 	calc32x64pos 14,24,vdp_map_ant,uiVRAMAddress,d2
 	jsr	draw9Slice

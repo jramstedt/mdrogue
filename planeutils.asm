@@ -10,6 +10,16 @@
 	lsr.w	#5,\5
 	ENDM
 
+; Calculate pattern name table offset of 32x64 screen plane
+; \1 X
+; \2 Y
+; \3 Plane VRAM address
+; \4 Pattern VRAM address
+; \5 destination
+	MACRO calc32x64posStatic
+	move.l	#(\3+(\2<<7)+(\1<<1))<<16|(\4>>5),\5
+	ENDM
+
 ; Add X and Y to position
 ; \1 X
 ; \2 Y
