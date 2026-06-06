@@ -149,7 +149,7 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
       tilePattern |= (palette & 0b11) << 13
 
       patternNameView.setUint16(nameViewOffset, tilePattern)
-      nameViewOffset += 2
+      nameViewOffset += Uint16Array.BYTES_PER_ELEMENT
     }
 
     console.log(`section ${name} tilemap: ${sectionPatterns.length} patterns, ${patternNameView.byteLength} bytes`)
@@ -478,11 +478,16 @@ export function writePalette (reducedPalette: Uint32Array) {
   return megaDrivePalette
 }
 
+/**
+ * Note: returned pattern indices are in row major order. This is to simplify use in tilemaps.
+ * Adds sprite patterns to "patterns" in column major order.
+ * @returns Pattern indices in row major order.
+ */
 function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
   const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
   const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
 
-  const patternIndices: number[] = []
+  const patternIndices = new Uint16Array(widthInPatterns * heightInPatterns)
 
   // MegaDrive: Top to bottom then left to right
   for (let patX = 0; patX < widthInPatterns; patX += patternSize) {
@@ -492,23 +497,27 @@ function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
         throw new Error('Too many patterns.')
 
       patterns[nextIndex] = buildPattern(src, patX, patY)
-      patternIndices.push(nextIndex)
+      patternIndices[patY * widthInPatterns + patX] = nextIndex
     }
   }
 
   return patternIndices
 }
 
+/**
+ * Adds tilemap patterns to "patterns" in row major order.
+ * @returns Pattern indices in row major order.
+ */
 function buildTilemapPatterns (src: SubRect, patterns: Pattern[]) {
   const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
   const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
 
-  const patternIndices: number[] = []
+  const patternIndices = new Uint16Array(widthInPatterns * heightInPatterns)
 
   for (let patY = 0; patY < widthInPatterns; patY += patternSize) {
     for (let patX = 0; patX < heightInPatterns; patX += patternSize) {
       const pattern = buildPattern(src, patX, patY)
-      patternIndices.push(findPatternIndex(patterns, pattern))
+      patternIndices[patY * widthInPatterns + patX] = findPatternIndex(patterns, pattern)
     }
   }
 
