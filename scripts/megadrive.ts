@@ -119,42 +119,76 @@ function findPatternIndex (patterns: Pattern[], pattern: Pattern) {
   return (nextIndex & 0x07FF)
 }
 
-export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pattern[]) {
+export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pattern[], writeSprite: boolean) {
   const patternStartOffset = patterns.length
 
   const patternNameBuffer = new ArrayBuffer(64 * 1024) // Mega Drive 64k VRAM
   const sectionOffset: { name: string, offset: number }[] = []
+  let patternNameDataOffset = 0
 
-  let dataOffset = 0
+  const spriteDataBuffer = new ArrayBuffer(4 * 1024 * 1024) // Max Mega Drive ROM size
+  const spriteOffset: { name: string, offset: number }[] = []
+  let spriteDataOffset = 0
+
   for (const section of inputSections) {
-    const { width, height, highPriority, palette, name } = section
-    const widthPatterns = width >>> 3
-    const heighPatterns = height >>> 3
+    const { highPriority, palette, name } = section
 
-    sectionOffset.push({ name, offset: dataOffset })
+    sectionOffset.push({ name, offset: patternNameDataOffset })
 
-    const patternNameView = new DataView(patternNameBuffer, dataOffset, widthPatterns * heighPatterns * 2) // 2 bytes per name
-    dataOffset += patternNameView.byteLength
+    const patternOffset = patterns.length
+    const sectionPatterns = writeSprite
+      ? buildSpritePatterns(section, patterns)
+      : buildTilemapPatterns(section, patterns)
 
-    for (let y = 0; y < height; y += patternSize) {
-      for (let x = 0; x < width; x += patternSize) {
-        const pattern = buildPattern(section, x, y)
+    const patternNameView = new DataView(patternNameBuffer, patternNameDataOffset, sectionPatterns.length * 2) // 2 bytes per name
+    patternNameDataOffset += patternNameView.byteLength
 
-        let tilePattern = findPatternIndex(patterns, pattern)
-        if (highPriority) tilePattern |= 0x8000
-        tilePattern |= (palette & 0b11) << 13
+    let nameViewOffset = 0
+    for (let tilePattern of sectionPatterns) {
+      if (highPriority) tilePattern |= 0x8000
+      tilePattern |= (palette & 0b11) << 13
 
-        patternNameView.setUint16(((y >>> 3) * widthPatterns + (x >>> 3)) * 2, tilePattern)
-      }
+      patternNameView.setUint16(nameViewOffset, tilePattern)
+      nameViewOffset += 2
     }
 
-    console.log(`section ${name} tilemap: ${widthPatterns}x${heighPatterns} bytes: ${patternNameView.byteLength}`)
+    console.log(`section ${name} tilemap: ${sectionPatterns.length} patterns, ${patternNameView.byteLength} bytes`)
+
+    if (writeSprite) {
+      const { width, height } = section
+      const priority = highPriority ? 1 : 0
+
+      const widthInPatterns = Math.ceil(width / patternSize) * patternSize
+      const heightInPatterns = Math.ceil(height / patternSize) * patternSize
+
+      if (widthInPatterns > 4 || heightInPatterns > 4) {
+        console.warn(`Sprite from tilemap ${name} is too large ${widthInPatterns}x${heightInPatterns}`)
+        continue
+      }
+
+      spriteOffset.push({ name: `spr_${name}`, offset: spriteDataOffset })
+
+      const verticalFlip = 0;
+      const horizontalFlip = 0;
+
+      const spriteData = new DataView(spriteDataBuffer, spriteDataOffset, 8)
+      spriteDataOffset += spriteData.byteLength
+
+      spriteData.setInt16(0, 0)
+      spriteData.setUint16(2, ((widthInPatterns & 0b11) << 10) | ((heightInPatterns & 0b11) << 8))
+      spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternOffset & 0x7FF )
+      spriteData.setInt16(6, 0)
+
+      console.log(`section ${name} sprite: ${sectionPatterns.length} patterns, ${spriteData.byteLength} bytes`)
+    }
   }
+
+  const retSprite = writeSprite ? { spriteData: spriteDataBuffer.slice(0, spriteDataOffset), spriteOffset } : undefined
 
   const newPatterns = patterns.length - patternStartOffset
   console.log(`new patterns: ${newPatterns} bytes: ${newPatterns << 3} (all patterns: ${patterns.length} bytes: ${patterns.length << 3})`)
 
-  return { tileMap: patternNameBuffer.slice(0, dataOffset), sectionOffset }
+  return { tileMap: patternNameBuffer.slice(0, patternNameDataOffset), sectionOffset, ...retSprite }
 }
 
 export async function writeMegaDrivePatterns (prefix: string, inputLayers: { filePath: string, highPriority: boolean }[], targetDirectory: string, previousPatterns?: Pattern[]): Promise<Pattern[]> {
@@ -295,8 +329,9 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
   return patterns
 }
 
+export type SpriteGeneratorState = { patterns: Pattern[], dplcPatternsNeeded: number }
 // TODO tile vs sprite priority for slice
-export function generateMegaDriveSprites (slice: boolean, sections: readonly Section[], state: { patterns: Pattern[], dplcPatternsNeeded: number }) {
+export function generateMegaDriveSprites (slice: boolean, sections: readonly Section[], state: SpriteGeneratorState) {
   const frames: Rect[][] = []
   
   let frameOffset = 0
@@ -363,7 +398,7 @@ export function generateMegaDriveSprites (slice: boolean, sections: readonly Sec
         spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternOffset & 0x7FF )
         spriteData.setInt16(6, spriteY)
 
-        patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns)
+        patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns).length
       }
 
       frameOffset += usedSprites.length
@@ -387,7 +422,7 @@ export function generateMegaDriveSprites (slice: boolean, sections: readonly Sec
       spriteData.setUint16(4, (priority & 0b1) << 15 | (palette & 0b11) << 13 | (verticalFlip & 0b1) << 12 | (horizontalFlip & 0b1) << 11 | patternOffset & 0x7FF )
       spriteData.setInt16(6, spriteY)
 
-      patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns)
+      patternsWritten += buildSpritePatterns(subRect(section, sprite), state.patterns).length
 
       frameOffset++
     }
@@ -444,10 +479,10 @@ export function writePalette (reducedPalette: Uint32Array) {
 }
 
 function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
-  const patternStartOffset = patterns.length
-
   const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
   const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
+
+  const patternIndices: number[] = []
 
   // MegaDrive: Top to bottom then left to right
   for (let patX = 0; patX < widthInPatterns; patX += patternSize) {
@@ -457,10 +492,27 @@ function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
         throw new Error('Too many patterns.')
 
       patterns[nextIndex] = buildPattern(src, patX, patY)
+      patternIndices.push(nextIndex)
     }
   }
 
-  return patterns.length - patternStartOffset
+  return patternIndices
+}
+
+function buildTilemapPatterns (src: SubRect, patterns: Pattern[]) {
+  const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
+  const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
+
+  const patternIndices: number[] = []
+
+  for (let patY = 0; patY < widthInPatterns; patY += patternSize) {
+    for (let patX = 0; patX < heightInPatterns; patX += patternSize) {
+      const pattern = buildPattern(src, patX, patY)
+      patternIndices.push(findPatternIndex(patterns, pattern))
+    }
+  }
+
+  return patternIndices
 }
 
 /*

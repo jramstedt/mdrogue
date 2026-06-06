@@ -44,7 +44,7 @@ type Frame = {
 
 type Descriptor = {
   readonly name: string
-  readonly type?: 'tilemap' | 'sprite:vdp',
+  readonly type?: 'tilemap' | 'tilemap:sprite' | 'sprite:vdp',
   readonly frames: readonly Frame[]
   // readonly palettes: readonly [string, string, string, string] // TODO Load palette from file. Don't create new one.
 }
@@ -215,17 +215,27 @@ for (const { frames: descriptorFrames, name: descriptorName, type: outputType = 
     }
   }
 
-  if (outputType === 'tilemap') {
-    const { tileMap, sectionOffset } = generateMegaDriveTilemap(sections, allPatterns)
+  if (outputType.startsWith('tilemap')) {
+    const writeSprite = outputType.endsWith('sprite')
+
+    const { tileMap, sectionOffset, spriteData, spriteOffset } = generateMegaDriveTilemap(sections, allPatterns, writeSprite)
     sectionOffset.push({ name: `${descriptorName}_res_size`, offset: tileMap.byteLength })
 
     const tilemapPath = resolve(targetDirectory, `${descriptorName}-tilemap.bin`)
     console.log(`Writing ${tilemapPath}...`)
-    await writeFile(tilemapPath, new Uint16Array(tileMap))
+    await writeFile(tilemapPath, new Uint8Array(tileMap))
+
+    if (spriteData !== undefined && spriteOffset !== undefined) {
+      spriteOffset.push({ name: `${descriptorName}_spr_size`, offset: spriteData.byteLength })
+
+      const spritePath = resolve(targetDirectory, `${descriptorName}-spr.bin`)
+      console.log(`Writing ${spritePath}...`)
+      await writeFile(spritePath, new Uint8Array(spriteData))
+    }
 
     const resPath = resolve(targetDirectory, `${descriptorName}-res.asm`)
     console.log(`Writing ${resPath}...`)
-    await writeFile(resPath, sectionOffset.map(({ name, offset }) => `${name}\t\tequ ${offset}`).join('\n'))
+    await writeFile(resPath, [...sectionOffset, ...(spriteOffset ?? [])].map(({ name, offset }) => `${name}\t\tequ ${offset}`).join('\n'))
   } else if (outputType === 'sprite:vdp') {
     const { animationBuffer, frames, frameOffsets, dplc } = generateMegaDriveSprites(true, sections, state)
 

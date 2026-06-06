@@ -7,8 +7,8 @@ import { execa } from 'execa'
 import { distance, image, palette, utils } from 'image-q'
 import type { SpriteSheet } from '@kayahr/aseprite'
 
-import {generateMegaDriveSprites, imageQPalette as megaDrivePalette, patternBytes, patternSize, type Section} from './megadrive.ts'
-import {getIndexArray, type StrideArray, subRect, type SubRect} from './utils.ts'
+import {generateMegaDriveSprites, imageQPalette as megaDrivePalette, patternSize, type Section, type SpriteGeneratorState} from './megadrive.ts'
+import {concatenate, getIndexArray, type StrideArray, subRect} from './utils.ts'
 
 const [,, spritesheetFilename, targetDirectory, spriteMode = 'tags'] = process.argv
 
@@ -33,7 +33,7 @@ console.log(`Processing ${spritesheetPath} to ${targetDirectoryPath}`)
 // TODO some results from getBestSpritesGrid doesn't produce best merged result. Test all grids with merging for best result.
 
 
-const state = { patterns: new ArrayBuffer(64 * 1024) /* Max VDP RAM */, patternsWritten: 0, dplcPatternsNeeded: 0 }
+const state: SpriteGeneratorState = { patterns: [], dplcPatternsNeeded: 0 }
 
 function asesprite () {
   if (platform() === 'win32') return `${process.env['ProgramFiles(x86)']}\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe`
@@ -174,5 +174,7 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
 console.log(`Writing ${state.dplcPatternsNeeded} patterns needed for DPLC in VRAM...`)
 await writeFile(resolve(targetDirectory, `dplc.bin`), new Uint8Array([state.dplcPatternsNeeded]))
 
-console.log(`Writing ${state.patternsWritten} patterns...`)
-await writeFile(resolve(targetDirectory, `patterns.bin`), new Uint8Array(state.patterns, 0, state.patternsWritten * patternBytes))
+const allPatternsToWrite = concatenate(...state.patterns.map(pattern => pattern.normal.map(pattern => ((pattern & 0xFF000000) >>> 24) | ((pattern & 0xFF0000) >>> 8) | ((pattern & 0xFF00) << 8) | ((pattern & 0xFF) << 24) )))
+
+console.log(`Writing ${state.patterns.length} patterns...`)
+await writeFile(resolve(targetDirectory, `patterns.bin`), allPatternsToWrite)

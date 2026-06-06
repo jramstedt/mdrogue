@@ -397,6 +397,7 @@
   },
   {
     "name": "Inventory",
+    "type": "tilemap:sprite",
     "frames": [
       {
         "pngFile": "ui/border1.png",
