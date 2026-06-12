@@ -131,7 +131,7 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
   let spriteDataOffset = 0
 
   for (const section of inputSections) {
-    const { highPriority, palette, name } = section
+    const { highPriority, palette, name, width, height } = section
 
     sectionOffset.push({ name, offset: patternNameDataOffset })
 
@@ -152,14 +152,14 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
       nameViewOffset += Uint16Array.BYTES_PER_ELEMENT
     }
 
-    console.log(`section ${name} tilemap: ${sectionPatterns.length} patterns, ${patternNameView.byteLength} bytes`)
+    console.log(`section ${name} (${width}x${height}) tilemap: ${sectionPatterns.length} patterns, ${patternNameView.byteLength} bytes`)
 
     if (writeSprite) {
       const { width, height } = section
       const priority = highPriority ? 1 : 0
 
-      const widthInPatterns = Math.ceil(width / patternSize) * patternSize
-      const heightInPatterns = Math.ceil(height / patternSize) * patternSize
+      const widthInPatterns = (width + 7) >>> 3   // Full patterns
+      const heightInPatterns = (height + 7) >>> 3
 
       if (widthInPatterns > 4 || heightInPatterns > 4) {
         console.warn(`Sprite from tilemap ${name} is too large ${widthInPatterns}x${heightInPatterns}`)
@@ -203,7 +203,7 @@ export async function writeMegaDrivePatterns (prefix: string, inputLayers: { fil
     if (image.width % 256 !== 0) console.warn('Image width not multiple of 256.')
     if (image.height % 256 !== 0) console.warn('Image height not multiple of 256.')
 
-    const canvas = new Canvas(Math.ceil(image.width / 8) * 8, Math.ceil(image.height / 8) * 8)
+    const canvas = new Canvas(Math.ceil(image.width / patternSize) * patternSize, Math.ceil(image.height / patternSize) * patternSize)
     const ctx = canvas.getContext('2d')
     ctx.drawImage(image, 0, 0, image.width, image.height)
 
@@ -484,19 +484,19 @@ export function writePalette (reducedPalette: Uint32Array) {
  * @returns Pattern indices in row major order.
  */
 function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
-  const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
-  const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
+  const widthInPatterns = (src.width + 7) >>> 3
+  const heightInPatterns = (src.height + 7) >>> 3
 
   const patternIndices = new Uint16Array(widthInPatterns * heightInPatterns)
 
   // MegaDrive: Top to bottom then left to right
-  for (let patX = 0; patX < widthInPatterns; patX += patternSize) {
-    for (let patY = 0; patY < heightInPatterns; patY += patternSize) {
+  for (let patX = 0; patX < widthInPatterns; ++patX) {
+    for (let patY = 0; patY < heightInPatterns; ++patY) {
       const nextIndex = patterns.length
       if (nextIndex > 0x07FF)
         throw new Error('Too many patterns.')
 
-      patterns[nextIndex] = buildPattern(src, patX, patY)
+      patterns[nextIndex] = buildPattern(src, patX * patternSize, patY * patternSize)
       patternIndices[patY * widthInPatterns + patX] = nextIndex
     }
   }
@@ -509,57 +509,17 @@ function buildSpritePatterns (src: SubRect, patterns: Pattern[]) {
  * @returns Pattern indices in row major order.
  */
 function buildTilemapPatterns (src: SubRect, patterns: Pattern[]) {
-  const widthInPatterns = Math.ceil(src.width / patternSize) * patternSize
-  const heightInPatterns = Math.ceil(src.height / patternSize) * patternSize
+  const widthInPatterns = (src.width + 7) >>> 3
+  const heightInPatterns = (src.height + 7) >>> 3
 
   const patternIndices = new Uint16Array(widthInPatterns * heightInPatterns)
 
-  for (let patY = 0; patY < widthInPatterns; patY += patternSize) {
-    for (let patX = 0; patX < heightInPatterns; patX += patternSize) {
-      const pattern = buildPattern(src, patX, patY)
+  for (let patY = 0; patY < heightInPatterns; ++patY) {
+    for (let patX = 0; patX < widthInPatterns; ++patX) {
+      const pattern = buildPattern(src, patX * patternSize, patY * patternSize)
       patternIndices[patY * widthInPatterns + patX] = findPatternIndex(patterns, pattern)
     }
   }
 
   return patternIndices
 }
-
-/*
-function writePattern (src: SubRect, output: { patterns: ArrayBuffer, patternsWritten: number }) {
-  const pattern = new Uint32Array(output.patterns, output.patternsWritten++ * patternBytes, patternSize)
-
-  const minX = 0
-  const minY = 0
-  const maxX = Math.min(src.width, src.widthStride) - 1
-  const maxY = Math.min(src.height, src.data.length / src.widthStride) - 1
-
-  for (let srcY = 0; srcY < patternSize; ++srcY) {
-    if (srcY < minY || srcY > maxY) continue
-    const srcOffset = (src.offset ?? 0) + srcY * src.widthStride
-
-    let rowData = 0
-    for (let srcX = 0; srcX < patternSize; ++srcX) {
-      rowData <<= 4
-      if (srcX < minX || srcX > maxX) continue
-
-      rowData |= src.data[srcOffset+srcX]! & 0x0F
-    }
-
-    pattern[srcY] = rowData
-  }
-}
-
-export function writePatterns (src: SubRect, output: { patterns: ArrayBuffer, patternsWritten: number }) {
-  const widthInPatterns = Math.ceil(src.width / patternSize)
-  const heightInPatterns = Math.ceil(src.height / patternSize)
-
-  // MegaDrive: Top to bottom then left to right
-  for (let patX = 0; patX < widthInPatterns; ++patX) {
-    for (let patY = 0; patY < heightInPatterns; ++patY) {
-      writePattern(subRect(src, [patX * patternSize, patY * patternSize, patternSize, patternSize]), output)
-    }
-  }
-
-  return heightInPatterns * widthInPatterns
-}
-*/
