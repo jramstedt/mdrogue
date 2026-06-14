@@ -1,7 +1,11 @@
 		clrso
-uiHot		so.w	1
+uiHot		so.w	1	;
+uiHotAux	so.w	1	; can be used for indexing for example
 uiActive	so.w	1
-uiListIndex	so.b	1
+uiAPressed	so.w	1	; frames A is pressed ; TODO move somewhere else to be used in other places
+uiBPressed	so.w	1	; frames B is pressed
+uiCPressed	so.w	1	; frames C is pressed
+uiSPressed	so.w	1	; frames start is pressed
 uiStateSize	equ	__SO
 
 ; Pad navigation
@@ -56,12 +60,17 @@ openInventory
 	move.b	#1,(playerInventory+backpack+2)
 	move.b	#4,(playerInventory+backpack+3)
 
-	move.b	#5,(playerInventory+backpack+4)
+	move.b	#0,(playerInventory+backpack+4)
 	move.b	#6,(playerInventory+backpack+5)
 	move.b	#8,(playerInventory+backpack+6)
-	move.b	#9,(playerInventory+backpack+7)
+	move.b	#0,(playerInventory+backpack+7)
 
-	move.w	#uiBackpack,(inventoryUIState+uiHot)
+	move.b	#5,(playerInventory+backpack+8)
+	move.b	#0,(playerInventory+backpack+9)
+	move.b	#0,(playerInventory+backpack+10)
+	move.b	#9,(playerInventory+backpack+11)
+
+	move.l	#(uiBackpack<<16)|(8*4),(inventoryUIState+uiHot)
 
 	displayOn vdp_ctrl
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
@@ -70,38 +79,38 @@ openInventory
 .gameLoop
 	readGamePads pad1State,pad2State,pad1Change,pad2Change
 
-	lea	inventoryUIState+uiHot,a0
-	move.w	(a0),a1
-
-	; Navigation
-	move.b	pad1State,d0
-	not	d0
-	and.b	pad1Change,d0
-	btst	#0,d0
-	beq	*+4
-	move.w	(0,a1),(a0)
-	btst	#1,d0
-	beq	*+6
-	move.w	(4,a1),(a0)
-	btst	#2,d0
-	beq	*+6
-	move.w	(6,a1),(a0)
-	btst	#3,d0
-	beq	*+6
-	move.w	(2,a1),(a0)
+	clr.l	d0
 
 	; Stats
 	jsr	calculateStats
+	jsr	drawPlayerStatus
 
-	lea	playerStatus,a2
-	lea	playerStats,a3
+	; Slot items
+	lea	inventoryUIState,a3
 	lea	playerInventory,a4
 	lea	items,a5
 	lea	itemsTilemap,a6
 
-	clr.l	d0
+	; Increment press counters
+	add.w	#1,(uiAPressed,a3)
+	add.w	#1,(uiBPressed,a3)
+	add.w	#1,(uiCPressed,a3)
+	add.w	#1,(uiSPressed,a3)
 
-	; Slot items
+	; Clear press counters if not pressed
+	move.b	pad1State,d0
+	btst	#4,d0		; B
+	beq	*+6
+	clr.w	(uiBPressed,a3)
+	btst	#5,d0		; C
+	beq	*+6
+	clr.w	(uiCPressed,a3)
+	btst	#6,d0		; A
+	beq	*+6
+	clr.w	(uiAPressed,a3)
+	btst	#7,d0		; S
+	beq	*+6
+	clr.w	(uiSPressed,a3)
 
 	; ?\1 slot
 	; ?\2 item index
@@ -121,6 +130,17 @@ openInventory
 	jsr	draw2x2
 .skip
 	EINLINE
+	ENDM
+
+
+	MACRO drawSelectableBorder
+	lea	(inventoryTilemap+border2),a1
+	cmp.w	#\3,uiHot(a3)
+	bne	*+6
+	lea	(inventoryTilemap+border1),a1
+
+	calc32x64pos \1,\2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
 	ENDM
 
 	calc32x64pos 1,2,vdp_map_bnt,uiVRAMAddress,d2
@@ -152,7 +172,207 @@ openInventory
 
 	; TODO Build full string and draw it? btos can't add null chars!
 
+	; ========
+	; Backpack
+	; TODO If inventory doesn't have holes, this can be optimized.
+	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
+
+	; Border
+	move.l	#(12<<16)|8,d3
+	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
+	drawSelectableBorder 31,9,uiBackpack
+
+	; User input
+	cmp.w	#uiBackpack,uiHot(a3)
+	bne	.defaultNavigation
+
+	cmp.w	#10,(uiBPressed,a3)
+	blt	.itemNavigation
+	jsr	defaultNavigateHot
+	bra	.drawInventory
+
+.defaultNavigation
+	jsr	defaultNavigateHot
+	bra	.drawInventory
+
+.itemNavigation
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0
+
+.up
+	btst	#0,d0			; Up
+	beq	.down
+	sub.w	#4*4,uiHotAux(a3)	; One row up
+	bpl	.drawInventory
+	add.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
+	bra	.drawInventory
+.down
+	btst	#1,d0			; Down
+	beq	.left
+	add.w	#4*4,uiHotAux(a3)	; One row down
+	cmp.w	#backpackSize*4,uiHotAux(a3)
+	blt	.drawInventory
+	sub.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
+	bra	.drawInventory
+.left
+	btst	#2,d0			; Left
+	beq	.right
+	sub.w	#4,uiHotAux(a3)		; One column left
+	bpl	.drawInventory
+	add.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
+	bra	.drawInventory
+.right
+	btst	#3,d0			; Right
+	beq	.drawInventory
+	add.w	#4,uiHotAux(a3)		; One column right
+	cmp.w	#backpackSize*4,uiHotAux(a3)
+	blt	.drawInventory
+	sub.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
+
+.drawInventory
+	; Loops trough each inventory item.
+	move.l	#(uiBackpack<<16)|0,d5			; d5.w is drawn item counter (4 bytes per item)
+	move.w	#backpackSize,d4
+	bra	.calcCoordinates
+
+.backpackLoop
+	move.b	backpack(a4,d4.w),d1
+	beq	.skipIcon		; Item at 0 is null?
+	drawIcon
+.skipIcon
+	cmp.l	uiHot(a3),d5		; Checks both hot and current index
+	bne	.calcNextIcon
+
+	move.l	#(2<<16)|2,d3
+	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
+	add.l	d0,d2
+	lea	(inventoryTilemap+border1),a1
+	jsr	draw9Slice
+
+.calcNextIcon
+	; Calculate plane address for next icon
+	add.w	#2<<1,d5		; 2 name table entries
+	cmp.w	#24*2<<1,d5		; Draw max 24 items
+	beq	.endBackpack
+.calcCoordinates
+	clr.l	d0
+	; Y
+	move.w	d5,d0
+	and.b	#$F0,d0			; mask X off	(2<<1 * 3 = 0x10, so +1 Y)
+	lsl.w	#6-2,d0			; Y coord (for 64 width plane, 4 bytes per item)
+	; X
+	move.w	d5,d2
+	and.b	#$0F,d2			; mask Y off
+	add.b	d2,d0
+	; New write address
+	calc32x64pos 31,9,vdp_map_bnt,uiVRAMAddress,d2	; Restore d2 to origin
+	swap	d0
+	add.l	d0,d2
+
+	dbra	d4,.backpackLoop
+.endBackpack
+
+	; Borders
+	move.l	#(2<<16)|2,d3
+
+	; Neck
+	drawSelectableBorder 1,2,uiNeck
+
+	; Head
+	drawSelectableBorder 14,2,uiHead
+
+	; Torso
+	drawSelectableBorder 14,10,uiTorso
+
+	; Finger Right hand
+	drawSelectableBorder 1,14,uiFingerRight
+
+	; Finger Left hand
+	drawSelectableBorder 14,14,uiFingerLeft
+
+	; Legs
+	drawSelectableBorder 14,18,uiLegs
+
+	; Info
+	lea	(inventoryTilemap+border2),a1
+	move.l	#(6<<16)|12,d3
+	calc32x64pos 18,2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+	; Ground
+	move.l	#(6<<16)|8,d3
+	calc32x64pos 31,2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+	; A
+	move.l	#(3<<16)|3,d3
+	drawSelectableBorder 1,24,uiA
+	jsr	draw9Slice
+
+	; B
+	drawSelectableBorder 5,24,uiB
+	jsr	draw9Slice
+
+	; C
+	drawSelectableBorder 9,24,uiC
+	jsr	draw9Slice
+
+	; Actions
+	lea	(inventoryTilemap+border2),a1
+	move.l	#(3<<16)|9,d3
+	calc32x64pos 14,24,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+	; Help
+	calc32x64pos 25,24,vdp_map_ant,uiVRAMAddress,d2
+	lea	strHelp,a0
 	lea	parchmentTilemap,a1
+	jsr	draw8x8Text
+
+	; print vertical line of 224/240
+	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
+	lsr.w	#8,d0
+	lea	textScrap,a0
+	jsr	btos
+
+	calc32x64pos 0,0,vdp_map_bnt,uiVRAMAddress,d2
+	lea	parchmentTilemap,a1
+	jsr	draw8x8Text
+
+	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
+	jsr	processDMAQueue
+	jsr	waitVBlankOn	; Wait for blanking to stop.
+	bra .gameLoop
+
+defaultNavigateHot
+	lea	inventoryUIState+uiHot,a0
+	move.w	(a0),a1
+
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0
+	btst	#0,d0		; Up
+	beq	*+4
+	move.w	(0,a1),(a0)
+	btst	#1,d0		; Down
+	beq	*+6
+	move.w	(4,a1),(a0)
+	btst	#2,d0		; Left
+	beq	*+6
+	move.w	(6,a1),(a0)
+	btst	#3,d0		; right
+	beq	*+6
+	move.w	(2,a1),(a0)
+
+	rts
+
+drawPlayerStatus
+	lea	parchmentTilemap,a1	; Font tilemap, used by draw8x8Text
+	lea	playerStatus,a2
+	lea	playerStats,a3
+	lea	playerInventory,a4
+	lea	items,a5
 
 	; \1 X offset
 	; \2 value source, if not set defaults to d0
@@ -261,129 +481,7 @@ openInventory
 	bra	.fxEnd
 
 .fxEnd
-
-	; Backpack
-	; Loops trough each inventory item.
-	; TODO If inventory doesn't have holes, this can be optimized.
-	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
-	calc32x64pos 31,9,vdp_map_bnt,uiVRAMAddress,d1			; d1 is inventory origin
-	move.l	d1,d2
-	move.l	#0,d3							; d3 is drawn item counter (4 bytes per item)
-	move.w	#backpackSize,d4
-.nextItem
-	dbra	d4,.backpackLoop
-
-.backpackLoop
-	move.b	backpack(a4,d4.w),d0
-	beq	.nextItem		; Item at 0 is null?
-	drawIcon
-	; Calculate plane address for next icon
-	add.b	#2<<1,d3		; 2 name table entries
-	cmp	#24*2<<1,d3		; Draw max 24 items
-	beq	.endBackpack
-	; Y
-	move.l	d3,d0
-	and.b	#$F0,d0			; mask X off	(2<<1 * 3 = 0x10, so +1 Y)
-	lsl.w	#6-2,d0			; Y coord (for 64 width plane, 4 bytes per item)
-	; X
-	move.l	d3,d2
-	and.b	#$0F,d2			; mask Y off
-	add.b	d2,d0
-	; New write address
-	move.l	d1,d2			; Restore d2 to origin
-	swap	d0
-	add.l	d0,d2
-	dbra	d4,.backpackLoop
-.endBackpack
-
-	lea	inventoryUIState,a6
-
-	MACRO drawSelectableSlot
-	lea	(inventoryTilemap+border2),a1
-	cmp.w	#\3,uiHot(a6)
-	bne	*+6
-	lea	(inventoryTilemap+border1),a1
-
-	calc32x64pos \1,\2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-	ENDM
-
-	; Borders
-	move.l	#(2<<16)|2,d3
-
-	; Neck
-	drawSelectableSlot 1,2,uiNeck
-
-	; Head
-	drawSelectableSlot 14,2,uiHead
-
-	; Torso
-	drawSelectableSlot 14,10,uiTorso
-
-	; Finger Right hand
-	drawSelectableSlot 1,14,uiFingerRight
-
-	; Finger Left hand
-	drawSelectableSlot 14,14,uiFingerLeft
-
-	; Legs
-	drawSelectableSlot 14,18,uiLegs
-
-	; Info
-	lea	(inventoryTilemap+border2),a1
-	move.l	#(6<<16)|12,d3
-	calc32x64pos 18,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; Ground
-	move.l	#(6<<16)|8,d3
-	calc32x64pos 31,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; Backpack
-	move.l	#(12<<16)|8,d3
-	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; A
-	move.l	#(3<<16)|3,d3
-	drawSelectableSlot 1,24,uiA
-	jsr	draw9Slice
-
-	; B
-	drawSelectableSlot 5,24,uiB
-	jsr	draw9Slice
-
-	; C
-	drawSelectableSlot 9,24,uiC
-	jsr	draw9Slice
-
-	; Actions
-	lea	(inventoryTilemap+border2),a1
-	move.l	#(3<<16)|9,d3
-	calc32x64pos 14,24,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; Help
-	calc32x64pos 25,24,vdp_map_ant,uiVRAMAddress,d2
-	lea	strHelp,a0
-	lea	parchmentTilemap,a1
-	jsr	draw8x8Text
-
-	; print vertical line of 224/240
-	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
-	lsr.w	#8,d0
-	lea	textScrap,a0
-	jsr	btos
-
-	calc32x64pos 0,0,vdp_map_bnt,uiVRAMAddress,d2
-	lea	parchmentTilemap,a1
-	jsr	draw8x8Text
-
-	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
-	jsr	processDMAQueue
-	jsr	waitVBlankOn	; Wait for blanking to stop.
-	bra .gameLoop
+	rts
 
 strHealth	dc.b	'Life XXX/',0
 strMana		dc.b	'Mana XXX/',0
