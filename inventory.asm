@@ -55,22 +55,12 @@ openInventory
 	move.b	#7,(playerInventory+slotFingerLeft)
 	move.b	#6,(playerInventory+slotLegs)
 
-	move.b	#2,(playerInventory+backpack)
-	move.b	#10,(playerInventory+backpack+1)
-	move.b	#1,(playerInventory+backpack+2)
-	move.b	#4,(playerInventory+backpack+3)
+	; Fill backpack with stuff
+	REPT	48
+	move.b	#((REPTN)%10)+1,(playerInventory+backpack+REPTN)
+	ENDR
 
-	move.b	#0,(playerInventory+backpack+4)
-	move.b	#6,(playerInventory+backpack+5)
-	move.b	#8,(playerInventory+backpack+6)
-	move.b	#0,(playerInventory+backpack+7)
-
-	move.b	#5,(playerInventory+backpack+8)
-	move.b	#0,(playerInventory+backpack+9)
-	move.b	#0,(playerInventory+backpack+10)
-	move.b	#9,(playerInventory+backpack+11)
-
-	move.l	#(uiBackpack<<16)|(8*4),(inventoryUIState+uiHot)
+	move.l	#(uiBackpack<<16)|0,(inventoryUIState+uiHot)
 
 	displayOn vdp_ctrl
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
@@ -178,82 +168,66 @@ openInventory
 	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
 
 	; Border
-	move.l	#(12<<16)|8,d3
+	move.l	#(14<<16)|8,d3
 	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
 	drawSelectableBorder 31,9,uiBackpack
 
-	; User input
-	cmp.w	#uiBackpack,uiHot(a3)
-	bne	.defaultNavigation
-
-	cmp.w	#10,(uiBPressed,a3)
-	blt	.itemNavigation
-	jsr	defaultNavigateHot
-	bra	.drawInventory
-
-.defaultNavigation
-	jsr	defaultNavigateHot
-	bra	.drawInventory
-
-.itemNavigation
-	move.b	pad1State,d0
-	not.b	d0
-	and.b	pad1Change,d0
-
-.up
-	btst	#0,d0			; Up
-	beq	.down
-	sub.w	#4*4,uiHotAux(a3)	; One row up
-	bpl	.drawInventory
-	add.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
-	bra	.drawInventory
-.down
-	btst	#1,d0			; Down
-	beq	.left
-	add.w	#4*4,uiHotAux(a3)	; One row down
-	cmp.w	#backpackSize*4,uiHotAux(a3)
-	blt	.drawInventory
-	sub.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
-	bra	.drawInventory
-.left
-	btst	#2,d0			; Left
-	beq	.right
-	sub.w	#4,uiHotAux(a3)		; One column left
-	bpl	.drawInventory
-	add.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
-	bra	.drawInventory
-.right
-	btst	#3,d0			; Right
-	beq	.drawInventory
-	add.w	#4,uiHotAux(a3)		; One column right
-	cmp.w	#backpackSize*4,uiHotAux(a3)
-	blt	.drawInventory
-	sub.w	#backpackSize*4,uiHotAux(a3)	; Wrap around
-
-.drawInventory
 	; Loops trough each inventory item.
-	move.l	#(uiBackpack<<16)|0,d5			; d5.w is drawn item counter (4 bytes per item)
-	move.w	#backpackSize,d4
+	move.w	#backpackSize,d4	; d4 is inventory index
+	clr.l	d6			; d6 is processed item counter
+
+	; TODO instead of backpackSize row count is needed (including possible short). It needs to be used in navigation wraparound too...
+	; Scroll offsetting
+	clr.l	d3
+	move.w	uiHotAux(a3),d3
+	andi	#$FC,d3			; mask X away
+	sub.w	#4*3,d3			; rows over scroll top threshold
+	ble	.startInventoryDrawing
+	cmp.w	#backpackSize-4*7,d3	; rows over scroll bottom threshold
+	ble	.skipNext
+	move.w	#backpackSize-4*7,d3
+
+.skipNext
+	dbra	d3,.scrollOffset
+	bra	.startInventoryDrawing
+
+.scrollOffset
+	sub.w	#1,d4
+	move.b	(backpack,a4,d4.w),d0
+	beq	.skipNext
+
+	add.w	#1,d6
+	bra	.skipNext
+
+.startInventoryDrawing
+	move.l	#(uiBackpack<<16)|0,d5	; d5.w is drawn item counter (4 bytes per item)
 	bra	.calcCoordinates
 
+.nextItem
+	dbra	d4,.backpackLoop
+	bra	.endBackpack
+
 .backpackLoop
-	move.b	backpack(a4,d4.w),d1
-	beq	.skipIcon		; Item at 0 is null?
+	move.b	(backpack,a4,d4.w),d0
+	beq	.nextItem		; Item at 0 is null?
 	drawIcon
-.skipIcon
-	cmp.l	uiHot(a3),d5		; Checks both hot and current index
+
+	cmp.w	uiHotAux(a3),d6		; Checks both hot and current index
 	bne	.calcNextIcon
 
-	move.l	#(2<<16)|2,d3
+	; Draw hot border
 	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
-	add.l	d0,d2
+	add.l	d3,d2
 	lea	(inventoryTilemap+border1),a1
+	move.l	#(2<<16)|2,d3
 	jsr	draw9Slice
 
 .calcNextIcon
+	add.w	#1,d6
+
 	; Calculate plane address for next icon
 	add.w	#2<<1,d5		; 2 name table entries
-	cmp.w	#24*2<<1,d5		; Draw max 24 items
+	cmp.w	#28*2<<1,d5		; Draw max 24 items
 	beq	.endBackpack
 .calcCoordinates
 	clr.l	d0
@@ -269,9 +243,61 @@ openInventory
 	calc32x64pos 31,9,vdp_map_bnt,uiVRAMAddress,d2	; Restore d2 to origin
 	swap	d0
 	add.l	d0,d2
+	move.l	d0,d3			; Save d0 for hot border position
 
 	dbra	d4,.backpackLoop
 .endBackpack
+
+	; TODO clear empty slots of short rows
+
+	; User input
+	cmp.w	#uiBackpack,uiHot(a3)
+	bne	.defaultNavigation
+
+	cmp.w	#10,(uiBPressed,a3)
+	blt	.itemNavigation
+	jsr	defaultNavigateHot
+	bra	.endBackpackNavigation
+
+.defaultNavigation
+	jsr	defaultNavigateHot
+	bra	.endBackpackNavigation
+
+.itemNavigation
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0
+
+.up
+	btst	#0,d0			; Up
+	beq	.down
+	sub.w	#4,uiHotAux(a3)	; One row up
+	bpl	.left
+	add.w	d6,uiHotAux(a3)	; Wrap around
+	bra	.left
+.down
+	btst	#1,d0			; Down
+	beq	.left
+	add.w	#4,uiHotAux(a3)	; One row down
+	cmp.w	uiHotAux(a3),d6
+	bgt	.left
+	sub.w	d6,uiHotAux(a3)	; Wrap around
+	bra	.left
+.left
+	btst	#2,d0			; Left
+	beq	.right
+	sub.w	#1,uiHotAux(a3)		; One column left
+	bpl	.endBackpackNavigation
+	add.w	d6,uiHotAux(a3)	; Wrap around
+	bra	.endBackpackNavigation
+.right
+	btst	#3,d0			; Right
+	beq	.endBackpackNavigation
+	add.w	#1,uiHotAux(a3)		; One column right
+	cmp.w	uiHotAux(a3),d6
+	bgt	.endBackpackNavigation
+	sub.w	d6,uiHotAux(a3)	; Wrap around
+.endBackpackNavigation
 
 	; Borders
 	move.l	#(2<<16)|2,d3

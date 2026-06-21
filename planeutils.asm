@@ -174,11 +174,11 @@ draw2x2
 	setVDPAutoIncrement 2,vdp_ctrl
 
 ; Build VRAM write command
-	move.l	d2,d7
-	clr.w	d7
-	swap	d7		; d7.w Plane VRAM address
-	arrangeWriteVRAMcmd d7
-	move.l	d7,vdp_ctrl
+	move.l	d2,d1
+	clr.w	d1
+	swap	d1		; d1.w Plane VRAM address
+	arrangeWriteVRAMcmd d1
+	move.l	d1,vdp_ctrl
 
 	; 1,1
 	move.w	0(a1),d0	; d0 is "pattern name"
@@ -190,8 +190,8 @@ draw2x2
 	add.w	d2,d0		; Add pattern VRAM index
 	move.w	d0,vdp_data
 
-	add.l	#(1<<7)<<16,d7	; 64 pattern names per row, 2 bytes per pattern name
-	move.l	d7,vdp_ctrl
+	add.l	#(1<<7)<<16,d1	; 64 pattern names per row, 2 bytes per pattern name
+	move.l	d1,vdp_ctrl
 
 	; 1,2
 	move.w	4(a1),d0	; d0 is "pattern name"
