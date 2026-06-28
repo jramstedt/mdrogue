@@ -56,7 +56,7 @@ openInventory
 	move.b	#6,(playerInventory+slotLegs)
 
 	; Fill backpack with stuff
-	REPT	48
+	REPT 45
 	move.b	#((REPTN)%10)+1,(playerInventory+backpack+REPTN)
 	ENDR
 
@@ -176,29 +176,55 @@ openInventory
 	move.w	#backpackSize,d4	; d4 is inventory index
 	clr.l	d6			; d6 is processed item counter
 
-	; TODO instead of backpackSize row count is needed (including possible short). It needs to be used in navigation wraparound too...
+	; Calculate number of rows
+	; d0 is count of items to draw
+	MACRO calcDrawCount
+	INLINE
+	clr.l	d0
+	move.w	#backpackSize,d1
+.accumulateLoop
+	dbra	d1,.accumulate
+	bra	.end
+.accumulate
+	tst.b	(backpack,a4,d1.w)
+	beq	.accumulateLoop		; Item at 0 is null?
+	add.w	#1,d0
+	bra	.accumulateLoop
+.end
+	EINLINE
+	ENDM
+
+	calcDrawCount
+	cmp.w	#4*7,d0			; No scrolling needed
+	ble	.startInventoryDrawing
+
+	add.w	#3,d0			; Alignment - 1
+	andi.w	#$FFFC,d0		; Mask out bottom 2 bits
+	sub.w	#4*3+4*4,d0		; Subtracts top threshold 3 and bottom threshold 4
+
 	; Scroll offsetting
 	clr.l	d3
 	move.w	uiHotAux(a3),d3
 	andi	#$FC,d3			; mask X away
 	sub.w	#4*3,d3			; rows over scroll top threshold
 	ble	.startInventoryDrawing
-	cmp.w	#backpackSize-4*7,d3	; rows over scroll bottom threshold
-	ble	.skipNext
-	move.w	#backpackSize-4*7,d3
+	cmp.w	d0,d3			; rows over scroll bottom threshold
+	ble	.scrollForward
+	move.w	d0,d3			; Scroll to max
 
-.skipNext
-	dbra	d3,.scrollOffset
+.scrollForward
+	dbra	d3,.checkNextItem
 	bra	.startInventoryDrawing
 
-.scrollOffset
+.checkNextItem
 	sub.w	#1,d4
 	move.b	(backpack,a4,d4.w),d0
-	beq	.skipNext
+	beq	.checkNextItem
 
 	add.w	#1,d6
-	bra	.skipNext
+	bra	.scrollForward
 
+	; Draw
 .startInventoryDrawing
 	move.l	#(uiBackpack<<16)|0,d5	; d5.w is drawn item counter (4 bytes per item)
 	bra	.calcCoordinates
@@ -212,7 +238,7 @@ openInventory
 	beq	.nextItem		; Item at 0 is null?
 	drawIcon
 
-	cmp.w	uiHotAux(a3),d6		; Checks both hot and current index
+	cmp.w	uiHotAux(a3),d6		; Is d6 hot?
 	bne	.calcNextIcon
 
 	; Draw hot border
@@ -246,9 +272,15 @@ openInventory
 	move.l	d0,d3			; Save d0 for hot border position
 
 	dbra	d4,.backpackLoop
-.endBackpack
 
-	; TODO clear empty slots of short rows
+	; Fill rest with empty
+	move.w	#empty,d0
+	lea	(a6,d0.w),a1
+	jsr	draw2x2
+	clr.w	d4			; clear d4 to not branch into .backpackLoop
+	bra	.calcNextIcon
+
+.endBackpack
 
 	; User input
 	cmp.w	#uiBackpack,uiHot(a3)
@@ -264,39 +296,54 @@ openInventory
 	bra	.endBackpackNavigation
 
 .itemNavigation
-	move.b	pad1State,d0
-	not.b	d0
-	and.b	pad1Change,d0
+	move.b	pad1State,d2
+	not.b	d2
+	and.b	pad1Change,d2
+
+	calcDrawCount
 
 .up
-	btst	#0,d0			; Up
+	btst	#0,d2			; Up
 	beq	.down
-	sub.w	#4,uiHotAux(a3)	; One row up
+	sub.w	#4,uiHotAux(a3)	;	 One row up
 	bpl	.left
-	add.w	d6,uiHotAux(a3)	; Wrap around
+
+	move.w	d0,d1			; d1 is full rows
+        add.w	#3,d1			; Alignment - 1
+        andi.w	#$FFFC,d1		; Mask out bottom 2 bits
+	add.w	d1,uiHotAux(a3)		; Wrap around
+
+	cmp.w	uiHotAux(a3),d0		; Over last (partial row)?
+	bgt	*+6
+	sub.w	#4,uiHotAux(a3)		; One more row up
 	bra	.left
 .down
-	btst	#1,d0			; Down
+	btst	#1,d2			; Down
 	beq	.left
-	add.w	#4,uiHotAux(a3)	; One row down
-	cmp.w	uiHotAux(a3),d6
+	add.w	#4,uiHotAux(a3)		; One row down
+	cmp.w	uiHotAux(a3),d0
 	bgt	.left
-	sub.w	d6,uiHotAux(a3)	; Wrap around
-	bra	.left
+
+	move.w	d0,d1			; d1 is full rows
+	add.w	#3,d1			; Alignment - 1
+	andi.w	#$FFFC,d1		; Mask out bottom 2 bits
+	sub.w	d1,uiHotAux(a3)		; Wrap around
+	bpl	.left			; Before first item (partial row)?
+	add.w	#4,uiHotAux(a3)		; One more row down
 .left
-	btst	#2,d0			; Left
+	btst	#2,d2			; Left
 	beq	.right
 	sub.w	#1,uiHotAux(a3)		; One column left
 	bpl	.endBackpackNavigation
-	add.w	d6,uiHotAux(a3)	; Wrap around
+	add.w	d0,uiHotAux(a3)		; Wrap around
 	bra	.endBackpackNavigation
 .right
-	btst	#3,d0			; Right
+	btst	#3,d2			; Right
 	beq	.endBackpackNavigation
 	add.w	#1,uiHotAux(a3)		; One column right
-	cmp.w	uiHotAux(a3),d6
+	cmp.w	uiHotAux(a3),d0
 	bgt	.endBackpackNavigation
-	sub.w	d6,uiHotAux(a3)	; Wrap around
+	sub.w	d0,uiHotAux(a3)		; Wrap around
 .endBackpackNavigation
 
 	; Borders

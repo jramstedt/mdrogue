@@ -392,6 +392,12 @@
       {
         "name": "sword_magic_teal_gem",
         "x": "+"
+      },
+
+      {
+        "name": "empty",
+        "x": 0,
+        "y": "+"
       }
     ]
   },
