@@ -1,7 +1,6 @@
 		clrso
 uiHot		so.w	1	;
-uiHotAux	so.w	1	; can be used for indexing for example
-uiActive	so.w	1
+uiBackpackIndex	so.w	1	; Selected item in backpack
 uiAPressed	so.w	1	; frames A is pressed ; TODO move somewhere else to be used in other places
 uiBPressed	so.w	1	; frames B is pressed
 uiCPressed	so.w	1	; frames C is pressed
@@ -80,27 +79,6 @@ openInventory
 	lea	playerInventory,a4
 	lea	items,a5
 	lea	itemsTilemap,a6
-
-	; Increment press counters
-	add.w	#1,(uiAPressed,a3)
-	add.w	#1,(uiBPressed,a3)
-	add.w	#1,(uiCPressed,a3)
-	add.w	#1,(uiSPressed,a3)
-
-	; Clear press counters if not pressed
-	move.b	pad1State,d0
-	btst	#4,d0		; B
-	beq	*+6
-	clr.w	(uiBPressed,a3)
-	btst	#5,d0		; C
-	beq	*+6
-	clr.w	(uiCPressed,a3)
-	btst	#6,d0		; A
-	beq	*+6
-	clr.w	(uiAPressed,a3)
-	btst	#7,d0		; S
-	beq	*+6
-	clr.w	(uiSPressed,a3)
 
 	; ?\1 slot
 	; ?\2 item index
@@ -187,7 +165,7 @@ openInventory
 	bra	.end
 .accumulate
 	tst.b	(backpack,a4,d1.w)
-	beq	.accumulateLoop		; Item at 0 is null?
+	beq	.accumulateLoop		; Item is null?
 	add.w	#1,d0
 	bra	.accumulateLoop
 .end
@@ -204,7 +182,7 @@ openInventory
 
 	; Scroll offsetting
 	clr.l	d3
-	move.w	uiHotAux(a3),d3
+	move.w	uiBackpackIndex(a3),d3
 	andi	#$FC,d3			; mask X away
 	sub.w	#4*3,d3			; rows over scroll top threshold
 	ble	.startInventoryDrawing
@@ -231,14 +209,14 @@ openInventory
 
 .nextItem
 	dbra	d4,.backpackLoop
-	bra	.endBackpack
+	bra	.drawEmpty		; End of backpack items. Draw empty
 
 .backpackLoop
 	move.b	(backpack,a4,d4.w),d0
-	beq	.nextItem		; Item at 0 is null?
+	beq	.nextItem		; Item is null?
 	drawIcon
 
-	cmp.w	uiHotAux(a3),d6		; Is d6 hot?
+	cmp.w	uiBackpackIndex(a3),d6		; Is d6 hot?
 	bne	.calcNextIcon
 
 	; Draw hot border
@@ -271,8 +249,9 @@ openInventory
 	add.l	d0,d2
 	move.l	d0,d3			; Save d0 for hot border position
 
-	dbra	d4,.backpackLoop
+	bra	.nextItem
 
+.drawEmpty
 	; Fill rest with empty
 	move.w	#empty,d0
 	lea	(a6,d0.w),a1
@@ -282,22 +261,26 @@ openInventory
 
 .endBackpack
 
+	; ==========
 	; User input
+
+	; Backpack input
 	cmp.w	#uiBackpack,uiHot(a3)
 	bne	.defaultNavigation
 
-	cmp.w	#10,(uiBPressed,a3)
-	blt	.itemNavigation
-	jsr	defaultNavigateHot
-	bra	.endBackpackNavigation
+	cmp.w	#10,(uiBPressed,a3)	; If B pressed, get out of backpack, also cancels item scrap
+	blt	.backpackNavigation
 
 .defaultNavigation
 	jsr	defaultNavigateHot
-	bra	.endBackpackNavigation
+	bra	.endBackpackInput
 
-.itemNavigation
+.backpackNavigation
+	tst.w	(uiCPressed,a3)		; If C pressed
+	bne	.backpackScrap		; Skip navigation
+
 	move.b	pad1State,d2
-	not.b	d2
+	not.b	d2			; flip pad1State bits
 	and.b	pad1Change,d2
 
 	calcDrawCount
@@ -305,46 +288,59 @@ openInventory
 .up
 	btst	#0,d2			; Up
 	beq	.down
-	sub.w	#4,uiHotAux(a3)	;	 One row up
+	sub.w	#4,uiBackpackIndex(a3)	;	 One row up
 	bpl	.left
 
 	move.w	d0,d1			; d1 is full rows
         add.w	#3,d1			; Alignment - 1
         andi.w	#$FFFC,d1		; Mask out bottom 2 bits
-	add.w	d1,uiHotAux(a3)		; Wrap around
+	add.w	d1,uiBackpackIndex(a3)		; Wrap around
 
-	cmp.w	uiHotAux(a3),d0		; Over last (partial row)?
+	cmp.w	uiBackpackIndex(a3),d0		; Over last (partial row)?
 	bgt	*+6
-	sub.w	#4,uiHotAux(a3)		; One more row up
+	sub.w	#4,uiBackpackIndex(a3)		; One more row up
 	bra	.left
 .down
 	btst	#1,d2			; Down
 	beq	.left
-	add.w	#4,uiHotAux(a3)		; One row down
-	cmp.w	uiHotAux(a3),d0
+	add.w	#4,uiBackpackIndex(a3)		; One row down
+	cmp.w	uiBackpackIndex(a3),d0
 	bgt	.left
 
 	move.w	d0,d1			; d1 is full rows
 	add.w	#3,d1			; Alignment - 1
 	andi.w	#$FFFC,d1		; Mask out bottom 2 bits
-	sub.w	d1,uiHotAux(a3)		; Wrap around
+	sub.w	d1,uiBackpackIndex(a3)		; Wrap around
 	bpl	.left			; Before first item (partial row)?
-	add.w	#4,uiHotAux(a3)		; One more row down
+	add.w	#4,uiBackpackIndex(a3)		; One more row down
 .left
 	btst	#2,d2			; Left
 	beq	.right
-	sub.w	#1,uiHotAux(a3)		; One column left
-	bpl	.endBackpackNavigation
-	add.w	d0,uiHotAux(a3)		; Wrap around
-	bra	.endBackpackNavigation
+	sub.w	#1,uiBackpackIndex(a3)		; One column left
+	bpl	.endBackpackInput
+	add.w	d0,uiBackpackIndex(a3)		; Wrap around
+	bra	.endBackpackInput
 .right
 	btst	#3,d2			; Right
-	beq	.endBackpackNavigation
-	add.w	#1,uiHotAux(a3)		; One column right
-	cmp.w	uiHotAux(a3),d0
-	bgt	.endBackpackNavigation
-	sub.w	d0,uiHotAux(a3)		; Wrap around
-.endBackpackNavigation
+	beq	.endBackpackInput
+	add.w	#1,uiBackpackIndex(a3)		; One column right
+	cmp.w	uiBackpackIndex(a3),d0
+	bgt	.endBackpackInput
+	sub.w	d0,uiBackpackIndex(a3)		; Wrap around
+
+	bra	.endBackpackInput
+
+.backpackScrap
+	move.b	pad1State,d2
+
+	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
+	blt	.endBackpackInput
+
+	btst	#5,d2			; C
+	beq	.endBackpackInput
+
+	jsr	removeActive
+.endBackpackInput
 
 	; Borders
 	move.l	#(2<<16)|2,d3
@@ -403,6 +399,35 @@ openInventory
 	lea	parchmentTilemap,a1
 	jsr	draw8x8Text
 
+	; Note: This is done at the end to allow checking pressed duration and state change
+	; Increment press counters if pressed
+	; Clear press counters if not pressed
+	move.b	pad1State,d0
+
+	btst	#4,d0		; B
+	beq	*+8
+	clr.w	(uiBPressed,a3)
+	bra	*+6
+	add.w	#1,(uiBPressed,a3)
+
+	btst	#5,d0		; C
+	beq	*+8
+	clr.w	(uiCPressed,a3)
+	bra	*+6
+	add.w	#1,(uiCPressed,a3)
+
+	btst	#6,d0		; A
+	beq	*+8
+	clr.w	(uiAPressed,a3)
+	bra	*+6
+	add.w	#1,(uiAPressed,a3)
+
+	btst	#7,d0		; S
+	beq	*+8
+	clr.w	(uiSPressed,a3)
+	bra	*+6
+	add.w	#1,(uiSPressed,a3)
+
 	; print vertical line of 224/240
 	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
 	lsr.w	#8,d0
@@ -416,7 +441,8 @@ openInventory
 	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
 	jsr	processDMAQueue
 	jsr	waitVBlankOn	; Wait for blanking to stop.
-	bra .gameLoop
+
+	bra 	.gameLoop
 
 defaultNavigateHot
 	lea	inventoryUIState+uiHot,a0
@@ -438,6 +464,42 @@ defaultNavigateHot
 	beq	*+6
 	move.w	(2,a1),(a0)
 
+	rts
+
+; Remove active item from backpack
+removeActive
+	clr.l	d0
+	move.w	#backpackSize,d1
+.accumulateLoop
+	dbra	d1,.accumulate
+	bra	.end
+.accumulate
+	tst.b	(backpack,a4,d1.w)
+	beq	.accumulateLoop		; Item is null?
+
+	cmp.w	uiBackpackIndex(a3),d0
+	beq	.remove
+
+	add.w	#1,d0
+	bra	.accumulateLoop
+
+.remove
+	clr.b	(backpack,a4,d1.w)	; Remove item from backpack
+
+.restLoop
+	dbra	d1,.check
+	bra	.fixBackpackIndex
+.check
+	tst.b	(backpack,a4,d1.w)
+	beq	.restLoop		; Item is null?
+	bra	.end
+
+.fixBackpackIndex
+	sub.w	#1,uiBackpackIndex(a3)
+	bge	.end
+	clr.w	uiBackpackIndex(a3)
+
+.end
 	rts
 
 drawPlayerStatus
@@ -493,8 +555,8 @@ drawPlayerStatus
 	lea	\1,a0
 	jsr	draw8x8Text
 
-	move.b	\3(a4),d0
-	beq	.skip			; Item at 0 is null
+	move.b	(\3,a4),d0
+	beq	.skip			; Item is null
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.b	(priB,a5,d0.w),d0	; TODO what if this is not protect?
 	asr.b	#3,d0
