@@ -21,6 +21,9 @@ plrStatusSize		equ	__SO
 itemA			so.b	1
 itemB			so.b	1
 itemC			so.b	1
+;itemX			so.b	1	; TODO detect controller
+;itemY			so.b	1
+;itemZ			so.b	1
 slotHead		so.b	1
 slotNeck		so.b	1
 slotTorso		so.b	1
@@ -113,4 +116,31 @@ addEffectAndStats	; Items and weapons are usable and don't provide effect bonuse
 addStats
 	addStat	priB(a1),a0
 	addStat	secB(a1),a0
+	rts
+
+
+; d2.w	sequential index in non null items
+; return
+; d0.w 	items index
+; d1.w 	index to backpack
+; trash
+; d3.b
+getBackpackItem
+	lea	playerInventory,a0
+	clr.l	d0
+	move.w	#backpackSize,d1
+.accumulateLoop
+	dbra	d1,.accumulate
+	bra	.end
+.accumulate
+	move.b	(backpack,a0,d1.w),d3
+	beq	.accumulateLoop		; Item is null?
+
+	cmp.w	d2,d0
+	beq	.end
+
+	add.w	#1,d0
+	bra	.accumulateLoop
+.end
+	move.b	d3,d0
 	rts

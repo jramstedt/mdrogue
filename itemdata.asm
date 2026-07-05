@@ -28,6 +28,32 @@ normal		equ	0
 
 ; quest flag
 junk		equ	0
+persistent	equ	1	; can't be removed from player inventory
+
+	even
+; Allowed inventory slots for item slot
+slotToInventory
+	INLINE
+	dc.w	.item
+	dc.w	.weapon
+	dc.w	.head
+	dc.w	.neck
+	dc.w	.torso
+	dc.w	.finger
+	dc.w	.legs
+	dc.w	.quest
+	dc.w	.end
+
+.item	dc.b	itemA,itemB,itemC	; TODO X,Y,Z
+.weapon	dc.b	itemA,itemB,itemC
+.head	dc.b	slotHead
+.neck	dc.b	slotNeck
+.torso	dc.b	slotTorso
+.finger	dc.b	slotFingerRight,slotFingerLeft
+.legs	dc.b	slotLegs
+.quest	dc.b	backpack
+.end
+	EINLINE
 
 ; item structure
 		rsreset

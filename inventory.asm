@@ -1,9 +1,11 @@
 		clrso
 uiHot		so.w	1	;
-uiBackpackIndex	so.w	1	; Selected item in backpack
+uiBackpackIndex	so.b	1	; Selected item in backpack
+uiActSlotIndex	so.b	1	; Active slot index when equipping
 uiAPressed	so.w	1	; frames A is pressed ; TODO move somewhere else to be used in other places
 uiBPressed	so.w	1	; frames B is pressed
 uiCPressed	so.w	1	; frames C is pressed
+; TODO X,Y,Z
 uiSPressed	so.w	1	; frames start is pressed
 uiStateSize	equ	__SO
 
@@ -12,6 +14,7 @@ uiStateSize	equ	__SO
 uiA		dc.w	uiFingerRight,uiB,uiNeck,uiBackpack
 uiB		dc.w	uiFingerRight,uiC,uiNeck,uiA
 uiC		dc.w	uiLegs,uiActions,uiHead,uiB
+; TODO X,Y,Z, needs alternative table?
 uiHead		dc.w	uiActions,uiGround,uiTorso,uiNeck
 uiNeck		dc.w	uiA,uiHead,uiFingerRight,uiGround
 uiTorso		dc.w	uiHead,uiBackpack,uiFingerLeft,uiFingerRight
@@ -44,15 +47,15 @@ openInventory
 	jsr	processDMAQueue
 
 	; Test data TODO remove
-	move.b	#1,(playerInventory+itemA)
-	move.b	#8,(playerInventory+itemB)
-	move.b	#9,(playerInventory+itemC)
+	;move.b	#1,(playerInventory+itemA)
+	;move.b	#8,(playerInventory+itemB)
+	;move.b	#9,(playerInventory+itemC)
 	move.b	#3,(playerInventory+slotHead)
 	move.b	#4,(playerInventory+slotNeck)
 	move.b	#5,(playerInventory+slotTorso)
-	move.b	#7,(playerInventory+slotFingerRight)
-	move.b	#7,(playerInventory+slotFingerLeft)
-	move.b	#6,(playerInventory+slotLegs)
+	;move.b	#7,(playerInventory+slotFingerRight)
+	;move.b	#7,(playerInventory+slotFingerLeft)
+	;move.b	#6,(playerInventory+slotLegs)
 
 	; Fill backpack with stuff
 	REPT 45
@@ -279,6 +282,12 @@ openInventory
 	tst.w	(uiCPressed,a3)		; If C pressed
 	bne	.backpackScrap		; Skip navigation
 
+	tst.w	(uiAPressed,a3)		; If A pressed
+	beq	.continueNavigation
+	jsr	equipItemFromBackpack
+	bra	.finishFrame		; TODO don't skip drawing?
+
+.continueNavigation
 	move.b	pad1State,d2
 	not.b	d2			; flip pad1State bits
 	and.b	pad1Change,d2
@@ -288,7 +297,8 @@ openInventory
 .up
 	btst	#0,d2			; Up
 	beq	.down
-	sub.w	#4,uiBackpackIndex(a3)	;	 One row up
+	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	sub.b	#4,(uiBackpackIndex,a3)	; One row up
 	bpl	.left
 
 	move.w	d0,d1			; d1 is full rows
@@ -303,8 +313,7 @@ openInventory
 .down
 	btst	#1,d2			; Down
 	beq	.left
-	add.w	#4,uiBackpackIndex(a3)		; One row down
-	cmp.w	uiBackpackIndex(a3),d0
+	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
 	add.b	#4,(uiBackpackIndex,a3)	; One row down
 	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.left
@@ -318,7 +327,7 @@ openInventory
 .left
 	btst	#2,d2			; Left
 	beq	.right
-	sub.w	#1,uiBackpackIndex(a3)		; One column left
+	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
 	sub.b	#1,(uiBackpackIndex,a3)	; One column left
 	bpl	.endBackpackInput
 	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
@@ -326,8 +335,7 @@ openInventory
 .right
 	btst	#3,d2			; Right
 	beq	.endBackpackInput
-	add.w	#1,uiBackpackIndex(a3)		; One column right
-	cmp.w	uiBackpackIndex(a3),d0
+	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
 	add.b	#1,(uiBackpackIndex,a3)	; One column right
 	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.endBackpackInput
@@ -504,6 +512,70 @@ removeActive
 	sub.b	#1,(uiBackpackIndex,a3)
 	bge	.end
 	clr.b	(uiBackpackIndex,a3)
+
+.end
+	rts
+
+; Swap backpack item with slot item
+equipItemFromBackpack
+        ; TODO for items & weapons, ask for A,B,C,X,Y,Z or other to cancel?
+        ; TODO highlight active slot
+
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem		; d0.w is index to items, d1.w is index to backpack
+
+	lea	items,a0
+	move.w	d0,d2
+	lsl.w	#3,d2			; Slot descriptor is 8 bytes
+	move.b	(slot,a0,d2.w),d2
+	and.w	#%111,d2		; d2 slot
+
+	lea	slotToInventory,a1
+	lsl.w	d2
+	move.w	(2,a1,d2.w),d3		; d3 is end of slot list
+	move.w	(a1,d2.w),a1		; a1 possible inventory slots
+	sub.w	a1,d3			; d3 is count of possible slots
+
+	move.b	pad1State,d2
+	not.b	d2
+	and.b	pad1Change,d2
+
+	btst	#0,d2		; Up
+	beq	*+6
+	sub.b	#1,(uiActSlotIndex,a3)
+	btst	#1,d2		; Down
+	beq	*+6
+	add.b	#1,(uiActSlotIndex,a3)
+	btst	#2,d2		; Left
+	beq	*+6
+	sub.b	#1,(uiActSlotIndex,a3)
+	btst	#3,d2		; right
+	beq	*+6
+	add.b	#1,(uiActSlotIndex,a3)
+
+	clr.l	d2
+	move.b	(uiActSlotIndex,a3),d2
+	add.b	d3,d2			; add count to wrap around if negative
+	divu	d3,d2
+	swap	d2			; d2 remainder
+	move.b	d2,(uiActSlotIndex,a3)	; save wrapped
+	move.b	(a1,d2.w),d3		; d3 selected inventory slot
+
+	; A released to confirm switch?
+	move.b	pad1State,d2
+	and.b	pad1Change,d2
+	btst	#6,d2			; A released?
+	beq	.end			; Not, skip item swap
+
+	lea	playerInventory,a1
+	; swap items
+	move.b	(a1,d3.w),d2		; d2 is item in slot
+	move.b	d0,(a1,d3.w)		; backpack -> slot
+	move.b	d2,(backpack,a1,d1.w)	; slot -> backpack
+	bne	.end
+
+	; Null item set to backpack
+	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
 
 .end
 	rts
