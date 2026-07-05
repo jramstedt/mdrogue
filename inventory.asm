@@ -1,7 +1,8 @@
 		clrso
 uiHot		so.w	1	;
+uiActive	so.w	1	;
 uiBackpackIndex	so.b	1	; Selected item in backpack
-uiActSlotIndex	so.b	1	; Active slot index when equipping
+uiHotSlotIndex	so.b	1	; Active slot index when equipping
 uiAPressed	so.w	1	; frames A is pressed ; TODO move somewhere else to be used in other places
 uiBPressed	so.w	1	; frames B is pressed
 uiCPressed	so.w	1	; frames C is pressed
@@ -24,6 +25,11 @@ uiLegs		dc.w	uiFingerLeft,uiBackpack,uiActions,uiBackpack
 uiGround	dc.w	uiBackpack,uiNeck,uiBackpack,uiHead
 uiBackpack	dc.w	uiGround,uiFingerRight,uiGround,uiActions
 uiActions	dc.w	uiLegs,uiBackpack,uiHead,uiC
+
+	MACRO inventoryToUISlot
+	lsl.w	#3,\1
+	add.w	#uiA,\1
+	ENDM
 
 openInventory
 	; Disable window plane
@@ -268,24 +274,31 @@ openInventory
 	; User input
 
 	; Backpack input
+	cmp.w	#uiBackpack,uiActive(a3)
+	beq	.backpackNavigation
+
+	; Not active, but hot?
 	cmp.w	#uiBackpack,uiHot(a3)
 	bne	.defaultNavigation
 
-	cmp.w	#10,(uiBPressed,a3)	; If B pressed, get out of backpack, also cancels item scrap
-	blt	.backpackNavigation
+	move.w	#uiBackpack,uiActive(a3); Automatically set backpack as active if hot to lock navigation
 
+.backpackNavigation
+	cmp.w	#10,(uiBPressed,a3)	; If B pressed, get out of backpack, also cancels item scrap
+	blt	.continueBackpackNavigation
 .defaultNavigation
+	clr.w	uiActive(a3)		; Reset active
 	jsr	defaultNavigateHot
 	bra	.endBackpackInput
 
-.backpackNavigation
+.continueBackpackNavigation
 	tst.w	(uiCPressed,a3)		; If C pressed
 	bne	.backpackScrap		; Skip navigation
 
 	tst.w	(uiAPressed,a3)		; If A pressed
 	beq	.continueNavigation
 	jsr	equipItemFromBackpack
-	bra	.finishFrame		; TODO don't skip drawing?
+	bra	.endBackpackInput
 
 .continueNavigation
 	move.b	pad1State,d2
@@ -297,7 +310,7 @@ openInventory
 .up
 	btst	#0,d2			; Up
 	beq	.down
-	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	sub.b	#4,(uiBackpackIndex,a3)	; One row up
 	bpl	.left
 
@@ -313,7 +326,7 @@ openInventory
 .down
 	btst	#1,d2			; Down
 	beq	.left
-	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	add.b	#4,(uiBackpackIndex,a3)	; One row down
 	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.left
@@ -327,7 +340,7 @@ openInventory
 .left
 	btst	#2,d2			; Left
 	beq	.right
-	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	sub.b	#1,(uiBackpackIndex,a3)	; One column left
 	bpl	.endBackpackInput
 	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
@@ -335,7 +348,7 @@ openInventory
 .right
 	btst	#3,d2			; Right
 	beq	.endBackpackInput
-	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	add.b	#1,(uiBackpackIndex,a3)	; One column right
 	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.endBackpackInput
@@ -542,42 +555,48 @@ equipItemFromBackpack
 
 	btst	#0,d2		; Up
 	beq	*+6
-	sub.b	#1,(uiActSlotIndex,a3)
+	sub.b	#1,(uiHotSlotIndex,a3)
 	btst	#1,d2		; Down
 	beq	*+6
-	add.b	#1,(uiActSlotIndex,a3)
+	add.b	#1,(uiHotSlotIndex,a3)
 	btst	#2,d2		; Left
 	beq	*+6
-	sub.b	#1,(uiActSlotIndex,a3)
+	sub.b	#1,(uiHotSlotIndex,a3)
 	btst	#3,d2		; right
 	beq	*+6
-	add.b	#1,(uiActSlotIndex,a3)
+	add.b	#1,(uiHotSlotIndex,a3)
 
 	clr.l	d2
-	move.b	(uiActSlotIndex,a3),d2
+	move.b	(uiHotSlotIndex,a3),d2
 	add.b	d3,d2			; add count to wrap around if negative
 	divu	d3,d2
 	swap	d2			; d2 remainder
-	move.b	d2,(uiActSlotIndex,a3)	; save wrapped
+	move.b	d2,(uiHotSlotIndex,a3)	; save wrapped
 	move.b	(a1,d2.w),d3		; d3 selected inventory slot
 
 	; A released to confirm switch?
 	move.b	pad1State,d2
 	and.b	pad1Change,d2
 	btst	#6,d2			; A released?
-	beq	.end			; Not, skip item swap
+	beq	.endSetHot		; Not, skip item swap
 
 	lea	playerInventory,a1
 	; swap items
 	move.b	(a1,d3.w),d2		; d2 is item in slot
 	move.b	d0,(a1,d3.w)		; backpack -> slot
 	move.b	d2,(backpack,a1,d1.w)	; slot -> backpack
-	bne	.end
+	bne	.endClearHot
 
 	; Null item set to backpack
-	clr.b	(uiActSlotIndex,a3)	; reset equip navigation
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 
-.end
+.endClearHot
+	move.w	#uiBackpack,(uiHot,a3)
+	rts
+
+.endSetHot
+	inventoryToUISlot d3
+	move.w	d3,(uiHot,a3)
 	rts
 
 drawPlayerStatus
