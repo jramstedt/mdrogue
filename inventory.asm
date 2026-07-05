@@ -86,9 +86,9 @@ openInventory
 	INLINE
 	iF NARG>0
 	    IF NARG>1
-	    move.b	\1(a4,\2),d0
+	    move.b	(\1,a4,\2),d0
 	    ELSE
-	    move.b	\1(a4),d0
+	    move.b	(\1,a4),d0
 	    ENDIF
 	    beq	.skip			; Item at 0 is null
 	ENDIF
@@ -103,7 +103,7 @@ openInventory
 
 	MACRO drawSelectableBorder
 	lea	(inventoryTilemap+border2),a1
-	cmp.w	#\3,uiHot(a3)
+	cmp.w	#\3,(uiHot,a3)
 	bne	*+6
 	lea	(inventoryTilemap+border1),a1
 
@@ -166,29 +166,29 @@ openInventory
 .accumulate
 	tst.b	(backpack,a4,d1.w)
 	beq	.accumulateLoop		; Item is null?
-	add.w	#1,d0
+	add.b	#1,d0
 	bra	.accumulateLoop
 .end
 	EINLINE
 	ENDM
 
 	calcDrawCount
-	cmp.w	#4*7,d0			; No scrolling needed
+	cmp.b	#4*7,d0			; No scrolling needed
 	ble	.startInventoryDrawing
 
-	add.w	#3,d0			; Alignment - 1
-	andi.w	#$FFFC,d0		; Mask out bottom 2 bits
-	sub.w	#4*3+4*4,d0		; Subtracts top threshold 3 and bottom threshold 4
+	add.b	#3,d0			; Alignment - 1
+	andi.b	#$FC,d0			; Mask out bottom 2 bits
+	sub.b	#4*3+4*4,d0		; Subtracts top threshold 3 and bottom threshold 4
 
 	; Scroll offsetting
 	clr.l	d3
-	move.w	uiBackpackIndex(a3),d3
-	andi	#$FC,d3			; mask X away
-	sub.w	#4*3,d3			; rows over scroll top threshold
+	move.b	(uiBackpackIndex,a3),d3
+	andi.b	#$FC,d3			; mask X away
+	sub.b	#4*3,d3			; rows over scroll top threshold
 	ble	.startInventoryDrawing
-	cmp.w	d0,d3			; rows over scroll bottom threshold
+	cmp.b	d0,d3			; rows over scroll bottom threshold
 	ble	.scrollForward
-	move.w	d0,d3			; Scroll to max
+	move.b	d0,d3			; Scroll to max
 
 .scrollForward
 	dbra	d3,.checkNextItem
@@ -199,7 +199,7 @@ openInventory
 	move.b	(backpack,a4,d4.w),d0
 	beq	.checkNextItem
 
-	add.w	#1,d6
+	add.b	#1,d6
 	bra	.scrollForward
 
 	; Draw
@@ -216,7 +216,7 @@ openInventory
 	beq	.nextItem		; Item is null?
 	drawIcon
 
-	cmp.w	uiBackpackIndex(a3),d6		; Is d6 hot?
+	cmp.b	(uiBackpackIndex,a3),d6		; Is d6 hot?
 	bne	.calcNextIcon
 
 	; Draw hot border
@@ -227,7 +227,7 @@ openInventory
 	jsr	draw9Slice
 
 .calcNextIcon
-	add.w	#1,d6
+	add.b	#1,d6
 
 	; Calculate plane address for next icon
 	add.w	#2<<1,d5		; 2 name table entries
@@ -292,41 +292,46 @@ openInventory
 	bpl	.left
 
 	move.w	d0,d1			; d1 is full rows
-        add.w	#3,d1			; Alignment - 1
-        andi.w	#$FFFC,d1		; Mask out bottom 2 bits
-	add.w	d1,uiBackpackIndex(a3)		; Wrap around
+        add.b	#3,d1			; Alignment - 1
+        andi.b	#$FC,d1			; Mask out bottom 2 bits
+	add.b	d1,(uiBackpackIndex,a3)		; Wrap around
 
-	cmp.w	uiBackpackIndex(a3),d0		; Over last (partial row)?
+	cmp.b	(uiBackpackIndex,a3),d0		; Over last (partial row)?
 	bgt	*+6
-	sub.w	#4,uiBackpackIndex(a3)		; One more row up
+	sub.b	#4,(uiBackpackIndex,a3)		; One more row up
 	bra	.left
 .down
 	btst	#1,d2			; Down
 	beq	.left
 	add.w	#4,uiBackpackIndex(a3)		; One row down
 	cmp.w	uiBackpackIndex(a3),d0
+	add.b	#4,(uiBackpackIndex,a3)	; One row down
+	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.left
 
 	move.w	d0,d1			; d1 is full rows
-	add.w	#3,d1			; Alignment - 1
-	andi.w	#$FFFC,d1		; Mask out bottom 2 bits
-	sub.w	d1,uiBackpackIndex(a3)		; Wrap around
+	add.b	#3,d1			; Alignment - 1
+	andi.b	#$FC,d1			; Mask out bottom 2 bits
+	sub.b	d1,(uiBackpackIndex,a3)	; Wrap around
 	bpl	.left			; Before first item (partial row)?
-	add.w	#4,uiBackpackIndex(a3)		; One more row down
+	add.b	#4,(uiBackpackIndex,a3)	; One more row down
 .left
 	btst	#2,d2			; Left
 	beq	.right
 	sub.w	#1,uiBackpackIndex(a3)		; One column left
+	sub.b	#1,(uiBackpackIndex,a3)	; One column left
 	bpl	.endBackpackInput
-	add.w	d0,uiBackpackIndex(a3)		; Wrap around
+	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
 	bra	.endBackpackInput
 .right
 	btst	#3,d2			; Right
 	beq	.endBackpackInput
 	add.w	#1,uiBackpackIndex(a3)		; One column right
 	cmp.w	uiBackpackIndex(a3),d0
+	add.b	#1,(uiBackpackIndex,a3)	; One column right
+	cmp.b	(uiBackpackIndex,a3),d0
 	bgt	.endBackpackInput
-	sub.w	d0,uiBackpackIndex(a3)		; Wrap around
+	sub.b	d0,(uiBackpackIndex,a3)	; Wrap around
 
 	bra	.endBackpackInput
 
@@ -399,6 +404,7 @@ openInventory
 	lea	parchmentTilemap,a1
 	jsr	draw8x8Text
 
+.finishFrame
 	; Note: This is done at the end to allow checking pressed duration and state change
 	; Increment press counters if pressed
 	; Clear press counters if not pressed
@@ -477,10 +483,10 @@ removeActive
 	tst.b	(backpack,a4,d1.w)
 	beq	.accumulateLoop		; Item is null?
 
-	cmp.w	uiBackpackIndex(a3),d0
+	cmp.b	(uiBackpackIndex,a3),d0
 	beq	.remove
 
-	add.w	#1,d0
+	add.b	#1,d0
 	bra	.accumulateLoop
 
 .remove
@@ -495,9 +501,9 @@ removeActive
 	bra	.end
 
 .fixBackpackIndex
-	sub.w	#1,uiBackpackIndex(a3)
+	sub.b	#1,(uiBackpackIndex,a3)
 	bge	.end
-	clr.w	uiBackpackIndex(a3)
+	clr.b	(uiBackpackIndex,a3)
 
 .end
 	rts
