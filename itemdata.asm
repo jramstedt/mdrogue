@@ -85,7 +85,7 @@ itemDescSize	equ	__RS
 
 	even
 items
-	buildItemDescriptor	quest,junk,0,0,0,0,0				; Null item
+	buildItemDescriptor	quest,junk,0,0,0,0,empty			; Null item
 	buildItemDescriptor	item,none,health,1,0,0,potion_health		; health potion
 	buildItemDescriptor	item,none,mana,1,0,0,potion_mana		; mana potion
 

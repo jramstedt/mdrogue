@@ -21,14 +21,20 @@ uiNeck		dc.w	uiA,uiHead,uiFingerRight,uiGround
 uiTorso		dc.w	uiHead,uiBackpack,uiFingerLeft,uiFingerRight
 uiFingerRight	dc.w	uiNeck,uiFingerLeft,uiA,uiBackpack
 uiFingerLeft	dc.w	uiTorso,uiBackpack,uiLegs,uiFingerRight
-uiLegs		dc.w	uiFingerLeft,uiBackpack,uiActions,uiBackpack
-uiGround	dc.w	uiBackpack,uiNeck,uiBackpack,uiHead
+uiLegs		dc.w	uiFingerLeft,uiBackpack,uiActions,uiFingerRight
 uiBackpack	dc.w	uiGround,uiFingerRight,uiGround,uiActions
+; Special
+uiGround	dc.w	uiBackpack,uiNeck,uiBackpack,uiHead
 uiActions	dc.w	uiLegs,uiBackpack,uiHead,uiC
 
 	MACRO inventoryToUISlot
 	lsl.w	#3,\1
 	add.w	#uiA,\1
+	ENDM
+
+	MACRO uiSlotToInventory
+	sub.w	#uiA,\1
+	lsr.w	#3,\1
 	ENDM
 
 openInventory
@@ -94,12 +100,13 @@ openInventory
 	MACRO drawIcon
 	INLINE
 	iF NARG>0
+	    clr.w	d0
 	    IF NARG>1
 	    move.b	(\1,a4,\2),d0
 	    ELSE
 	    move.b	(\1,a4),d0
 	    ENDIF
-	    beq	.skip			; Item at 0 is null
+	    ;beq	.skip			; Item at 0 is null
 	ENDIF
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.w	(gfx,a5,d0.w),d0
@@ -149,8 +156,8 @@ openInventory
 
 	; TODO Build full string and draw it? btos can't add null chars!
 
-	; ========
-	; Backpack
+; ========
+; Draw Backpack
 	; TODO If inventory doesn't have holes, this can be optimized.
 	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
 
@@ -270,16 +277,17 @@ openInventory
 
 .endBackpack
 
-	; ==========
-	; User input
+; ==========
+; User input
 
-	; Backpack input
+.backpackInput
 	cmp.w	#uiBackpack,uiActive(a3)
 	beq	.backpackNavigation
 
 	; Not active, but hot?
 	cmp.w	#uiBackpack,uiHot(a3)
-	bne	.defaultNavigation
+	blt	.equipmentInput		; Continue with equipment input check
+	bne	.defaultNavigation	; TODO should be bgt .groundInput or .actionInput
 
 	move.w	#uiBackpack,uiActive(a3); Automatically set backpack as active if hot to lock navigation
 
@@ -289,7 +297,7 @@ openInventory
 .defaultNavigation
 	clr.w	uiActive(a3)		; Reset active
 	jsr	defaultNavigateHot
-	bra	.endBackpackInput
+	bra	.endInput
 
 .continueBackpackNavigation
 	tst.w	(uiCPressed,a3)		; If C pressed
@@ -298,7 +306,7 @@ openInventory
 	tst.w	(uiAPressed,a3)		; If A pressed
 	beq	.continueNavigation
 	jsr	equipItemFromBackpack
-	bra	.endBackpackInput
+	bra	.endInput
 
 .continueNavigation
 	move.b	pad1State,d2
@@ -342,31 +350,83 @@ openInventory
 	beq	.right
 	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	sub.b	#1,(uiBackpackIndex,a3)	; One column left
-	bpl	.endBackpackInput
+	bpl	.endInput
 	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
-	bra	.endBackpackInput
+	bra	.endInput
 .right
 	btst	#3,d2			; Right
-	beq	.endBackpackInput
+	beq	.endInput
 	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
 	add.b	#1,(uiBackpackIndex,a3)	; One column right
 	cmp.b	(uiBackpackIndex,a3),d0
-	bgt	.endBackpackInput
+	bgt	.endInput
 	sub.b	d0,(uiBackpackIndex,a3)	; Wrap around
 
-	bra	.endBackpackInput
+	bra	.endInput
 
 .backpackScrap
 	move.b	pad1State,d2
 
 	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
-	blt	.endBackpackInput
+	blt	.endInput
 
 	btst	#5,d2			; C
-	beq	.endBackpackInput
+	beq	.endInput
 
 	jsr	removeActive
-.endBackpackInput
+	bra	.endInput
+
+.equipmentInput
+	tst.w	(uiActive,a3)
+	bne	.equipmentActive
+
+	; No ui element is active.
+	move.w	(uiHot,a3),d1
+	beq	.endInput		; Can hot be null?
+	cmp.w	#uiLegs,d1
+	bgt	.endInput		; TODO should be bgt .groundInput or .actionInput ??
+
+	; Check inputs
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0		; 1 pressed down
+
+	andi.b	#%01110000,d0		; BCA
+	beq	.defaultNavigation	; Not
+	move.w	d1,(uiActive,a3)
+
+.equipmentActive
+	move.b	pad1State,d0
+	move.b	d0,d1
+	not.b	d0
+	and.b	pad1Change,d0		; 1 pressed down
+
+		; B Drop TODO
+	btst	#4,d0			; B
+	beq	.equipmentC		; Not
+	bra	.equipmentRelease
+
+.equipmentC	; C Scrap
+	btst	#5,d1			; C released?
+	beq	.equipmentA		; Not
+
+	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
+	blt	.equipmentRelease
+
+	move.w	uiHot(a3),d0
+	uiSlotToInventory d0
+	clr.b	(a4,d0.w)
+	bra	.equipmentRelease
+
+.equipmentA	; A Switch / Use TODO show selection of items filtered to slot
+	btst	#6,d0			; A
+	beq	.endInput		; Not
+	bra	.equipmentRelease
+
+.equipmentRelease
+	clr.w	(uiActive,a3)
+
+.endInput
 
 	; Borders
 	move.l	#(2<<16)|2,d3
