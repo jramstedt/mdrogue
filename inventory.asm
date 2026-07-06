@@ -401,12 +401,21 @@ openInventory
 	not.b	d0
 	and.b	pad1Change,d0		; 1 pressed down
 
-		; B Drop TODO
+		; B Move to backpack
 	btst	#4,d0			; B
-	beq	.equipmentC		; Not
+	beq	.equipmentScrap		; Not
+
+	jsr	getBackpackFree
+	tst.w	d0
+	bmi	.equipmentRelease	; No free slot. TODO Show message to player
+
+	move.w	(uiActive,a3),d1
+	uiSlotToInventory d1
+	move.b	(a4,d1.w),(a0)
+	clr.b	(a4,d1.w)		; Clear slot
 	bra	.equipmentRelease
 
-.equipmentC	; C Scrap
+.equipmentScrap	; C Scrap
 	btst	#5,d1			; C released?
 	beq	.equipmentA		; Not
 
@@ -572,7 +581,14 @@ removeActive
 
 .remove
 	clr.b	(backpack,a4,d1.w)	; Remove item from backpack
+	jsr	fixBackpackIndex
+.end
+	rts
 
+; Checks if last non null item. If not moves index back one. Clamps to zero.
+; d1.w	backpack index
+fixBackpackIndex
+	; Check if last item and fix backpack index
 .restLoop
 	dbra	d1,.check
 	bra	.fixBackpackIndex
@@ -585,14 +601,12 @@ removeActive
 	sub.b	#1,(uiBackpackIndex,a3)
 	bge	.end
 	clr.b	(uiBackpackIndex,a3)
-
 .end
 	rts
 
 ; Swap backpack item with slot item
 equipItemFromBackpack
         ; TODO for items & weapons, ask for A,B,C,X,Y,Z or other to cancel?
-        ; TODO highlight active slot
 
 	move.b	(uiBackpackIndex,a3),d2
 	jsr	getBackpackItem		; d0.w is index to items, d1.w is index to backpack
@@ -649,6 +663,7 @@ equipItemFromBackpack
 
 	; Null item set to backpack
 	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
+	jsr	fixBackpackIndex
 
 .endClearHot
 	move.w	#uiBackpack,(uiHot,a3)

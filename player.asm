@@ -124,7 +124,7 @@ addStats
 ; d0.w 	items index
 ; d1.w 	index to backpack
 ; trash
-; d3.b
+; d3.b, a0
 getBackpackItem
 	lea	playerInventory,a0
 	clr.l	d0
@@ -143,4 +143,22 @@ getBackpackItem
 	bra	.accumulateLoop
 .end
 	move.b	d3,d0
+	rts
+
+; return
+; a0	Address to free backpack slot
+; d0.w	-1 if not found
+; trash
+; d3.b, a0
+getBackpackFree
+	lea	playerInventory+backpack,a0
+	move.w	#backpackSize,d0
+.checkLoop
+	dbra	d0,.check
+	bra	.end
+.check
+	tst.b	(a0)+
+	bne	.checkLoop		; Item is not null?
+.end
+	sub	#1,a0
 	rts
