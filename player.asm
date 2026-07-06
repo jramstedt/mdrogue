@@ -145,20 +145,34 @@ getBackpackItem
 	move.b	d3,d0
 	rts
 
+; d1.w	sequential index in non null items
+; return
+; a0	Address to backpack slot
+getBackpackItemAddress
+	lea	playerInventory+backpack+backpackSize,a0
+	move.w	#backpackSize,d0
+.checkLoop
+	dbra	d0,.check
+	rts
+.check
+	tst.b	-(a0)
+	beq	.checkLoop		; Item is null?
+	dbra	d1,.checkLoop
+	rts
+
+
 ; return
 ; a0	Address to free backpack slot
 ; d0.w	-1 if not found
 ; trash
 ; d3.b, a0
 getBackpackFree
-	lea	playerInventory+backpack,a0
+	lea	playerInventory+backpack+backpackSize,a0
 	move.w	#backpackSize,d0
 .checkLoop
 	dbra	d0,.check
-	bra	.end
+	rts
 .check
-	tst.b	(a0)+
+	tst.b	-(a0)
 	bne	.checkLoop		; Item is not null?
-.end
-	sub	#1,a0
 	rts
