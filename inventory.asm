@@ -74,6 +74,8 @@ openInventory
 	move.b	#((REPTN)%10)+1,(playerInventory+backpack+REPTN)
 	ENDR
 
+	jsr compactBackpack
+
 	move.l	#(uiBackpack<<16)|0,(inventoryUIState+uiHot)
 
 	displayOn vdp_ctrl
@@ -309,11 +311,13 @@ openInventory
 	bra	.endInput
 
 .continueNavigation
+	calcDrawCount
+	tst.b	d0
+	beq	.endInput		; No items in backpack, end input checking
+
 	move.b	pad1State,d2
 	not.b	d2			; flip pad1State bits
 	and.b	pad1Change,d2
-
-	calcDrawCount
 
 .up
 	btst	#0,d2			; Up
@@ -325,11 +329,11 @@ openInventory
 	move.w	d0,d1			; d1 is full rows
         add.b	#3,d1			; Alignment - 1
         andi.b	#$FC,d1			; Mask out bottom 2 bits
-	add.b	d1,(uiBackpackIndex,a3)		; Wrap around
+	add.b	d1,(uiBackpackIndex,a3)	; Wrap around
 
-	cmp.b	(uiBackpackIndex,a3),d0		; Over last (partial row)?
+	cmp.b	(uiBackpackIndex,a3),d0	; Over last (partial row)?
 	bgt	*+6
-	sub.b	#4,(uiBackpackIndex,a3)		; One more row up
+	sub.b	#4,(uiBackpackIndex,a3)	; One more row up
 	bra	.left
 .down
 	btst	#1,d2			; Down
