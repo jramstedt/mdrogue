@@ -176,3 +176,24 @@ getBackpackFree
 	tst.b	-(a0)
 	bne	.checkLoop		; Item is not null?
 	rts
+
+; Compacts backpack by moving each item to last null position. Keeps the order.
+compactBackpack
+	lea	playerInventory+backpack+backpackSize,a0	; Copy from
+	move	a0,a1						; Copy to
+	move.w	#backpackSize,d0
+.checkLoop
+	dbra	d0,.check
+	move	a1,d0
+	sub.l	a0,d0			; How many changed place
+	dbeq	d0,.clear
+	rts
+.check
+	move.b	-(a0),-(a1)
+	bne	.checkLoop		; Item is not null?
+	add	#1,a1			; Item was null, adjust target.
+	bra 	.checkLoop
+.clear					; clear "moved" items, since they were actually copied
+	clr.b	-(a1)
+	dbra	d0,.clear
+	rts
