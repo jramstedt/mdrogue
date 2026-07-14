@@ -121,6 +121,7 @@ addStats
 	rts
 
 ; Calculate number of non null items
+; a4	playerInventory
 ; return
 ; d0	count of items
 getBackpackItemCount
