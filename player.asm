@@ -39,7 +39,6 @@ plrInventorySize	equ	__SO
 	move.b	\1,d0
 	lsr.b	#3,d0
 	or.b	d0,plrEffects(\2)
-.end
 	ENDM
 
 	MACRO addStat
@@ -355,4 +354,106 @@ compactBackpack
 .clear					; clear "moved" items, since they were actually copied
 	clr.b	-(a1)
 	dbra	d0,.clear
+	rts
+
+; Find next item. Does not wrap around.
+; a0	Start address, Note: decrement 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; return
+; a0	Found item address if Z true
+findItemForwardToEnd
+	move.l	#playerInventory+backpack+backpackSize,d1
+	sub.l	a0,d1
+	bra	findItemForwardFor
+
+; Find next item. Wraps around.
+; a0	Start address, Note: decrement 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; return
+; a0	Found item address if Z true
+findItemForward
+	move.l	#backpackSize,d1
+	bra	findItemForwardFor
+
+; Find next item. Wraps around.
+; a0	Start address, Note: decrement 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; d1	Count to check
+; return
+; a0	Found item address if Z true
+findItemForwardFor
+.nextItem
+	addq	#1,a0			; Next item
+	cmp.w	#playerInventory+backpack+backpackSize,a0
+	blt	.checkLoop
+	sub.l	#backpackSize,a0	; Wrap around
+.checkLoop
+	dbra	d1,.check
+	; Not found
+	move	#0,ccr
+	rts
+.check
+	move.b	(a0),d2		; d2 is item type
+	beq	.nextItem	; Item is null?
+
+	jsr	(a2)
+	beq	.match
+
+	bra	.nextItem
+.match
+	dbra	d0,.nextItem
+	rts
+
+; Find next item. Does not wrap around.
+; a0	Start address, Note: increment 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; return
+; a0	Found item address if Z true
+findItemBackwardToStart
+	move.l	a0,d1
+	sub.l	#playerInventory+backpack,d1
+	bra	findItemBackwardFor
+
+; Find next item. Wraps around.
+; a0	Start address, Note: increment 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; return
+; a0	Found item address if Z true
+findItemBackward
+	move.l	#backpackSize,d1
+	bra	findItemBackwardFor
+
+; Find next item. Wraps around.
+; a0	Start address, Note: increment 1 if current address needs checking too.
+; a2	Predicate subroutine
+; d0	Matches to skip
+; d1	Count to check
+; return
+; a0	Found item address if Z true
+findItemBackwardFor
+.nextItem
+	subq	#1,a0			; Next item
+	cmp.w	#playerInventory+backpack,a0
+	bge	.checkLoop
+	add.l	#backpackSize,a0	; Wrap around
+.checkLoop
+	dbra	d1,.check
+	; Not found
+	move	#0,ccr
+	rts
+.check
+	move.b	(a0),d2	; d2 is item type
+	beq	.nextItem	; Item is null?
+
+	jsr	(a2)
+	beq	.match
+
+	bra	.nextItem
+.match
+	dbra	d0,.nextItem
 	rts

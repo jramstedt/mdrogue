@@ -354,8 +354,8 @@ openInventory
 	jsr	(a2)			; Check if current selected can be equipped
 	beq	.equipmentActive
 	jsr	findNextItem		; Find next equippable item
-	bmi	.equipmentRelease	; TODO show player now suitable items
-	move.b	d0,(uiBackpackIndex,a3)	: Select equippable item in backpack
+	bmi	.equipmentRelease	; TODO show player "no suitable items" message
+	move.b	d0,(uiBackpackIndex,a3)	; Select equippable item in backpack
 
 .equipmentActive
 	move.b	pad1State,d0
