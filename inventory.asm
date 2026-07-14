@@ -373,10 +373,10 @@ openInventory
 	bne	.equipmentMove		; Not
 
 	btst	#0,d0			; Up
-	bne	.selectNextItem		; Yes
+	bne	.selectPreviousItem	; Yes
 
 	btst	#1,d0			; Down
-	bne	.selectPreviousItem	; Yes
+	bne	.selectNextItem		; Yes
 
 	btst	#2,d0			; Left
 	bne	.selectPreviousItem	; Yes
