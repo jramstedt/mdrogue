@@ -55,6 +55,34 @@ slotToInventory
 .end
 	EINLINE
 
+	even
+; Allowed item slots for inventory slot
+inventoryToSlot
+			INLINE
+			dc.w	.itemA
+			dc.w	.itemB
+			dc.w	.itemC
+			; TODO X,Y,Z
+			dc.w	.slotHead
+			dc.w	.slotNeck
+			dc.w	.slotTorso
+			dc.w	.slotFingerRight
+			dc.w	.slotFingerLeft
+			dc.w	.slotLegs
+			dc.w	.end
+
+.itemA			dc.b	item,weapon
+.itemB			dc.b	item,weapon
+.itemC			dc.b	item,weapon
+.slotHead		dc.b	head
+.slotNeck		dc.b	neck
+.slotTorso		dc.b	torso
+.slotFingerRight	dc.b	finger
+.slotFingerLeft		dc.b	finger
+.slotLegs		dc.b	legs
+.end
+			EINLINE
+
 ; item structure
 		rsreset
 slot		rs.b	1	; EEEEESSS	E=Effect S=Slot

@@ -89,7 +89,6 @@ openInventory
 
 	; Stats
 	jsr	calculateStats
-	jsr	drawPlayerStatus
 
 	; Slot items
 	lea	inventoryUIState,a3
@@ -97,6 +96,75 @@ openInventory
 	lea	items,a5
 	lea	itemsTilemap,a6
 
+; =======
+; Borders
+	MACRO drawSelectableBorder
+	lea	(inventoryTilemap+border2),a1
+	cmp.w	#\3,(uiHot,a3)
+	bne	*+6
+	lea	(inventoryTilemap+border1),a1
+
+	calc32x64pos \1,\2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+	ENDM
+
+	move.l	#(2<<16)|2,d3
+
+	; Neck
+	drawSelectableBorder 1,2,uiNeck
+
+	; Head
+	drawSelectableBorder 14,2,uiHead
+
+	; Torso
+	drawSelectableBorder 14,10,uiTorso
+
+	; Finger Right hand
+	drawSelectableBorder 1,14,uiFingerRight
+
+	; Finger Left hand
+	drawSelectableBorder 14,14,uiFingerLeft
+
+	; Legs
+	drawSelectableBorder 14,18,uiLegs
+
+	; Info
+	lea	(inventoryTilemap+border2),a1
+	move.l	#(6<<16)|12,d3
+	calc32x64pos 18,2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+	; Ground
+	move.l	#(6<<16)|8,d3
+	calc32x64pos 31,2,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+	; Backpack
+	move.l	#(14<<16)|8,d3
+	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
+	drawSelectableBorder 31,9,uiBackpack
+
+	; A
+	move.l	#(3<<16)|3,d3
+	drawSelectableBorder 1,24,uiA
+	jsr	draw9Slice
+
+	; B
+	drawSelectableBorder 5,24,uiB
+	jsr	draw9Slice
+
+	; C
+	drawSelectableBorder 9,24,uiC
+	jsr	draw9Slice
+
+	; Actions
+	lea	(inventoryTilemap+border2),a1
+	move.l	#(3<<16)|9,d3
+	calc32x64pos 14,24,vdp_map_ant,uiVRAMAddress,d2
+	jsr	draw9Slice
+
+; =====
+; Icons
 	; ?\1 slot
 	; ?\2 item index
 	MACRO drawIcon
@@ -116,17 +184,6 @@ openInventory
 	jsr	draw2x2
 .skip
 	EINLINE
-	ENDM
-
-
-	MACRO drawSelectableBorder
-	lea	(inventoryTilemap+border2),a1
-	cmp.w	#\3,(uiHot,a3)
-	bne	*+6
-	lea	(inventoryTilemap+border1),a1
-
-	calc32x64pos \1,\2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
 	ENDM
 
 	calc32x64pos 1,2,vdp_map_bnt,uiVRAMAddress,d2
@@ -160,37 +217,334 @@ openInventory
 
 ; ========
 ; Draw Backpack
+	jsr drawBackpack
+
+; ==========
+; User input
+
+.backpackInput
+	cmp.w	#uiBackpack,uiActive(a3)
+	beq	.backpackNavigation
+
+	; Not active, but hot?
+	cmp.w	#uiBackpack,uiHot(a3)
+	blt	.equipmentInput		; Continue with equipment input check
+	bne	.defaultNavigation	; TODO should be bgt .groundInput or .actionInput
+
+	move.w	#uiBackpack,uiActive(a3); Automatically set backpack as active if hot to lock navigation
+
+; Backpack navigation input
+.backpackNavigation
+	cmp.w	#10,(uiBPressed,a3)	; If B pressed, get out of backpack, also cancels item scrap
+	blt	.continueBackpackNavigation
+.defaultNavigation
+	clr.w	(uiActive,a3)		; Reset active
+	jsr	defaultNavigateHot
+	bra	.endInput
+
+.continueBackpackNavigation
+	tst.w	(uiCPressed,a3)		; If C pressed
+	bne	.backpackScrap		; Skip navigation
+
+	tst.w	(uiAPressed,a3)		; If A pressed
+	beq	.continueNavigation
+	jsr	equipItemFromBackpack
+	bra	.endInput
+
+.continueNavigation
+	jsr	getBackpackItemCount
+	tst.b	d0
+	beq	.endInput		; No items in backpack, end input checking
+
+	move.b	pad1State,d2
+	not.b	d2			; flip pad1State bits
+	and.b	pad1Change,d2
+
+.up
+	btst	#0,d2			; Up
+	beq	.down
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
+	sub.b	#4,(uiBackpackIndex,a3)	; One row up
+	bpl	.left
+
+	move.w	d0,d1			; d1 is full rows
+        add.b	#3,d1			; Alignment - 1
+        andi.b	#$FC,d1			; Mask out bottom 2 bits
+	add.b	d1,(uiBackpackIndex,a3)	; Wrap around
+
+	cmp.b	(uiBackpackIndex,a3),d0	; Over last (partial row)?
+	bgt	*+6
+	sub.b	#4,(uiBackpackIndex,a3)	; One more row up
+	bra	.left
+.down
+	btst	#1,d2			; Down
+	beq	.left
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
+	add.b	#4,(uiBackpackIndex,a3)	; One row down
+	cmp.b	(uiBackpackIndex,a3),d0
+	bgt	.left
+
+	move.w	d0,d1			; d1 is full rows
+	add.b	#3,d1			; Alignment - 1
+	andi.b	#$FC,d1			; Mask out bottom 2 bits
+	sub.b	d1,(uiBackpackIndex,a3)	; Wrap around
+	bpl	.left			; Before first item (partial row)?
+	add.b	#4,(uiBackpackIndex,a3)	; One more row down
+.left
+	btst	#2,d2			; Left
+	beq	.right
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
+	sub.b	#1,(uiBackpackIndex,a3)	; One column left
+	bpl	.endInput
+	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
+	bra	.endInput
+.right
+	btst	#3,d2			; Right
+	beq	.endInput
+	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
+	add.b	#1,(uiBackpackIndex,a3)	; One column right
+	cmp.b	(uiBackpackIndex,a3),d0
+	bgt	.endInput
+	sub.b	d0,(uiBackpackIndex,a3)	; Wrap around
+
+	bra	.endInput
+
+.backpackScrap
+	move.b	pad1State,d2
+
+	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
+	blt	.endInput
+
+	btst	#5,d2			; C
+	beq	.endInput
+
+	jsr	removeActive
+	bra	.endInput
+
+; Equipment slot input
+.equipmentInput
+	tst.w	(uiActive,a3)
+	bne	.equipmentActive
+
+	; No ui element is active.
+	move.w	(uiHot,a3),d1
+	beq	.endInput		; Can hot be null?
+	cmp.w	#uiLegs,d1
+	bgt	.endInput		; TODO should be bgt .groundInput or .actionInput ??
+
+	; Check inputs
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0		; 1 pressed down
+
+	andi.b	#%01110000,d0		; BCA
+	beq	.defaultNavigation	; Not
+	move.w	d1,(uiActive,a3)
+
+	btst	#6,d0			; A pressed
+	beq	.equipmentActive	; Not
+
+	; A pressed, show filtered item in backpack
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem
+	move.w	d0,d4
+	lea	checkSlots,a2
+	lea	inventoryUIState,a3
+	lea	items,a5
+	jsr	(a2)			; Check if current selected can be equipped
+	beq	.equipmentActive
+	jsr	findNextItem		; Find next equippable item
+	bmi	.equipmentRelease	; TODO show player now suitable items
+	move.b	d0,(uiBackpackIndex,a3)	: Select equippable item in backpack
+
+.equipmentActive
+	move.b	pad1State,d0
+	move.b	d0,d1
+	not.b	d0
+	and.b	pad1Change,d0		; 1 pressed down
+
+.equipmentSwitch	; A Switch / Use
+	move.b	pad1State,d2
+	and.b	pad1Change,d2
+	btst	#6,d2			; A released?
+	bne	.switchItem
+
+	btst	#6,d1			; A
+	bne	.equipmentMove		; Not
+
+	btst	#0,d0			; Up
+	bne	.selectNextItem		; Yes
+
+	btst	#1,d0			; Down
+	bne	.selectPreviousItem	; Yes
+
+	btst	#2,d0			; Left
+	bne	.selectPreviousItem	; Yes
+
+	btst	#3,d0			; right
+	bne	.selectNextItem		; Yes
+
+	bra	.endInput
+
+.selectNextItem
+	clr.l	d2
+	clr.l	d3
+	move.b	(uiBackpackIndex,a3),d2
+	lea	checkSlots,a2
+	lea	inventoryUIState,a3
+	lea	items,a5
+	jsr	findNextItem
+	bmi	.endInput
+	move.b	d0,(uiBackpackIndex,a3)
+	bra	.endInput
+
+.selectPreviousItem
+	clr.l	d2
+	clr.l	d3
+	move.b	(uiBackpackIndex,a3),d2
+	lea	checkSlots,a2
+	lea	inventoryUIState,a3
+	lea	items,a5
+	jsr	findPrevItem
+	bmi	.endInput
+	move.b	d0,(uiBackpackIndex,a3)
+	bra	.endInput
+
+.switchItem
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem		; d0.w is index to items, d1.w is index to backpack
+
+	move.w	(uiActive,a3),d3
+	uiSlotToInventory d3
+	; swap items
+	move.b	(a4,d3.w),d2		; d2 is item in slot
+	move.b	d0,(a4,d3.w)		; backpack -> slot
+	move.b	d2,(backpack,a4,d1.w)	; slot -> backpack
+	bne	.equipmentRelease
+
+	; Null item set to backpack
+	jsr	fixBackpackIndex
+	bra	.equipmentRelease
+
+.equipmentMove	; B Move to backpack
+	btst	#4,d0			; B
+	beq	.equipmentScrap		; Not
+
+	jsr	getBackpackFree
+	tst.w	d0
+	bmi	.equipmentRelease	; No free slot. TODO Show message to player
+
+	move.w	(uiActive,a3),d1
+	uiSlotToInventory d1
+	move.b	(a4,d1.w),(a0)
+	clr.b	(a4,d1.w)		; Clear slot
+	bra	.equipmentRelease
+
+.equipmentScrap	; C Scrap
+	btst	#5,d1			; C released?
+	beq	.endInput		; Not
+
+	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
+	blt	.equipmentRelease
+
+	move.w	uiHot(a3),d0
+	uiSlotToInventory d0
+	clr.b	(a4,d0.w)
+	bra	.equipmentRelease
+
+.equipmentRelease
+	clr.w	(uiActive,a3)
+
+.endInput
+
+	; Help
+	calc32x64pos 25,24,vdp_map_ant,uiVRAMAddress,d2
+	lea	strHelp,a0
+	lea	parchmentTilemap,a1
+	jsr	draw8x8Text
+
+.finishFrame
+	; Note: This is done at the end to allow checking pressed duration and state change
+	; Increment press counters if pressed
+	; Clear press counters if not pressed
+	move.b	pad1State,d0
+
+	btst	#4,d0		; B
+	beq	*+8
+	clr.w	(uiBPressed,a3)
+	bra	*+6
+	add.w	#1,(uiBPressed,a3)
+
+	btst	#5,d0		; C
+	beq	*+8
+	clr.w	(uiCPressed,a3)
+	bra	*+6
+	add.w	#1,(uiCPressed,a3)
+
+	btst	#6,d0		; A
+	beq	*+8
+	clr.w	(uiAPressed,a3)
+	bra	*+6
+	add.w	#1,(uiAPressed,a3)
+
+	btst	#7,d0		; S
+	beq	*+8
+	clr.w	(uiSPressed,a3)
+	bra	*+6
+	add.w	#1,(uiSPressed,a3)
+
+	; print vertical line of 224/240
+	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
+	lsr.w	#8,d0
+	lea	textScrap,a0
+	jsr	btos
+
+	calc32x64pos 0,0,vdp_map_bnt,uiVRAMAddress,d2
+	lea	parchmentTilemap,a1
+	jsr	draw8x8Text
+
+	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
+	jsr	processDMAQueue
+
+	; TODO Move some stuff here
+
+	jsr	drawPlayerStatus
+
+	jsr	waitVBlankOn	; Wait for blanking to stop.
+
+	bra 	.gameLoop
+
+defaultNavigateHot
+	lea	inventoryUIState+uiHot,a0
+	move.w	(a0),a1
+
+	move.b	pad1State,d0
+	not.b	d0
+	and.b	pad1Change,d0
+	btst	#0,d0		; Up
+	beq	*+4
+	move.w	(0,a1),(a0)
+	btst	#1,d0		; Down
+	beq	*+6
+	move.w	(4,a1),(a0)
+	btst	#2,d0		; Left
+	beq	*+6
+	move.w	(6,a1),(a0)
+	btst	#3,d0		; right
+	beq	*+6
+	move.w	(2,a1),(a0)
+
+	rts
+
+drawBackpack
 	; TODO If inventory doesn't have holes, this can be optimized.
 	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
-
-	; Border
-	move.l	#(14<<16)|8,d3
-	calc32x64pos 31,9,vdp_map_ant,uiVRAMAddress,d2
-	drawSelectableBorder 31,9,uiBackpack
 
 	; Loops trough each inventory item.
 	move.w	#backpackSize,d4	; d4 is inventory index
 	clr.l	d6			; d6 is processed item counter
 
-	; Calculate number of rows
-	; d0 is count of items to draw
-	MACRO calcDrawCount
-	INLINE
-	clr.l	d0
-	move.w	#backpackSize,d1
-.accumulateLoop
-	dbra	d1,.accumulate
-	bra	.end
-.accumulate
-	tst.b	(backpack,a4,d1.w)
-	beq	.accumulateLoop		; Item is null?
-	add.b	#1,d0
-	bra	.accumulateLoop
-.end
-	EINLINE
-	ENDM
-
-	calcDrawCount
+	jsr	getBackpackItemCount	; d0 is count
 	cmp.b	#4*7,d0			; No scrolling needed
 	ble	.startInventoryDrawing
 
@@ -278,292 +632,6 @@ openInventory
 	bra	.calcNextIcon
 
 .endBackpack
-
-; ==========
-; User input
-
-.backpackInput
-	cmp.w	#uiBackpack,uiActive(a3)
-	beq	.backpackNavigation
-
-	; Not active, but hot?
-	cmp.w	#uiBackpack,uiHot(a3)
-	blt	.equipmentInput		; Continue with equipment input check
-	bne	.defaultNavigation	; TODO should be bgt .groundInput or .actionInput
-
-	move.w	#uiBackpack,uiActive(a3); Automatically set backpack as active if hot to lock navigation
-
-.backpackNavigation
-	cmp.w	#10,(uiBPressed,a3)	; If B pressed, get out of backpack, also cancels item scrap
-	blt	.continueBackpackNavigation
-.defaultNavigation
-	clr.w	uiActive(a3)		; Reset active
-	jsr	defaultNavigateHot
-	bra	.endInput
-
-.continueBackpackNavigation
-	tst.w	(uiCPressed,a3)		; If C pressed
-	bne	.backpackScrap		; Skip navigation
-
-	tst.w	(uiAPressed,a3)		; If A pressed
-	beq	.continueNavigation
-	jsr	equipItemFromBackpack
-	bra	.endInput
-
-.continueNavigation
-	calcDrawCount
-	tst.b	d0
-	beq	.endInput		; No items in backpack, end input checking
-
-	move.b	pad1State,d2
-	not.b	d2			; flip pad1State bits
-	and.b	pad1Change,d2
-
-.up
-	btst	#0,d2			; Up
-	beq	.down
-	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
-	sub.b	#4,(uiBackpackIndex,a3)	; One row up
-	bpl	.left
-
-	move.w	d0,d1			; d1 is full rows
-        add.b	#3,d1			; Alignment - 1
-        andi.b	#$FC,d1			; Mask out bottom 2 bits
-	add.b	d1,(uiBackpackIndex,a3)	; Wrap around
-
-	cmp.b	(uiBackpackIndex,a3),d0	; Over last (partial row)?
-	bgt	*+6
-	sub.b	#4,(uiBackpackIndex,a3)	; One more row up
-	bra	.left
-.down
-	btst	#1,d2			; Down
-	beq	.left
-	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
-	add.b	#4,(uiBackpackIndex,a3)	; One row down
-	cmp.b	(uiBackpackIndex,a3),d0
-	bgt	.left
-
-	move.w	d0,d1			; d1 is full rows
-	add.b	#3,d1			; Alignment - 1
-	andi.b	#$FC,d1			; Mask out bottom 2 bits
-	sub.b	d1,(uiBackpackIndex,a3)	; Wrap around
-	bpl	.left			; Before first item (partial row)?
-	add.b	#4,(uiBackpackIndex,a3)	; One more row down
-.left
-	btst	#2,d2			; Left
-	beq	.right
-	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
-	sub.b	#1,(uiBackpackIndex,a3)	; One column left
-	bpl	.endInput
-	add.b	d0,(uiBackpackIndex,a3)	; Wrap around
-	bra	.endInput
-.right
-	btst	#3,d2			; Right
-	beq	.endInput
-	clr.b	(uiHotSlotIndex,a3)	; reset equip navigation
-	add.b	#1,(uiBackpackIndex,a3)	; One column right
-	cmp.b	(uiBackpackIndex,a3),d0
-	bgt	.endInput
-	sub.b	d0,(uiBackpackIndex,a3)	; Wrap around
-
-	bra	.endInput
-
-.backpackScrap
-	move.b	pad1State,d2
-
-	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
-	blt	.endInput
-
-	btst	#5,d2			; C
-	beq	.endInput
-
-	jsr	removeActive
-	bra	.endInput
-
-.equipmentInput
-	tst.w	(uiActive,a3)
-	bne	.equipmentActive
-
-	; No ui element is active.
-	move.w	(uiHot,a3),d1
-	beq	.endInput		; Can hot be null?
-	cmp.w	#uiLegs,d1
-	bgt	.endInput		; TODO should be bgt .groundInput or .actionInput ??
-
-	; Check inputs
-	move.b	pad1State,d0
-	not.b	d0
-	and.b	pad1Change,d0		; 1 pressed down
-
-	andi.b	#%01110000,d0		; BCA
-	beq	.defaultNavigation	; Not
-	move.w	d1,(uiActive,a3)
-
-.equipmentActive
-	move.b	pad1State,d0
-	move.b	d0,d1
-	not.b	d0
-	and.b	pad1Change,d0		; 1 pressed down
-
-		; B Move to backpack
-	btst	#4,d0			; B
-	beq	.equipmentScrap		; Not
-
-	jsr	getBackpackFree
-	tst.w	d0
-	bmi	.equipmentRelease	; No free slot. TODO Show message to player
-
-	move.w	(uiActive,a3),d1
-	uiSlotToInventory d1
-	move.b	(a4,d1.w),(a0)
-	clr.b	(a4,d1.w)		; Clear slot
-	bra	.equipmentRelease
-
-.equipmentScrap	; C Scrap
-	btst	#5,d1			; C released?
-	beq	.equipmentA		; Not
-
-	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
-	blt	.equipmentRelease
-
-	move.w	uiHot(a3),d0
-	uiSlotToInventory d0
-	clr.b	(a4,d0.w)
-	bra	.equipmentRelease
-
-.equipmentA	; A Switch / Use TODO show selection of items filtered to slot
-	btst	#6,d0			; A
-	beq	.endInput		; Not
-	bra	.equipmentRelease
-
-.equipmentRelease
-	clr.w	(uiActive,a3)
-
-.endInput
-
-	; Borders
-	move.l	#(2<<16)|2,d3
-
-	; Neck
-	drawSelectableBorder 1,2,uiNeck
-
-	; Head
-	drawSelectableBorder 14,2,uiHead
-
-	; Torso
-	drawSelectableBorder 14,10,uiTorso
-
-	; Finger Right hand
-	drawSelectableBorder 1,14,uiFingerRight
-
-	; Finger Left hand
-	drawSelectableBorder 14,14,uiFingerLeft
-
-	; Legs
-	drawSelectableBorder 14,18,uiLegs
-
-	; Info
-	lea	(inventoryTilemap+border2),a1
-	move.l	#(6<<16)|12,d3
-	calc32x64pos 18,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; Ground
-	move.l	#(6<<16)|8,d3
-	calc32x64pos 31,2,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; A
-	move.l	#(3<<16)|3,d3
-	drawSelectableBorder 1,24,uiA
-	jsr	draw9Slice
-
-	; B
-	drawSelectableBorder 5,24,uiB
-	jsr	draw9Slice
-
-	; C
-	drawSelectableBorder 9,24,uiC
-	jsr	draw9Slice
-
-	; Actions
-	lea	(inventoryTilemap+border2),a1
-	move.l	#(3<<16)|9,d3
-	calc32x64pos 14,24,vdp_map_ant,uiVRAMAddress,d2
-	jsr	draw9Slice
-
-	; Help
-	calc32x64pos 25,24,vdp_map_ant,uiVRAMAddress,d2
-	lea	strHelp,a0
-	lea	parchmentTilemap,a1
-	jsr	draw8x8Text
-
-.finishFrame
-	; Note: This is done at the end to allow checking pressed duration and state change
-	; Increment press counters if pressed
-	; Clear press counters if not pressed
-	move.b	pad1State,d0
-
-	btst	#4,d0		; B
-	beq	*+8
-	clr.w	(uiBPressed,a3)
-	bra	*+6
-	add.w	#1,(uiBPressed,a3)
-
-	btst	#5,d0		; C
-	beq	*+8
-	clr.w	(uiCPressed,a3)
-	bra	*+6
-	add.w	#1,(uiCPressed,a3)
-
-	btst	#6,d0		; A
-	beq	*+8
-	clr.w	(uiAPressed,a3)
-	bra	*+6
-	add.w	#1,(uiAPressed,a3)
-
-	btst	#7,d0		; S
-	beq	*+8
-	clr.w	(uiSPressed,a3)
-	bra	*+6
-	add.w	#1,(uiSPressed,a3)
-
-	; print vertical line of 224/240
-	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
-	lsr.w	#8,d0
-	lea	textScrap,a0
-	jsr	btos
-
-	calc32x64pos 0,0,vdp_map_bnt,uiVRAMAddress,d2
-	lea	parchmentTilemap,a1
-	jsr	draw8x8Text
-
-	jsr	waitVBlankOff	; Wait for blanking to start (VBlank is off).
-	jsr	processDMAQueue
-	jsr	waitVBlankOn	; Wait for blanking to stop.
-
-	bra 	.gameLoop
-
-defaultNavigateHot
-	lea	inventoryUIState+uiHot,a0
-	move.w	(a0),a1
-
-	move.b	pad1State,d0
-	not.b	d0
-	and.b	pad1Change,d0
-	btst	#0,d0		; Up
-	beq	*+4
-	move.w	(0,a1),(a0)
-	btst	#1,d0		; Down
-	beq	*+6
-	move.w	(4,a1),(a0)
-	btst	#2,d0		; Left
-	beq	*+6
-	move.w	(6,a1),(a0)
-	btst	#3,d0		; right
-	beq	*+6
-	move.w	(2,a1),(a0)
-
 	rts
 
 ; Remove active item from backpack
@@ -726,21 +794,27 @@ drawPlayerStatus
 	; \1 label address
 	; \2 value X offset
 	; \3 slot
+	; Needs d3 to be total protection
 	MACRO writeLabelAndSlotProtection
 	INLINE
 	lea	\1,a0
 	jsr	draw8x8Text
 
 	move.b	(\3,a4),d0
-	beq	.skip			; Item is null
+	beq	.writeNull		; Item is null
 	lsl.w	#3,d0			; Slot descriptor is 8 bytes
 	move.b	(priB,a5,d0.w),d0	; TODO what if this is not protect?
-	asr.b	#3,d0
+	asr.b	#3,d0			; Get value
 	sub.b	d0,d3			; Subs from total protection
-
 	lea	textScrap,a0
 	writeValue \2
-.skip
+	bra	.end
+
+.writeNull
+	add32x64pos \2,0,d2
+	lea	strNull,a0
+	jsr	draw8x8Text
+.end
 	EINLINE
 	ENDM
 
@@ -793,6 +867,8 @@ drawPlayerStatus
 
 .fxEnd
 	rts
+
+strNull		dc.b	'---',0
 
 strHealth	dc.b	'Life XXX/',0
 strMana		dc.b	'Mana XXX/',0

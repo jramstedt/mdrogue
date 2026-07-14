@@ -50,6 +50,8 @@ plrInventorySize	equ	__SO
 	add.b	d1,(\2,d0.w)
 	ENDM
 
+; TODO Don't use non null indexing, but just address to inventory. Add getNextItem with nth. match, filtering and starting address.
+
 ; TODO Check calling convention and registers
 ; Goes trough inventory and calculates stats. Adds bonus stats on top.
 calculateStats
@@ -118,6 +120,20 @@ addStats
 	addStat	secB(a1),a0
 	rts
 
+; Calculate number of non null items
+; return
+; d0	count of items
+getBackpackItemCount
+	clr.l	d0
+	move.w	#backpackSize,d1
+.accumulateLoop
+	dbra	d1,.accumulate
+	rts
+.accumulate
+	tst.b	(backpack,a4,d1.w)
+	beq	.accumulateLoop		; Item is null?
+	add.w	#1,d0
+	bra	.accumulateLoop
 
 ; d2.w	sequential index in non null items
 ; return
@@ -145,6 +161,149 @@ getBackpackItem
 	move.b	d3,d0
 	rts
 
+; d2.w	sequential index in non null items
+; a2	check routine
+; return
+; d0	next item index
+findNextItem
+	lea	playerInventory+backpack+backpackSize,a0
+
+	clr.l	d0
+	move.l	#-1,d4
+	clr.w	d4
+	move.w	#backpackSize,d1
+
+	; Find first match for wrap around
+.findFirstLoop
+	dbra	d1,.checkFirst
+	swap	d4			; Not found
+	move.w	d4,d0
+	rts
+.checkFirst
+	move.b	-(a0),d4
+	beq	.findFirstLoop		; Item is null?
+
+	jsr	(a2)
+	beq	.isFirstOk
+
+	add.w	#1,d0
+	bra	.findFirstLoop
+
+.isFirstOk
+	cmp.w	d2,d0
+	ble	.firstFound
+	rts
+
+.firstFound
+	move.w	d0,d4
+	swap	d4			; d4 high is first found for wrap around
+	clr.w	d4
+	add.w	#1,d0
+
+	; Find next
+.checkLoop
+	dbra	d1,.check
+	swap	d4			; Not found
+	move.w	d4,d0
+	rts
+.check
+	move.b	-(a0),d4
+	beq	.checkLoop		; Item is null?
+
+	cmp.w	d2,d0
+	ble	.continue
+
+	jsr	(a2)
+	bne	.continue
+	rts
+
+.continue
+	add.w	#1,d0
+	bra	.checkLoop
+
+; d2.w	sequential index in non null items
+; a2	check routine
+; return
+; d0	previous item index
+findPrevItem
+	lea	playerInventory+backpack+backpackSize,a0
+
+	clr.l	d0
+	move.l	#-1,d4
+	clr.w	d4
+	move.w	#backpackSize,d1
+
+	; Find next
+.checkLoop
+	dbra	d1,.check
+	swap	d4			; Not found
+	move.w	d4,d0
+	rts
+.check
+	move.b	-(a0),d4
+	beq	.checkLoop		; Item is null?
+
+	cmp.w	d2,d0
+	beq	.wasFound
+
+.wasNotFound
+	jsr	(a2)
+	bne	.continue
+	move.w	d0,d4
+	swap	d4			; save match
+	clr.w	d4
+
+.continue
+	add.w	#1,d0
+	bra	.checkLoop
+
+.wasFound
+	tst.l	d4
+	bmi	.wasNotFound
+	swap	d4			; restore saved
+	move.w	d4,d0
+	rts
+
+; Compare type
+checkType
+	cmp.w	d3,d4
+	rts
+
+; Compare slot
+; d3.w	wanted item type
+; a5	items
+checkSlot
+	lsl.w	#3,d4			; Slot descriptor is 8 bytes
+	move.b	(slot,a5,d4.w),d4
+	and.w	#%111,d4		; d4 slot
+	cmp.w	d3,d4
+	rts
+
+; Compare list of slots from inventoryToSlot
+; a3	inventoryUIState
+; a5	items
+; d4	item index
+checkSlots
+	lsl.w	#3,d4			; Slot descriptor is 8 bytes
+	move.b	(slot,a5,d4.w),d4
+	and.w	#%111,d4		; d4 slot
+
+	move.w	(uiActive,a3),d5
+	uiSlotToInventory d5
+	lsl.w	d5
+
+	lea	inventoryToSlot,a1
+	move.w	(2,a1,d5.w),d3		; d3 is end of slot list
+	move.w	(a1,d5.w),a1		; a1 possible inventory slots
+	sub.w	a1,d3			; d3 is count of possible slots
+	bra	.checkNext
+
+.checkLoop
+	cmp.b	(a1,d3.w),d4
+.checkNext
+	dbeq	d3,.checkLoop
+	rts
+
 ; d1.w	sequential index in non null items
 ; return
 ; a0	Address to backpack slot
@@ -159,7 +318,6 @@ getBackpackItemAddress
 	beq	.checkLoop		; Item is null?
 	dbra	d1,.checkLoop
 	rts
-
 
 ; return
 ; a0	Address to free backpack slot
