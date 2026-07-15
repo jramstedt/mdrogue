@@ -49,7 +49,7 @@ plrInventorySize	equ	__SO
 	add.b	d1,(\2,d0.w)
 	ENDM
 
-; TODO Don't use non null indexing, but just address to inventory. Add getNextItem with nth. match, filtering and starting address.
+; TODO Don't use "non null indexing", but just address to inventory. 2D Grid wrapping is a problem.
 
 ; TODO Check calling convention and registers
 ; Goes trough inventory and calculates stats. Adds bonus stats on top.
@@ -396,8 +396,8 @@ findItemForwardFor
 	move	#0,ccr
 	rts
 .check
-	move.b	(a0),d2		; d2 is item type
-	beq	.nextItem	; Item is null?
+	move.b	(a0),d2			; d2 is item type
+	beq	.nextItem		; Item is null?
 
 	jsr	(a2)
 	beq	.match
@@ -421,7 +421,7 @@ findItemBackwardToStart
 ; Find next item. Wraps around.
 ; a0	Start address, Note: increment 1 if current address needs checking too.
 ; a2	Predicate subroutine
-; d0	Matches to skip
+; d0.w	Matches to skip
 ; return
 ; a0	Found item address if Z true
 findItemBackward
@@ -447,8 +447,8 @@ findItemBackwardFor
 	move	#0,ccr
 	rts
 .check
-	move.b	(a0),d2	; d2 is item type
-	beq	.nextItem	; Item is null?
+	move.b	(a0),d2			; d2 is item type
+	beq	.nextItem		; Item is null?
 
 	jsr	(a2)
 	beq	.match
@@ -456,4 +456,8 @@ findItemBackwardFor
 	bra	.nextItem
 .match
 	dbra	d0,.nextItem
+	rts
+
+nopMatch
+	move	#%00100,ccr
 	rts
