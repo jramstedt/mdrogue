@@ -204,3 +204,32 @@ draw2x2
 	move.w	d0,vdp_data
 
 	rts
+
+; Fill rectangle with single tile
+; a1	Tile source address
+; d2.l	Hi = Plane VRAM address, Lo = Pattern VRAM index. HHHHLLLL
+; d3.l	Hi = Height, Lo = Width
+fillRect
+	setVDPAutoIncrement 2,vdp_ctrl
+
+; Build VRAM write command
+	move.l	d2,d7
+	clr.w	d7
+	swap	d7		; d7.w Plane VRAM address
+	arrangeWriteVRAMcmd d7
+
+	move.w	(a1),d6		; d6 is "pattern name"
+	add.w	d2,d6		; Add pattern VRAM index
+
+	move.l	d3,d1
+	swap	d1		; d1.w is height
+	bra	.start
+
+.loop
+	move.w	d6,vdp_data
+.row	dbra	d0,.loop
+	add.l	#(1<<7)<<16,d7	; 64 pattern names per row, 2 bytes per pattern name
+.start	move.l	d7,vdp_ctrl
+	move.w	d3,d0		; d0.w is width
+	dbra	d1,.row
+	rts

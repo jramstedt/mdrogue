@@ -85,11 +85,6 @@ openInventory
 .gameLoop
 	readGamePads pad1State,pad2State,pad1Change,pad2Change
 
-	clr.l	d0
-
-	; Stats
-	jsr	calculateStats
-
 	; Slot items
 	lea	inventoryUIState,a3
 	lea	playerInventory,a4
@@ -217,7 +212,7 @@ openInventory
 
 ; ========
 ; Draw Backpack
-	jsr drawBackpack
+	jsr	drawBackpack
 
 ; ==========
 ; User input
@@ -227,7 +222,7 @@ openInventory
 	beq	.backpackNavigation
 
 	; Not active, but hot?
-	cmp.w	#uiBackpack,uiHot(a3)
+	cmp.w	#uiBackpack,(uiHot,a3)
 	blt	.equipmentInput		; Continue with equipment input check
 	bne	.defaultNavigation	; TODO should be bgt .groundInput or .actionInput
 
@@ -493,12 +488,25 @@ openInventory
 	bra	*+6
 	add.w	#1,(uiSPressed,a3)
 
+; ==================
+; Draw Hot item info
+	jsr	clearItemInfo
+	lea	inventoryUIState,a3
+	move.w	(uiHot,a3),d0
+	uiSlotToInventory d0
+	move.b	(a4,d0.w),d0		; d2 is item in slot
+	jsr	drawItemInfo
+
+; =====
+; Stats
+	jsr	calculateStats
+	jsr	drawPlayerStatus
+
 	; print vertical line of 224/240
 	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
 	lsr.w	#8,d0
 	lea	textScrap,a0
 	jsr	btos
-
 	calc32x64pos 0,0,vdp_map_bnt,uiVRAMAddress,d2
 	lea	parchmentTilemap,a1
 	jsr	draw8x8Text
@@ -507,8 +515,6 @@ openInventory
 	jsr	processDMAQueue
 
 	; TODO Move some stuff here
-
-	jsr	drawPlayerStatus
 
 	jsr	waitVBlankOn	; Wait for blanking to stop.
 
@@ -539,6 +545,8 @@ defaultNavigateHot
 drawBackpack
 	; TODO If inventory doesn't have holes, this can be optimized.
 	; TODO Maybe "draw" empty slots too instead of skipping them? Scrolling then changes d4 (where drawing starts).
+
+	lea	items,a5
 
 	; Loops trough each inventory item.
 	move.w	#backpackSize,d4	; d4 is inventory index
@@ -746,13 +754,6 @@ equipItemFromBackpack
 	move.w	d3,(uiHot,a3)
 	rts
 
-drawPlayerStatus
-	lea	parchmentTilemap,a1	; Font tilemap, used by draw8x8Text
-	lea	playerStatus,a2
-	lea	playerStats,a3
-	lea	playerInventory,a4
-	lea	items,a5
-
 	; \1 X offset
 	; \2 value source, if not set defaults to d0
 	MACRO writeValue
@@ -776,6 +777,13 @@ drawPlayerStatus
 	writeValue \+,\+
 	ENDR
 	ENDM
+
+drawPlayerStatus
+	lea	parchmentTilemap,a1	; Font tilemap, used by draw8x8Text
+	lea	playerStatus,a2
+	lea	playerStats,a3
+	lea	playerInventory,a4
+	lea	items,a5
 
 	; Health
 	; Label
@@ -802,7 +810,7 @@ drawPlayerStatus
 
 	move.b	(\3,a4),d0
 	beq	.writeNull		; Item is null
-	lsl.w	#3,d0			; Slot descriptor is 8 bytes
+	lsl.w	#3,d0			; Item descriptor is 8 bytes
 	move.b	(priB,a5,d0.w),d0	; TODO what if this is not protect?
 	asr.b	#3,d0			; Get value
 	sub.b	d0,d3			; Subs from total protection
@@ -845,6 +853,13 @@ drawPlayerStatus
 	calc32x64pos 18,18,vdp_map_bnt,uiVRAMAddress,d2
 	move.b	plrEffects(a3),d3
 	beq	.fxEnd
+	jsr	writeEffects
+
+.fxEnd
+	rts
+
+; d3	effect bits
+writeEffects
 	; Loop trough each bit. Draw text if set.
 	lea	strFx,a0
 	move	#5,d4
@@ -868,6 +883,117 @@ drawPlayerStatus
 .fxEnd
 	rts
 
+	; \1	priB or secB
+	MACRO writeBonus
+	INLINE
+	move.b	(\1,a5),d3
+	move.b	d3,d4
+	and.w	#%111,d3	; d3 stat index
+	lsl.w	#1,d3		; d3 offset to jump table
+	asr.b	#3,d4		; d4 stat value
+	beq	.skip
+
+	move.b	(slot,a5),d5
+	and.w	#%111,d5	; d5 slot
+
+	move.w	(itemStatsJmpTable,pc,d3.w),a0
+	jsr	(a0)
+.skip
+	EINLINE
+	ENDM
+
+; d0.w	index to items
+drawItemInfo
+	tst.w	d0
+	beq	.end
+
+	lea	items,a5
+	lsl.w	#3,d0			; Item descriptor is 8 bytes
+	lea	(a5,d0.w),a5		; a0 is item descriptor
+
+	lea	parchmentTilemap,a1
+	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
+	move.w	(label,a5),a0
+	jsr	draw8x8Text
+
+	writeBonus	priB
+	writeBonus	secB
+
+	; Effect
+	move.b	(slot,a5),d3
+	move.b	d3,d5
+	and.w	#%111,d5	; d5 slot
+	cmp	#head,d5
+	blt	.end		; Usable items don't have effects
+
+	lsr.b	#3,d3
+	beq	.end
+	add32x64pos 0,1,d2		; Next line
+	jsr	writeEffects
+
+.end
+	rts
+
+clearItemInfo
+	lea	(itemsTilemap+empty),a1
+	move.l	#(6<<16)|12,d3
+	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
+	jsr	fillRect
+	rts
+
+; d0.b	value
+; d5.w	slot
+itemStatsJmpTable
+	dc.w	.health
+	dc.w	.mana
+	dc.w	.protect
+	dc.w	.restore
+	dc.w	.melee
+	dc.w	.magic
+
+.health
+	lea	strItemHealth,a0
+	bra	.writeValue
+
+.mana
+	lea	strItemMana,a0
+	bra	.writeValue
+.protect
+	lsl.w	#1,d5		; d5 offset to table
+	move.w	(.slotStrTable,pc,d5.w),a0
+	bra	.writeValue
+
+.slotStrTable
+	dc.w	strItemProtection
+        dc.w	strItemProtection
+        dc.w	strItemHead
+        dc.w	strItemProtection
+        dc.w	strItemChest
+        dc.w	strItemProtection
+        dc.w	strItemLegs
+        dc.w	strItemProtection
+
+.restore
+	lea	strItemRestore,a0
+	bra	.writeValue
+.melee
+	lea	strItemDmgMelee,a0
+	bra	.writeValue
+.magic
+	lea	strItemDmgMagic,a0
+	bra	.writeValue
+
+.writeValue
+	add32x64pos 0,1,d2		; Next line
+	jsr	draw8x8Text
+	add32x64pos 9,0,d2
+	lea	textScrap,a0
+	move.b	d4,d0
+	jsr	btos
+	jsr	draw8x8Text
+	add32x64pos -9,0,d2
+	rts
+
 strNull		dc.b	'---',0
 
 strHealth	dc.b	'Life XXX/',0
@@ -886,6 +1012,17 @@ strFx1		dc.b	'Missing 1',0
 strFx2		dc.b	'Missing 2',0
 strFx3		dc.b	'Missing 3',0
 strFx4		dc.b	'Missing 4',0
+
+strItem
+strItemHealth		dc.b	'Life     ',0
+strItemMana		dc.b	'Mana     ',0
+strItemHead		dc.b	'AR Head  ',0
+strItemChest		dc.b	'AR Chest ',0
+strItemLegs		dc.b	'AR Legs  ',0
+strItemProtection	dc.b	'Protect +',0
+strItemRestore		dc.b	'Restore +',0
+strItemDmgMelee		dc.b	'DR Melee ',0
+strItemDmgMagic		dc.b	'DR Magic ',0
 
 strHelp		dc.b	'A Switch / Use',$A,$D,'B Drop',$A,$D,'C Scrap',0
 
