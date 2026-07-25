@@ -31,6 +31,7 @@ const drawPreview = Boolean(JSON.parse(preview))
 type Frame = {
   readonly pngFile?: string,
   readonly name?: string,
+  readonly label?: string,
   readonly x?: number | "+" | "-"
   readonly y?: number | "+" | "-"
   readonly width?: number
@@ -129,7 +130,7 @@ for (const { frames: descriptorFrames, name: descriptorName, type: outputType = 
   let paletteIndex: 0 | 1 | 2 | 3 = 0
   let highPriority = false
   let anchor = { x: 0, y: 0 }
-  for (const { x, y, width, height, highPriority: frameHighPriority, palette: framePalette, name: frameName, pngFile: framePngFile, preview, anchor: frameAnchor } of descriptorFrames) {
+  for (const { x, y, width, height, highPriority: frameHighPriority, palette: framePalette, name: frameName, label: frameLabel, pngFile: framePngFile, preview, anchor: frameAnchor } of descriptorFrames) {
     if (framePngFile !== undefined) pngFile = framePngFile
     if (framePalette !== undefined) paletteIndex = framePalette
     if (frameHighPriority !== undefined) highPriority = frameHighPriority
@@ -192,6 +193,7 @@ for (const { frames: descriptorFrames, name: descriptorName, type: outputType = 
       highPriority,
       palette: paletteIndex,
       name: frameName ?? `${descriptorName}_res_${origin.x}_${origin.y}`,
+      label: frameLabel,
       origin: anchor
     } satisfies Section
 
@@ -235,7 +237,16 @@ for (const { frames: descriptorFrames, name: descriptorName, type: outputType = 
 
     const resPath = resolve(targetDirectory, `${descriptorName}-res.asm`)
     console.log(`Writing ${resPath}...`)
-    await writeFile(resPath, [...sectionOffset, ...(spriteOffset ?? [])].map(({ name, offset }) => `${name}\t\tequ ${offset}`).join('\n'))
+    const asmSourceLines = [...sectionOffset, ...(spriteOffset ?? [])].flatMap(
+        ({ name, offset, label }) => {
+          const offsetLine = `${name}\t\tequ ${offset}`
+          return label
+              ? [offsetLine, `str_${name}\t\tdc.b\t'${label}',0`]
+              : [offsetLine]
+        }
+    )
+    asmSourceLines.push('\teven')
+    await writeFile(resPath, asmSourceLines.join('\n'))
   } else if (outputType === 'sprite:vdp') {
     const { animationBuffer, frames, frameOffsets, dplc } = generateMegaDriveSprites(true, sections, state)
 

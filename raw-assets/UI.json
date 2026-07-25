@@ -7,6 +7,7 @@
         "copyright": " https://opengameart.org/content/16x16-rpg-items-db32",
 
         "name": "potion_health",
+        "label": "Health potion",
         "x": 0,
         "y": 0,
         "width": 16,
@@ -16,85 +17,105 @@
       },
       {
         "name": "potion_mana",
+        "label": "Mana potion",
         "x": "+"
       },
       {
         "name": "potion_misc1",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc2",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc3",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc4",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc5",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc6",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc7",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc8",
+        "label": "Potion",
         "x": "+"
       },
       {
         "name": "potion_misc9",
+        "label": "Potion",
         "x": "+"
       },
 
       {
         "name": "ring_silver",
+        "label": "Silver ring",
         "x": 0,
         "y": "+"
       },
       {
         "name": "ring_gold",
+        "label": "Gold ring",
         "x": "+"
       },
       {
         "name": "ring_bronze",
+        "label": "Bronze ring",
         "x": "+"
       },
       {
         "name": "ring_silver_green",
+        "label": "Silver-green ring",
         "x": "+"
       },
       {
         "name": "ring_gold_green",
+        "label": "Gold-green ring",
         "x": "+"
       },
       {
         "name": "ring_silver_red",
+        "label": "Silver-red ring",
         "x": "+"
       },
       {
         "name": "ring_gold_red",
+        "label": "Gold-red ring",
         "x": "+"
       },
       {
         "name": "ring_silver_blue",
+        "label": "Silver-blue ring",
         "x": "+"
       },
       {
         "name": "ring_gold_blue",
+        "label": "Gold-blue ring",
         "x": "+"
       },
 
       {
         "name": "necklace_silver",
+        "label": "Silver necklace",
         "x": 0,
         "y": "+"
       },
@@ -132,6 +153,7 @@
       },
       {
         "name": "chest_iron",
+        "label": "Iron shirt",
         "x": "+"
       },
       {

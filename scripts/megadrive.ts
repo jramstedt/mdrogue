@@ -21,7 +21,7 @@ for (let r = 0; r <= 0b111; ++r)
 
 export type Pattern = { normal: Uint32Array, flipped: Uint32Array }
 export type Rect = [x: number, y: number, width: number, height: number]
-export type Section = SubRect & { highPriority: boolean, palette: 0 | 1 | 2 | 3,  name: string, origin?: { x: number, y: number } }
+export type Section = SubRect & { highPriority: boolean, palette: 0 | 1 | 2 | 3, name: string, origin?: { x: number, y: number }, label?: string | undefined }
 
 export const patternSize = 8 // Mega Drive uses 8x8 pixel patterns.
 export const patternBytes = 4 * 8 // 8 * 32bits
@@ -123,17 +123,17 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
   const patternStartOffset = patterns.length
 
   const patternNameBuffer = new ArrayBuffer(64 * 1024) // Mega Drive 64k VRAM
-  const sectionOffset: { name: string, offset: number }[] = []
+  const sectionOffset: { name: string, offset: number, label?: string | undefined }[] = []
   let patternNameDataOffset = 0
 
   const spriteDataBuffer = new ArrayBuffer(4 * 1024 * 1024) // Max Mega Drive ROM size
-  const spriteOffset: { name: string, offset: number }[] = []
+  const spriteOffset: { name: string, offset: number, label?: string | undefined }[] = []
   let spriteDataOffset = 0
 
   for (const section of inputSections) {
-    const { highPriority, palette, name, width, height } = section
+    const { highPriority, palette, name, width, height, label } = section
 
-    sectionOffset.push({ name, offset: patternNameDataOffset })
+    sectionOffset.push({ name, offset: patternNameDataOffset, label })
 
     const patternOffset = patterns.length
     const sectionPatterns = writeSprite
@@ -166,7 +166,7 @@ export function generateMegaDriveTilemap (inputSections: Section[], patterns: Pa
         continue
       }
 
-      spriteOffset.push({ name: `spr_${name}`, offset: spriteDataOffset })
+      spriteOffset.push({ name: `spr_${name}`, offset: spriteDataOffset, label })
 
       const verticalFlip = 0;
       const horizontalFlip = 0;

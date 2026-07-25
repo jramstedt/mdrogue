@@ -54,7 +54,7 @@ for await (const layerName of execa`${asesprite()} ${asespriteroptions} --list-l
   if (spriteMode === undefined)
     await execa({stdout: 'inherit', stderr: 'inherit'})`${asesprite()} ${asespriteroptions} --layer=${layerName} ${spritesheetPath} --list-tags --split-tags --ignore-empty --merge-duplicates --filename-format={tag}/{tagframe0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
   else if (spriteMode === 'grid')
-    await execa({stdout: process.stdout, stderr: 'inherit'})`${asesprite()} ${asespriteroptions} --format=json-array --layer=${layerName} --split-grid ${spritesheetPath} --sheet-columns=5 --ignore-empty --merge-duplicates --filename-format={frame0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
+    await execa({stdout: 'inherit', stderr: 'inherit'})`${asesprite()} ${asespriteroptions} --format=json-array --layer=${layerName} --split-grid ${spritesheetPath} --sheet-columns=5 --ignore-empty --merge-duplicates --filename-format={frame0000} --sheet-type=rows --sheet=${sheet} --data=${data}`
 
   const spritesheetImage = decode(await readFile(sheet), { checkCrc: true })
   const { width: imageWidth, height: imageHeight, channels: imageChannels, depth: imageDepth, data: imagePixels, palette: imagePalette } = spritesheetImage
