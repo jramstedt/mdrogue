@@ -90,7 +90,7 @@ priB		rs.b	1	; BBBBBIII	B=Value  I=Stat
 secB		rs.b	1	; BBBBBIII	B=Value  I=Stat
 		rs.b	1	; padding
 gfx		rs.w	1	; Tilemap offset
-		rs.w	1	; padding
+label		rs.w	1	; Name string address
 itemDescSize	equ	__RS
 
 ; item name = gfx of priB ?
@@ -102,29 +102,30 @@ itemDescSize	equ	__RS
 ; \5	Secondary bonus stat
 ; \6	Secondary bonus value
 ; \7	Graphics
+; \8	Name
 	MACRO buildItemDescriptor
 	dc.b	(\2<<3)|(\1)
 	dc.b	(\4<<3)|(\3)
 	dc.b	(\6<<3)|(\5)
 	dc.b	0
 	dc.w	\7
-	dc.w	0
+	dc.w	\8
 	ENDM
 
 	even
 items
-	buildItemDescriptor	quest,junk,0,0,0,0,empty			; Null item
-	buildItemDescriptor	item,none,health,1,0,0,potion_health		; health potion
-	buildItemDescriptor	item,none,mana,1,0,0,potion_mana		; mana potion
+	buildItemDescriptor	quest,junk,0,0,0,0,empty,0					; Null item
+	buildItemDescriptor	item,none,health,1,0,0,potion_health,str_potion_health		; health potion
+	buildItemDescriptor	item,none,mana,1,0,0,potion_mana,str_potion_mana		; mana potion
 
-	buildItemDescriptor	head,none,protect,1,0,0,helmet_iron		; iron helmet
-	buildItemDescriptor	neck,none,protect,1,0,0,necklace_silver		; iron gorget
-	buildItemDescriptor	torso,none,protect,1,0,0,chest_iron		; iron shirt
-	buildItemDescriptor	legs,none,protect,1,0,0,legs_iron		; iron pants
+	buildItemDescriptor	head,none,protect,1,0,0,helmet_iron,0				; iron helmet
+	buildItemDescriptor	neck,float,protect,1,melee,1,necklace_silver,0			; iron gorget
+	buildItemDescriptor	torso,none,protect,1,0,0,chest_iron,str_chest_iron		; iron shirt
+	buildItemDescriptor	legs,none,protect,1,0,0,legs_iron,0				; iron pants
 
-	buildItemDescriptor	finger,none,protect,1,restore,1,ring_silver	; iron ring
+	buildItemDescriptor	finger,none,protect,1,restore,1,ring_silver,str_ring_silver	; iron ring
 
-	buildItemDescriptor	weapon,normal,melee,1,0,0,sword_iron		; iron sword
+	buildItemDescriptor	weapon,normal,melee,1,0,0,sword_iron,0				; iron sword
 
-	buildItemDescriptor	weapon,fireball,magic,1,0,0,book_black_plain	; fireball spell
-	buildItemDescriptor	weapon,1,magic,1,0,0,book_brown_plain		; ??? spell
+	buildItemDescriptor	weapon,fireball,magic,1,0,0,book_black_plain,0			; fireball spell
+	buildItemDescriptor	weapon,1,magic,1,0,0,book_brown_plain,0				; ??? spell
