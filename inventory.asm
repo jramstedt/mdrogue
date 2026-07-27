@@ -226,7 +226,7 @@ openInventory
 	blt	.equipmentInput		; Continue with equipment input check
 	bne	.defaultNavigation	; TODO should be bgt .groundInput or .actionInput
 
-	move.w	#uiBackpack,uiActive(a3); Automatically set backpack as active if hot to lock navigation
+	move.w	#uiBackpack,(uiActive,a3); Automatically set backpack as active if hot to lock navigation
 
 ; Backpack navigation input
 .backpackNavigation
@@ -442,7 +442,7 @@ openInventory
 	cmp.w	#25,(uiCPressed,a3)	; If C pressed, remove item
 	blt	.equipmentRelease
 
-	move.w	uiHot(a3),d0
+	move.w	(uiHot,a3),d0
 	uiSlotToInventory d0
 	clr.b	(a4,d0.w)
 	bra	.equipmentRelease
@@ -490,17 +490,79 @@ openInventory
 
 ; ==================
 ; Draw Hot item info
-	jsr	clearItemInfo
-	lea	inventoryUIState,a3
+	lea	(itemsTilemap+empty),a1
+	move.l	#(6<<16)|12,d3
+	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
+	jsr	fillRect
+
+	cmp.w	#uiBackpack,(uiHot,a3)
+	beq	.hotBackpackItemInfo
+
+	; Hot equipment or item
 	move.w	(uiHot,a3),d0
 	uiSlotToInventory d0
 	move.b	(a4,d0.w),d0		; d2 is item in slot
+	bra	.drawHotItemInfo
+
+	; Hot backpack item
+.hotBackpackItemInfo
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem
+
+.drawHotItemInfo
+	lea	parchmentTilemap,a1
+	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
 	jsr	drawItemInfo
+
+; ==================
+; Draw Active item info
+	tst.w	(uiActive,a3)
+	beq	.endDrawActiveItemInfo
+
+	cmp.w	#uiBackpack,(uiActive,a3)
+	beq	.activeBackpackItemInfo
+
+	; Is switching from backpack?
+	tst.w	(uiAPressed,a3)		; If A pressed
+	beq	.skipBackpackSwitch	; Not
+
+	; Item/Equipment active and switching from backpack
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem
+	lea	parchmentTilemap,a1
+	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
+	jsr	drawItemInfo
+.skipBackpackSwitch
+
+	jsr	clearPlayerStatus
+
+	; Active equipment or item
+	move.w	(uiActive,a3),d0
+	uiSlotToInventory d0
+	move.b	(a4,d0.w),d0		; d2 is item in slot
+	bra	.drawActiveItemInfo
+
+.activeBackpackItemInfo
+	tst.w	(uiAPressed,a3)		; If A pressed
+	beq	.endDrawActiveItemInfo
+
+	jsr	clearPlayerStatus
+
+	move.b	(uiBackpackIndex,a3),d2
+	jsr	getBackpackItem
+
+.drawActiveItemInfo
+	lea	parchmentTilemap,a1
+	calc32x64pos 18,9,vdp_map_bnt,uiVRAMAddress,d2
+	jsr	drawItemInfo
+	bra	.endDrawPlayerStatus
+.endDrawActiveItemInfo
 
 ; =====
 ; Stats
 	jsr	calculateStats
 	jsr	drawPlayerStatus
+.endDrawPlayerStatus
 
 	; print vertical line of 224/240
 	move.w	vdp_hvcnt,d0	; hi = vert, lo = hori
@@ -778,27 +840,6 @@ equipItemFromBackpack
 	ENDR
 	ENDM
 
-drawPlayerStatus
-	lea	parchmentTilemap,a1	; Font tilemap, used by draw8x8Text
-	lea	playerStatus,a2
-	lea	playerStats,a3
-	lea	playerInventory,a4
-	lea	items,a5
-
-	; Health
-	; Label
-	calc32x64pos 18,9,vdp_map_bnt,uiVRAMAddress,d2
-	writeLabelAndValues strHealth,5,plrHealth(a2),4,plrMaxHealth(a3)
-
-	; Mana
-	; Label
-	calc32x64pos 18,10,vdp_map_bnt,uiVRAMAddress,d2
-	writeLabelAndValues strMana,5,plrMana(a2),4,plrMaxMana(a3)
-
-	; Load protection and then decrement slot protections
-	clr.l	d3
-	move.b	plrProtection(a3),d3
-
 	; \1 label address
 	; \2 value X offset
 	; \3 slot
@@ -825,6 +866,27 @@ drawPlayerStatus
 .end
 	EINLINE
 	ENDM
+
+drawPlayerStatus
+	lea	parchmentTilemap,a1	; Font tilemap, used by draw8x8Text
+	lea	playerStatus,a2
+	lea	playerStats,a3
+	lea	playerInventory,a4
+	lea	items,a5
+
+	; Health
+	; Label
+	calc32x64pos 18,9,vdp_map_bnt,uiVRAMAddress,d2
+	writeLabelAndValues strHealth,5,plrHealth(a2),4,plrMaxHealth(a3)
+
+	; Mana
+	; Label
+	calc32x64pos 18,10,vdp_map_bnt,uiVRAMAddress,d2
+	writeLabelAndValues strMana,5,plrMana(a2),4,plrMaxMana(a3)
+
+	; Load protection and then decrement slot protections
+	clr.l	d3
+	move.b	plrProtection(a3),d3
 
 	; Head Armor Rating
 	calc32x64pos 18,11,vdp_map_bnt,uiVRAMAddress,d2
@@ -856,6 +918,13 @@ drawPlayerStatus
 	jsr	writeEffects
 
 .fxEnd
+	rts
+
+clearPlayerStatus
+	lea	(itemsTilemap+empty),a1
+	move.l	#(14<<16)|12,d3
+	calc32x64pos 18,9,vdp_map_bnt,uiVRAMAddress,d2
+	jsr	fillRect
 	rts
 
 ; d3	effect bits
@@ -902,6 +971,8 @@ writeEffects
 	EINLINE
 	ENDM
 
+; a1	Font tilemap source address
+; d2.l	Hi = Plane VRAM address, Lo = Pattern VRAM index. HHHHLLLL
 ; d0.w	index to items
 drawItemInfo
 	tst.w	d0
@@ -911,8 +982,6 @@ drawItemInfo
 	lsl.w	#3,d0			; Item descriptor is 8 bytes
 	lea	(a5,d0.w),a5		; a0 is item descriptor
 
-	lea	parchmentTilemap,a1
-	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
 	move.w	(label,a5),a0
 	jsr	draw8x8Text
 
@@ -932,13 +1001,6 @@ drawItemInfo
 	jsr	writeEffects
 
 .end
-	rts
-
-clearItemInfo
-	lea	(itemsTilemap+empty),a1
-	move.l	#(6<<16)|12,d3
-	calc32x64pos 18,2,vdp_map_bnt,uiVRAMAddress,d2
-	jsr	fillRect
 	rts
 
 ; d0.b	value
